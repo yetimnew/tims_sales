@@ -17,6 +17,7 @@ import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import {
     Route,
@@ -32,13 +33,6 @@ import {
     Search,
     ChevronRight,
 } from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Distances',
-        href: '/distances',
-    },
-];
 
 type ColumnKey =
     | 'route'
@@ -118,147 +112,192 @@ interface DistancesIndexProps {
 
 const SKELETON_FLAG_KEY = 'distances.index.shouldShowSkeleton';
 
-const COLUMN_DEFINITIONS: Array<{
-    id: ColumnKey;
-    label: string;
-    sortKey?: string;
-    align?: 'center' | 'right';
-}> = [
-    { id: 'route', label: 'Route' },
-    { id: 'status', label: 'Status', sortKey: 'status', align: 'center' },
-    { id: 'distance_km', label: 'Distance (km)', sortKey: 'distance_km', align: 'right' },
-    { id: 'estimated_time_hours', label: 'Time (hrs)', sortKey: 'estimated_time_hours', align: 'right' },
-    { id: 'route_type', label: 'Route Type', sortKey: 'route_type', align: 'center' },
-    { id: 'average_speed_kmph', label: 'Avg Speed', sortKey: 'average_speed_kmph', align: 'right' },
-    { id: 'road_quality_index', label: 'Road Quality', sortKey: 'road_quality_index', align: 'right' },
-    { id: 'toll_road', label: 'Toll Road', align: 'center' },
-    { id: 'restricted_for_heavy_vehicles', label: 'Heavy Vehicle', align: 'center' },
-];
-
-const ROUTE_TYPE_OPTIONS = [
-    { label: 'All routes', value: 'all' },
-    { label: 'Primary', value: 'primary' },
-    { label: 'Secondary', value: 'secondary' },
-    { label: 'Alternative', value: 'alternative' },
-];
-
-const formatNumberValue = (value?: number | string | null, fractionDigits = 0): string => {
-    if (value === null || value === undefined || value === '') {
-        return '—';
-    }
-
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) {
-        return '—';
-    }
-
-    return numeric.toLocaleString('en-US', {
-        minimumFractionDigits: fractionDigits,
-        maximumFractionDigits: fractionDigits,
-    });
-};
-
-const formatCount = (value?: number | string | null): string => {
-    if (value === null || value === undefined || value === '') {
-        return '0';
-    }
-
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) {
-        return '0';
-    }
-
-    return numeric.toLocaleString();
-};
-
-const formatDistanceValue = (value?: number | string | null): string => {
-    const formatted = formatNumberValue(value, 1);
-    return formatted === '—' ? '—' : `${formatted}`;
-};
-
-const formatHourValue = (value?: number | string | null): string => {
-    const formatted = formatNumberValue(value, 1);
-    return formatted === '—' ? '—' : `${formatted}`;
-};
-
-const formatSpeedValue = (value?: number | string | null): string => {
-    const formatted = formatNumberValue(value, 1);
-    return formatted === '—' ? '—' : `${formatted}`;
-};
-
-const getStatusBadge = (status?: string | null): React.ReactNode => {
-    if (!status) {
-        return (
-            <Badge variant="outline" className="bg-muted text-muted-foreground">
-                Unknown
-            </Badge>
-        );
-    }
-
-    const normalized = status.toLowerCase();
-    if (normalized === 'active') {
-        return (
-            <Badge className="flex w-fit items-center gap-1 border-emerald-200 bg-emerald-100 text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200">
-                Active
-            </Badge>
-        );
-    }
-
-    if (normalized === 'inactive') {
-        return (
-            <Badge className="flex w-fit items-center gap-1 border-slate-200 bg-slate-100 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
-                Inactive
-            </Badge>
-        );
-    }
-
-    return (
-        <Badge variant="outline" className="capitalize">
-            {status}
-        </Badge>
-    );
-};
-
-const getRouteTypeBadge = (routeType?: string | null): React.ReactNode => {
-    if (!routeType) {
-        return '—';
-    }
-
-    return (
-        <Badge className="flex w-fit items-center gap-1 border-blue-200 bg-blue-100 text-xs capitalize text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/30 dark:text-blue-200">
-            <CircleDot className="h-3 w-3" />
-            {routeType}
-        </Badge>
-    );
-};
-
-const getBooleanBadge = (value?: boolean | null, trueLabel = 'Yes', falseLabel = 'No'): React.ReactNode => {
-    if (value) {
-        return (
-            <Badge className="w-fit border-emerald-200 bg-emerald-100 text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200">
-                {trueLabel}
-            </Badge>
-        );
-    }
-
-    return (
-        <Badge className="w-fit border-slate-200 bg-slate-100 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
-            {falseLabel}
-        </Badge>
-    );
-};
-
-const resolveRegionLabel = (place?: PlaceSummary | null): string => {
-    const region = place?.woreda?.zone?.region?.name;
-    return region ?? '—';
-};
-
 export default function DistancesIndex({ distances, metrics, filters }: DistancesIndexProps) {
+    const { t, i18n } = useTranslation();
     const { hasPermission } = usePermissions();
     const canViewDistance = hasPermission('distances.show');
     const canCreateDistance = hasPermission('distances.create');
     const canEditDistance = hasPermission('distances.edit');
     const canDeleteDistance = hasPermission('distances.destroy');
+    const locale = i18n.language || 'en-US';
+    const notAvailableLabel = t('distances.fallbacks.notAvailable');
+    const unknownLabel = t('distances.fallbacks.unknown');
+
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('distances.title'),
+                href: '/distances',
+            },
+        ],
+        [t],
+    );
+
+    const columnDefinitions = React.useMemo<Array<{ id: ColumnKey; label: string; sortKey?: string; align?: 'center' | 'right' }>>(
+        () => [
+            { id: 'route', label: t('distances.columns.route') },
+            { id: 'status', label: t('distances.columns.status'), sortKey: 'status', align: 'center' },
+            { id: 'distance_km', label: t('distances.columns.distance'), sortKey: 'distance_km', align: 'right' },
+            { id: 'estimated_time_hours', label: t('distances.columns.time'), sortKey: 'estimated_time_hours', align: 'right' },
+            { id: 'route_type', label: t('distances.columns.routeType'), sortKey: 'route_type', align: 'center' },
+            { id: 'average_speed_kmph', label: t('distances.columns.averageSpeed'), sortKey: 'average_speed_kmph', align: 'right' },
+            { id: 'road_quality_index', label: t('distances.columns.roadQuality'), sortKey: 'road_quality_index', align: 'right' },
+            { id: 'toll_road', label: t('distances.columns.tollRoad'), align: 'center' },
+            { id: 'restricted_for_heavy_vehicles', label: t('distances.columns.heavyVehicle'), align: 'center' },
+        ],
+        [t],
+    );
+
+    const routeTypeOptions = React.useMemo(
+        () => [
+            { label: t('distances.routeTypes.all'), value: 'all' },
+            { label: t('distances.routeTypes.primary'), value: 'primary' },
+            { label: t('distances.routeTypes.secondary'), value: 'secondary' },
+            { label: t('distances.routeTypes.alternative'), value: 'alternative' },
+        ],
+        [t],
+    );
+
+    const formatNumberValue = React.useCallback(
+        (value?: number | string | null, fractionDigits = 0): string => {
+            if (value === null || value === undefined || value === '') {
+                return notAvailableLabel;
+            }
+
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) {
+                return notAvailableLabel;
+            }
+
+            return numeric.toLocaleString(locale, {
+                minimumFractionDigits: fractionDigits,
+                maximumFractionDigits: fractionDigits,
+            });
+        },
+        [locale, notAvailableLabel],
+    );
+
+    const formatCount = React.useCallback(
+        (value?: number | string | null): string => {
+            if (value === null || value === undefined || value === '') {
+                return '0';
+            }
+
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) {
+                return '0';
+            }
+
+            return numeric.toLocaleString(locale);
+        },
+        [locale],
+    );
+
+    const formatDistanceValue = React.useCallback(
+        (value?: number | string | null): string => {
+            const formatted = formatNumberValue(value, 1);
+            return formatted === notAvailableLabel ? notAvailableLabel : `${formatted}`;
+        },
+        [formatNumberValue, notAvailableLabel],
+    );
+
+    const formatHourValue = React.useCallback(
+        (value?: number | string | null): string => {
+            const formatted = formatNumberValue(value, 1);
+            return formatted === notAvailableLabel ? notAvailableLabel : `${formatted}`;
+        },
+        [formatNumberValue, notAvailableLabel],
+    );
+
+    const formatSpeedValue = React.useCallback(
+        (value?: number | string | null): string => {
+            const formatted = formatNumberValue(value, 1);
+            return formatted === notAvailableLabel ? notAvailableLabel : `${formatted}`;
+        },
+        [formatNumberValue, notAvailableLabel],
+    );
+
+    const getStatusBadge = React.useCallback(
+        (status?: string | null): React.ReactNode => {
+            if (!status) {
+                return (
+                    <Badge variant="outline" className="bg-muted text-muted-foreground">
+                        {t('distances.status.unknown')}
+                    </Badge>
+                );
+            }
+
+            const normalized = status.toLowerCase();
+            if (normalized === 'active') {
+                return (
+                    <Badge className="flex w-fit items-center gap-1 border-emerald-200 bg-emerald-100 text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200">
+                        {t('distances.status.active')}
+                    </Badge>
+                );
+            }
+
+            if (normalized === 'inactive') {
+                return (
+                    <Badge className="flex w-fit items-center gap-1 border-slate-200 bg-slate-100 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
+                        {t('distances.status.inactive')}
+                    </Badge>
+                );
+            }
+
+            return (
+                <Badge variant="outline" className="capitalize">
+                    {status}
+                </Badge>
+            );
+        },
+        [t],
+    );
+
+    const getRouteTypeBadge = React.useCallback(
+        (routeType?: string | null): React.ReactNode => {
+            if (!routeType) {
+                return notAvailableLabel;
+            }
+
+            const normalized = routeType.toLowerCase();
+            const label = t(`distances.routeTypes.${normalized}`, { defaultValue: routeType });
+
+            return (
+                <Badge className="flex w-fit items-center gap-1 border-blue-200 bg-blue-100 text-xs capitalize text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/30 dark:text-blue-200">
+                    <CircleDot className="h-3 w-3" />
+                    {label}
+                </Badge>
+            );
+        },
+        [notAvailableLabel, t],
+    );
+
+    const getBooleanBadge = React.useCallback(
+        (value?: boolean | null, trueLabel = t('distances.boolean.yes'), falseLabel = t('distances.boolean.no')): React.ReactNode => {
+            if (value) {
+                return (
+                    <Badge className="w-fit border-emerald-200 bg-emerald-100 text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200">
+                        {trueLabel}
+                    </Badge>
+                );
+            }
+
+            return (
+                <Badge className="w-fit border-slate-200 bg-slate-100 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
+                    {falseLabel}
+                </Badge>
+            );
+        },
+        [t],
+    );
+
+    const resolveRegionLabel = React.useCallback(
+        (place?: PlaceSummary | null): string => {
+            const region = place?.woreda?.zone?.region?.name;
+            return region ?? notAvailableLabel;
+        },
+        [notAvailableLabel],
+    );
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedRouteType, setSelectedRouteType] = React.useState(filters?.routeType ?? 'all');
@@ -397,7 +436,7 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
             return;
         }
 
-        const routeLabel = `${selectedDistance.from_place?.name ?? 'Unknown'} → ${selectedDistance.to_place?.name ?? 'Unknown'}`;
+        const routeLabel = `${selectedDistance.from_place?.name ?? unknownLabel} → ${selectedDistance.to_place?.name ?? unknownLabel}`;
         setIsDeleting(true);
 
         router.delete(`/distances/${selectedDistance.id}`, {
@@ -407,13 +446,13 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
                 setSelectedDistance(null);
                 setIsDeleting(false);
                 toast({
-                    title: '✅ Distance Record Deleted',
-                    description: `Route ${routeLabel} has been removed successfully.`,
+                    title: t('distances.delete.successTitle'),
+                    description: t('distances.delete.successDescription', { route: routeLabel }),
                 });
             },
             onError: (errors) => {
                 setIsDeleting(false);
-                const fallback = 'Unable to delete distance. Please try again.';
+                const fallback = t('distances.delete.failedDescription');
 
                 if (errors && typeof errors === 'object') {
                     const errorMessages = Object.values(errors)
@@ -422,13 +461,13 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
                         .join('\n');
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('distances.delete.failedTitle'),
                         description: errorMessages || fallback,
                         variant: 'destructive',
                     });
                 } else {
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('distances.delete.failedTitle'),
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -440,7 +479,7 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
     const statsDefinitions = [
         {
             id: 'total-distances',
-            label: 'Tracked Routes',
+            label: t('distances.stats.total.label'),
             icon: <Route className="h-3.5 w-3.5 text-rose-500" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
@@ -451,13 +490,13 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
             description: isLoading ? (
                 <Skeleton className="h-3 w-40" aria-hidden="true" />
             ) : (
-                'Active corridor records'
+                t('distances.stats.total.description')
             ),
             valueClassName: isLoading ? undefined : 'text-rose-600',
         },
         {
             id: 'average-speed',
-            label: 'Avg Speed (km/h)',
+            label: t('distances.stats.speed.label'),
             icon: <Gauge className="h-3.5 w-3.5 text-indigo-500" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
@@ -468,13 +507,13 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
             description: isLoading ? (
                 <Skeleton className="h-3 w-36" aria-hidden="true" />
             ) : (
-                'Mean corridor velocity'
+                t('distances.stats.speed.description')
             ),
             valueClassName: isLoading ? undefined : 'text-indigo-600',
         },
         {
             id: 'road-quality',
-            label: 'Road Quality Index',
+            label: t('distances.stats.quality.label'),
             icon: <TrendingDown className="h-3.5 w-3.5 text-emerald-500" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
@@ -485,13 +524,13 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
             description: isLoading ? (
                 <Skeleton className="h-3 w-32" aria-hidden="true" />
             ) : (
-                'Infrastructure readiness'
+                t('distances.stats.quality.description')
             ),
             valueClassName: isLoading ? undefined : 'text-emerald-600',
         },
         {
             id: 'seasonal-alerts',
-            label: 'Seasonal Alerts',
+            label: t('distances.stats.seasonal.label'),
             icon: <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
@@ -502,7 +541,7 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
             description: isLoading ? (
                 <Skeleton className="h-3 w-40" aria-hidden="true" />
             ) : (
-                'Routes with seasonal risks'
+                t('distances.stats.seasonal.description')
             ),
             valueClassName: isLoading ? undefined : 'text-amber-600',
         },
@@ -513,16 +552,16 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
     const tableColumns = React.useMemo(
         () => [
             { id: 'index', label: '#', align: 'center' as const },
-            ...COLUMN_DEFINITIONS.map((column) => ({
+            ...columnDefinitions.map((column) => ({
                 id: column.id,
                 label: column.label,
                 sortable: Boolean(column.sortKey),
                 sortKey: column.sortKey,
                 align: column.align,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
+            { id: 'actions', label: t('distances.table.actions'), align: 'center' as const },
         ],
-        [],
+        [columnDefinitions, t],
     );
 
     const renderColumnValue = React.useCallback((distance: DistanceRecord, column: ColumnKey): React.ReactNode => {
@@ -533,9 +572,9 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
                         <Navigation2 className="mt-0.5 h-4 w-4 text-primary" />
                         <div className="flex flex-col">
                             <span className="font-medium text-foreground">
-                                {distance.from_place?.name ?? 'Unknown'}
+                                {distance.from_place?.name ?? unknownLabel}
                                 <span className="mx-1 text-xs text-muted-foreground">→</span>
-                                {distance.to_place?.name ?? 'Unknown'}
+                                {distance.to_place?.name ?? unknownLabel}
                             </span>
                             <span className="text-xs text-muted-foreground">
                                 {resolveRegionLabel(distance.from_place)} • {resolveRegionLabel(distance.to_place)}
@@ -556,19 +595,23 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
             case 'road_quality_index':
                 return formatNumberValue(distance.road_quality_index, 1);
             case 'toll_road':
-                return getBooleanBadge(Boolean(distance.toll_road), 'Toll', 'No Toll');
+                return getBooleanBadge(Boolean(distance.toll_road), t('distances.flags.toll.true'), t('distances.flags.toll.false'));
             case 'restricted_for_heavy_vehicles':
-                return getBooleanBadge(Boolean(distance.restricted_for_heavy_vehicles), 'Restricted', 'Allowed');
+                return getBooleanBadge(
+                    Boolean(distance.restricted_for_heavy_vehicles),
+                    t('distances.flags.heavyVehicle.true'),
+                    t('distances.flags.heavyVehicle.false'),
+                );
             default:
-                return '—';
+                return notAvailableLabel;
         }
-    }, []);
+    }, [formatDistanceValue, formatHourValue, formatNumberValue, formatSpeedValue, getBooleanBadge, getRouteTypeBadge, getStatusBadge, notAvailableLabel, resolveRegionLabel, t, unknownLabel]);
 
     const tableRows = distanceData.length > 0
         ? distanceData.map((distance, index) => (
                   <TableRow key={distance.id} className="hover:bg-muted/50">
                       <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                      {COLUMN_DEFINITIONS.map((column) => (
+                      {columnDefinitions.map((column) => (
                           <TableCell
                               key={column.id}
                               className={
@@ -586,17 +629,17 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
                           <ListingRowActionsMenu
                               actions={[
                                   canViewDistance && {
-                                      label: 'View',
+                                      label: t('distances.actions.view'),
                                       icon: <Eye className="h-4 w-4" />,
                                       href: `/distances/${distance.id}`,
                                   },
                                   canEditDistance && {
-                                      label: 'Edit',
+                                      label: t('distances.actions.edit'),
                                       icon: <Edit className="h-4 w-4" />,
                                       href: `/distances/${distance.id}/edit`,
                                   },
                                   canDeleteDistance && {
-                                      label: 'Delete',
+                                      label: t('distances.actions.delete'),
                                       icon: <Trash2 className="h-4 w-4" />,
                                       danger: true,
                                       disabled: isDeleting && selectedDistance?.id === distance.id,
@@ -610,10 +653,10 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
         : (
             <TableRow>
                 <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                    No distances found.
+                    {t('distances.empty.title')}
                     {canCreateDistance && (
                         <Link href="/distances/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('distances.empty.createAction')}
                         </Link>
                     )}
                 </TableCell>
@@ -635,11 +678,13 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
             getKey={(item) => item.record.id}
             renderTitle={(item) => (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {t('distances.mobile.position', { value: item.position })}
+                    </span>
                     <span className="text-base font-semibold text-foreground">
-                        {item.record.from_place?.name ?? 'Unknown'}
+                        {item.record.from_place?.name ?? unknownLabel}
                         <span className="mx-1 text-xs text-muted-foreground">→</span>
-                        {item.record.to_place?.name ?? 'Unknown'}
+                        {item.record.to_place?.name ?? unknownLabel}
                     </span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
@@ -648,19 +693,27 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('distances.mobile.status')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">{getStatusBadge(item.record.status)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Distance</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('distances.mobile.distance')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">{formatDistanceValue(item.record.distance_km)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Travel Time</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('distances.mobile.time')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">{formatHourValue(item.record.estimated_time_hours)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Route Type</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('distances.mobile.routeType')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">{getRouteTypeBadge(item.record.route_type ?? null)}</span>
                     </div>
                 </div>
@@ -671,7 +724,7 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
                         <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                             <Link href={`/distances/${item.record.id}`}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t('distances.actions.view')}
                             </Link>
                         </Button>
                     )}
@@ -679,7 +732,7 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/distances/${item.record.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('distances.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -692,17 +745,17 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
                             disabled={isDeleting && selectedDistance?.id === item.record.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('distances.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No distances found.
+                    {t('distances.empty.title')}
                     {canCreateDistance && (
                         <Link href="/distances/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('distances.empty.createAction')}
                         </Link>
                     )}
                 </div>
@@ -714,17 +767,17 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search routes or notes...',
+                placeholder: t('distances.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
         >
             <Select value={selectedRouteType} onValueChange={handleRouteTypeChange}>
                 <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
-                    <SelectValue placeholder="Route type" />
+                    <SelectValue placeholder={t('distances.filters.routeTypePlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                    {ROUTE_TYPE_OPTIONS.map((option) => (
+                    {routeTypeOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
                         </SelectItem>
@@ -734,21 +787,21 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
 
             <Input
                 className="w-40"
-                placeholder="Filter by region"
+                placeholder={t('distances.filters.regionPlaceholder')}
                 value={regionQuery}
                 onChange={(event) => handleRegionChange(event.target.value)}
             />
 
             <Input
                 className="w-40"
-                placeholder="Filter by zone"
+                placeholder={t('distances.filters.zonePlaceholder')}
                 value={zoneQuery}
                 onChange={(event) => handleZoneChange(event.target.value)}
             />
 
             <Input
                 className="w-40"
-                placeholder="Filter by woreda"
+                placeholder={t('distances.filters.woredaPlaceholder')}
                 value={woredaQuery}
                 onChange={(event) => handleWoredaChange(event.target.value)}
             />
@@ -759,7 +812,7 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
         <Button asChild>
             <Link href="/distances/create">
                 <Plus className="mr-2 h-4 w-4" />
-                Add Distance
+                {t('distances.actions.add')}
             </Link>
         </Button>
     ) : null;
@@ -767,18 +820,21 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
     return (
         <>
             <ListPageLayout
-                headTitle="Distances"
-                title="Route Distances"
+                headTitle={t('distances.title')}
+                title={t('distances.index.title')}
                 description={
                     totalRecords === 0
-                        ? 'Monitor corridor readiness, travel times, and seasonal risks across logistics routes.'
-                        : `Monitor ${formatCount(totalRecords)} route${totalRecords === 1 ? '' : 's'} and seasonal risk factors.`
+                        ? t('distances.index.descriptionEmpty')
+                        : t('distances.index.description', {
+                              count: formatCount(totalRecords),
+                              plural: totalRecords === 1 ? '' : 's',
+                          })
                 }
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
-                tableTitle="Distance Matrix"
-                tableDescription="Analyse corridor performance, infrastructure indicators, and travel constraints"
+                tableTitle={t('distances.table.title')}
+                tableDescription={t('distances.table.description')}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     !isLoading && distances?.links ? (
@@ -803,8 +859,8 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
 
                         {isLoading && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                                <img src="/images/loading-spinner.svg" alt="Loading distances" className="h-12 w-12" />
-                                <span className="text-sm text-muted-foreground">Loading distances...</span>
+                                <img src="/images/loading-spinner.svg" alt={t('distances.loading.alt')} className="h-12 w-12" />
+                                <span className="text-sm text-muted-foreground">{t('distances.loading.message')}</span>
                             </div>
                         )}
                     </div>
@@ -815,8 +871,8 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
 
                     {isLoading && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading distances" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading distances...</span>
+                            <img src="/images/loading-spinner.svg" alt={t('distances.loading.alt')} className="h-10 w-10" />
+                            <span className="text-sm text-muted-foreground">{t('distances.loading.message')}</span>
                         </div>
                     )}
                 </div>
@@ -831,9 +887,13 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
                         setIsDeleting(false);
                     }
                 }}
-                title="Delete Distance"
-                description="Are you sure you want to delete this distance? This action cannot be undone."
-                itemName={selectedDistance ? `${selectedDistance.from_place?.name ?? 'Unknown'} → ${selectedDistance.to_place?.name ?? 'Unknown'}` : undefined}
+                title={t('distances.delete.title')}
+                description={t('distances.delete.description')}
+                itemName={
+                    selectedDistance
+                        ? `${selectedDistance.from_place?.name ?? unknownLabel} → ${selectedDistance.to_place?.name ?? unknownLabel}`
+                        : undefined
+                }
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
             />

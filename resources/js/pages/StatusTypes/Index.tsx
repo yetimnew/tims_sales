@@ -17,6 +17,7 @@ import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from 'react-i18next';
 import {
   Plus,
   Search,
@@ -30,13 +31,6 @@ import {
   BarChart3,
   CalendarClock,
 } from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-  {
-    title: 'Status Types',
-    href: '/statustypes',
-  },
-];
 
 const TABLE_LOADING_STORAGE_KEY = 'status-types.index.table-loading';
 
@@ -106,20 +100,6 @@ type NavigateOverrides = {
   per_page?: number;
 };
 
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-});
-
-const formatDate = (value?: string | null): string => {
-  if (!value) {
-    return '—';
-  }
-
-  return dateFormatter.format(new Date(value));
-};
-
 export default function StatusTypesIndex({
   statusTypes,
   metrics,
@@ -127,7 +107,10 @@ export default function StatusTypesIndex({
   usageOptions,
   perPageOptions,
 }: StatusTypesIndexProps) {
+  const { t, i18n } = useTranslation();
   const { hasPermission } = usePermissions();
+  const locale = i18n.language || 'en-US';
+  const notAvailableLabel = t('statusTypes.fallbacks.notAvailable');
   const isDataReady = Array.isArray(statusTypes?.data);
   const { isLoading: isTableLoading } = useListingLoading({
     storageKey: TABLE_LOADING_STORAGE_KEY,
@@ -152,6 +135,37 @@ export default function StatusTypesIndex({
   const [selectedStatusType, setSelectedStatusType] = React.useState<StatusTypeItem | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
+
+  const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+    () => [
+      {
+        title: t('statusTypes.title'),
+        href: '/statustypes',
+      },
+    ],
+    [t],
+  );
+
+  const dateFormatter = React.useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }),
+    [locale],
+  );
+
+  const formatDate = React.useCallback(
+    (value?: string | null): string => {
+      if (!value) {
+        return notAvailableLabel;
+      }
+
+      return dateFormatter.format(new Date(value));
+    },
+    [dateFormatter, notAvailableLabel],
+  );
 
   const availablePerPageOptions = React.useMemo(
     () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
@@ -185,50 +199,54 @@ export default function StatusTypesIndex({
     ? [
         {
           id: 'total-status-types',
-          label: 'Total Types',
+          label: t('statusTypes.stats.total.label'),
           icon: <Tag className="h-3.5 w-3.5 text-blue-600" />,
           value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : totalCount.toLocaleString(),
-          description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'All lifecycle categories',
+          description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : t('statusTypes.stats.total.description'),
           valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
         {
           id: 'in-use-status-types',
-          label: 'In Use',
+          label: t('statusTypes.stats.inUse.label'),
           icon: <LinkIcon className="h-3.5 w-3.5 text-emerald-600" />,
           value: isTableLoading ? <Skeleton className="h-4 w-12" aria-hidden="true" /> : inUseCount.toLocaleString(),
-          description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : `${statusesTotal.toLocaleString()} statuses linked`,
+          description: isTableLoading ? (
+            <Skeleton className="h-3 w-32" aria-hidden="true" />
+          ) : (
+            t('statusTypes.stats.inUse.description', { count: statusesTotal.toLocaleString() })
+          ),
           valueClassName: isTableLoading ? undefined : 'text-emerald-600',
         },
         {
           id: 'unused-status-types',
-          label: 'Unused',
+          label: t('statusTypes.stats.unused.label'),
           icon: <Ban className="h-3.5 w-3.5 text-amber-600" />,
           value: isTableLoading ? <Skeleton className="h-4 w-12" aria-hidden="true" /> : unusedCount.toLocaleString(),
-          description: isTableLoading ? <Skeleton className="h-3 w-28" aria-hidden="true" /> : 'Ready for assignment',
+          description: isTableLoading ? <Skeleton className="h-3 w-28" aria-hidden="true" /> : t('statusTypes.stats.unused.description'),
           valueClassName: isTableLoading ? undefined : 'text-amber-600',
         },
         {
           id: 'average-statuses',
-          label: 'Avg. Statuses',
+          label: t('statusTypes.stats.average.label'),
           icon: <BarChart3 className="h-3.5 w-3.5 text-purple-600" />,
           value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : averagePerType.toFixed(2),
-          description: isTableLoading ? <Skeleton className="h-3 w-24" aria-hidden="true" /> : 'Per status type',
+          description: isTableLoading ? <Skeleton className="h-3 w-24" aria-hidden="true" /> : t('statusTypes.stats.average.description'),
           valueClassName: isTableLoading ? undefined : 'text-purple-600',
         },
         {
           id: 'recent-status-types',
-          label: `Created (${recentDays}d)`,
+          label: t('statusTypes.stats.recent.label', { days: recentDays }),
           icon: <CalendarClock className="h-3.5 w-3.5 text-slate-600" />,
           value: isTableLoading ? <Skeleton className="h-4 w-12" aria-hidden="true" /> : recentCount.toLocaleString(),
-          description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Recently added types',
+          description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : t('statusTypes.stats.recent.description'),
           valueClassName: isTableLoading ? undefined : 'text-slate-600',
         },
         {
           id: 'total-statuses',
-          label: 'Statuses',
+          label: t('statusTypes.stats.statuses.label'),
           icon: <ListTree className="h-3.5 w-3.5 text-indigo-600" />,
           value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : statusesTotal.toLocaleString(),
-          description: isTableLoading ? <Skeleton className="h-3 w-28" aria-hidden="true" /> : 'Across all types',
+          description: isTableLoading ? <Skeleton className="h-3 w-28" aria-hidden="true" /> : t('statusTypes.stats.statuses.description'),
           valueClassName: isTableLoading ? undefined : 'text-indigo-600',
         },
       ]
@@ -330,8 +348,8 @@ export default function StatusTypesIndex({
         setDeleteError(null);
         setIsDeleting(false);
         toast({
-          title: 'Status type deleted',
-          description: 'The status type has been removed.',
+          title: t('statusTypes.delete.successTitle'),
+          description: t('statusTypes.delete.successDescription'),
         });
       },
       onError: (errors) => {
@@ -342,13 +360,13 @@ export default function StatusTypesIndex({
             .filter(Boolean)
             .join('\n');
 
-          const fallback = 'Failed to delete status type. Please review the requirements and try again.';
+          const fallback = t('statusTypes.delete.failedDescription');
           setDeleteError(messages || fallback);
-          toast({ title: 'Delete failed', description: messages || fallback, variant: 'destructive' });
+          toast({ title: t('statusTypes.delete.failedTitle'), description: messages || fallback, variant: 'destructive' });
         } else {
-          const fallback = 'An unexpected error occurred while deleting the status type. Please try again.';
+          const fallback = t('statusTypes.delete.failedUnknownDescription');
           setDeleteError(fallback);
-          toast({ title: 'Delete failed', description: fallback, variant: 'destructive' });
+          toast({ title: t('statusTypes.delete.failedTitle'), description: fallback, variant: 'destructive' });
         }
       },
     });
@@ -356,14 +374,14 @@ export default function StatusTypesIndex({
 
   const tableColumns = React.useMemo(
     () => [
-      { id: 'index', label: '#', align: 'center' as const },
-      { id: 'name', label: 'Name', sortable: true },
-      { id: 'description', label: 'Description' },
-      { id: 'statuses_count', label: 'Statuses', sortable: true, align: 'center' as const },
-      { id: 'created_at', label: 'Created', sortable: true },
-      { id: 'actions', label: 'Actions', align: 'center' as const },
+      { id: 'index', label: t('statusTypes.columns.index'), align: 'center' as const },
+      { id: 'name', label: t('statusTypes.columns.name'), sortable: true },
+      { id: 'description', label: t('statusTypes.columns.description') },
+      { id: 'statuses_count', label: t('statusTypes.columns.statuses'), sortable: true, align: 'center' as const },
+      { id: 'created_at', label: t('statusTypes.columns.created'), sortable: true },
+      { id: 'actions', label: t('statusTypes.columns.actions'), align: 'center' as const },
     ],
-    [],
+    [t],
   );
 
   const tableRows = isTableLoading
@@ -398,7 +416,7 @@ export default function StatusTypesIndex({
           <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
           <TableCell className="font-medium">{statusType.name}</TableCell>
           <TableCell className="max-w-[320px] text-sm text-muted-foreground">
-            {statusType.description || '—'}
+            {statusType.description || notAvailableLabel}
           </TableCell>
           <TableCell className="align-top">
             <div className="flex flex-col items-center gap-2">
@@ -414,7 +432,7 @@ export default function StatusTypesIndex({
                   ))}
                 </div>
               ) : (
-                <span className="text-xs text-muted-foreground">No statuses yet</span>
+                <span className="text-xs text-muted-foreground">{t('statusTypes.fallbacks.noStatuses')}</span>
               )}
             </div>
           </TableCell>
@@ -423,17 +441,17 @@ export default function StatusTypesIndex({
             <ListingRowActionsMenu
               actions={[
                 hasPermission('status-types.show') && {
-                  label: 'View',
+                  label: t('statusTypes.actions.view'),
                   icon: <Eye className="h-4 w-4" />,
                   href: `/statustypes/${statusType.id}`,
                 },
                 hasPermission('status-types.edit') && {
-                  label: 'Edit',
+                  label: t('statusTypes.actions.edit'),
                   icon: <Edit className="h-4 w-4" />,
                   href: `/statustypes/${statusType.id}/edit`,
                 },
                 hasPermission('status-types.destroy') && {
-                  label: 'Delete',
+                  label: t('statusTypes.actions.delete'),
                   icon: <Trash2 className="h-4 w-4" />,
                   danger: true,
                   onSelect: () => handleDeleteClick(statusType),
@@ -447,10 +465,10 @@ export default function StatusTypesIndex({
     : (
         <TableRow>
           <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-            No status types found.
+            {t('statusTypes.empty.title')}
             {hasPermission('status-types.create') && (
               <Link href="/statustypes/create" className="ml-1 text-primary underline">
-                Create one
+                {t('statusTypes.empty.action')}
               </Link>
             )}
           </TableCell>
@@ -509,7 +527,7 @@ export default function StatusTypesIndex({
         <div className="space-y-3 text-sm text-muted-foreground">
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-slate-600 dark:text-slate-300">Statuses</span>
+              <span className="font-medium text-slate-600 dark:text-slate-300">{t('statusTypes.labels.statuses')}</span>
               <span className="font-semibold text-slate-900 dark:text-slate-100">
                 {item.statusType.statuses_count.toLocaleString()}
               </span>
@@ -523,10 +541,10 @@ export default function StatusTypesIndex({
                 ))}
               </div>
             ) : (
-              <span className="text-xs text-muted-foreground">No statuses yet</span>
+              <span className="text-xs text-muted-foreground">{t('statusTypes.fallbacks.noStatuses')}</span>
             )}
           </div>
-          <p>{item.statusType.description || 'No description provided.'}</p>
+          <p>{item.statusType.description || t('statusTypes.fallbacks.noDescription')}</p>
         </div>
       )}
       renderFooter={(item) => (
@@ -535,7 +553,7 @@ export default function StatusTypesIndex({
             <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
               <Link href={`/statustypes/${item.statusType.id}`}>
                 <Eye className="mr-2 h-4 w-4" />
-                View
+                {t('statusTypes.actions.view')}
               </Link>
             </Button>
           )}
@@ -543,7 +561,7 @@ export default function StatusTypesIndex({
             <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
               <Link href={`/statustypes/${item.statusType.id}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
-                Edit
+                {t('statusTypes.actions.edit')}
               </Link>
             </Button>
           )}
@@ -556,17 +574,17 @@ export default function StatusTypesIndex({
               disabled={isDeleting && selectedStatusType?.id === item.statusType.id}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete
+              {t('statusTypes.actions.delete')}
             </Button>
           )}
         </div>
       )}
       emptyState={(
         <div className="py-8 text-center text-muted-foreground">
-          No status types found.
+          {t('statusTypes.empty.title')}
           {hasPermission('status-types.create') && (
             <Link href="/statustypes/create" className="ml-1 text-primary underline">
-              Create one
+              {t('statusTypes.empty.action')}
             </Link>
           )}
         </div>
@@ -575,31 +593,31 @@ export default function StatusTypesIndex({
   );
 
   const perPageSelectOptions = React.useMemo(
-    () => availablePerPageOptions.map((option) => ({ value: String(option), label: `${option} / page` })),
-    [availablePerPageOptions],
+    () => availablePerPageOptions.map((option) => ({ value: String(option), label: t('statusTypes.filters.perPageOption', { value: option }) })),
+    [availablePerPageOptions, t],
   );
 
   const tableHeaderExtras = (
     <ListingFilterBar
       search={{
         value: searchTerm,
-        placeholder: 'Search status types...',
+        placeholder: t('statusTypes.filters.searchPlaceholder'),
         onChange: handleSearchChange,
         icon: <Search className="h-4 w-4" />,
       }}
       perPage={{
         value: perPage,
-        label: 'Rows',
+        label: t('statusTypes.filters.rowsLabel'),
         onChange: handlePerPageChange,
         options: perPageSelectOptions,
       }}
     >
       <Select value={selectedUsage} onValueChange={handleUsageChange}>
         <SelectTrigger className="w-full min-w-[160px] sm:w-auto">
-          <SelectValue placeholder="Usage" />
+          <SelectValue placeholder={t('statusTypes.filters.usagePlaceholder')} />
         </SelectTrigger>
         <SelectContent>
-          {(usageOptions?.length ? usageOptions : [{ label: 'All usage states', value: 'all' }]).map((option) => (
+          {(usageOptions?.length ? usageOptions : [{ label: t('statusTypes.filters.allUsage'), value: 'all' }]).map((option) => (
             <SelectItem key={option.value} value={option.value}>
               {option.label}
             </SelectItem>
@@ -613,14 +631,14 @@ export default function StatusTypesIndex({
     <>
       {hasPermission('status-types.export') && (
         <Button variant="outline" onClick={() => router.get(route('status-types.export'))}>
-          Export CSV
+          {t('statusTypes.actions.export')}
         </Button>
       )}
       {hasPermission('status-types.create') && (
         <Button asChild>
           <Link href="/statustypes/create">
             <Plus className="mr-2 h-4 w-4" />
-            Add Status Type
+            {t('statusTypes.actions.add')}
           </Link>
         </Button>
       )}
@@ -630,14 +648,14 @@ export default function StatusTypesIndex({
   return (
     <>
       <ListPageLayout
-        headTitle="Status Types"
-        title="Status Types"
-        description={`Manage ${totalCount.toLocaleString()} lifecycle status categories.`}
+        headTitle={t('statusTypes.title')}
+        title={t('statusTypes.title')}
+        description={t('statusTypes.description', { count: totalCount.toLocaleString() })}
         breadcrumbs={breadcrumbs}
         actions={headerActions}
         stats={statsDefinitions ? <ListingStatsHeader stats={statsDefinitions} orientation="row" /> : null}
-        tableTitle="Status Type Catalog"
-        tableDescription="Track and govern the lifecycle categories used across the platform"
+        tableTitle={t('statusTypes.table.title')}
+        tableDescription={t('statusTypes.table.description')}
         tableHeaderExtras={tableHeaderExtras}
         pagination={
           statusTypes?.links?.length ? (
@@ -672,13 +690,13 @@ export default function StatusTypesIndex({
             setIsDeleting(false);
           }
         }}
-        title="Delete Status Type"
-        description="Are you sure you want to delete this status type? This action cannot be undone."
+        title={t('statusTypes.delete.title')}
+        description={t('statusTypes.delete.description')}
         itemName={selectedStatusType?.name}
         onConfirm={handleDeleteConfirm}
         isLoading={isDeleting}
         errorMessage={deleteError}
-        confirmLabel="Delete Status Type"
+        confirmLabel={t('statusTypes.delete.confirmLabel')}
       />
     </>
   );

@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
 import { index as usersIndexRoute } from '@/routes/users';
+import { useTranslation } from 'react-i18next';
 import {
     Users as UsersIcon,
     CheckCircle,
@@ -97,36 +98,18 @@ interface UsersIndexProps {
     };
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'User management',
-        href: usersIndexRoute().url,
-    },
-    {
-        title: 'Users',
-        href: '#',
-    },
-];
-
 const SKELETON_FLAG_KEY = 'users.index.shouldShowSkeleton';
 
 const COLUMN_DEFINITIONS: Array<{
     id: ColumnKey;
-    label: string;
     sortKey?: string;
     align?: 'center' | 'right';
 }> = [
-    { id: 'name', label: 'Name', sortKey: 'name' },
-    { id: 'email', label: 'Email', sortKey: 'email' },
-    { id: 'roles', label: 'Roles' },
-    { id: 'verified', label: 'Verified', sortKey: 'email_verified_at', align: 'center' },
-    { id: 'created_at', label: 'Created', sortKey: 'created_at' },
-];
-
-const DEFAULT_STATUS_OPTIONS: StatusOption[] = [
-    { label: 'All statuses', value: 'all' },
-    { label: 'Verified', value: 'verified' },
-    { label: 'Pending', value: 'pending' },
+    { id: 'name', sortKey: 'name' },
+    { id: 'email', sortKey: 'email' },
+    { id: 'roles' },
+    { id: 'verified', sortKey: 'email_verified_at', align: 'center' },
+    { id: 'created_at', sortKey: 'created_at' },
 ];
 
 const formatCount = (value?: number | string | null): string => {
@@ -142,17 +125,17 @@ const formatCount = (value?: number | string | null): string => {
     return numeric.toLocaleString();
 };
 
-const formatDateValue = (value?: string | null): string => {
+const formatDateValue = (value: string | null | undefined, locale: string, emptyLabel: string): string => {
     if (!value) {
-        return '—';
+        return emptyLabel;
     }
 
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) {
-        return '—';
+        return emptyLabel;
     }
 
-    return parsed.toLocaleDateString('en-US', {
+    return parsed.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -175,25 +158,10 @@ const getRoleBadgeClass = (roleName: string): string => {
     }
 };
 
-const getVerificationBadge = (status: VerificationStatus): React.ReactNode => {
-    if (status === 'verified') {
-        return (
-            <Badge className="flex w-fit items-center gap-1 border-emerald-200 bg-emerald-100 text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200">
-                <CheckCircle className="h-3 w-3" />
-                Verified
-            </Badge>
-        );
-    }
-
-    return (
-        <Badge className="flex w-fit items-center gap-1 border-amber-200 bg-amber-100 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/30 dark:text-amber-200">
-            <XCircle className="h-3 w-3" />
-            Pending
-        </Badge>
-    );
-};
-
 export default function UsersIndex({ users, filters, roleOptions, statusOptions, perPageOptions, stats }: UsersIndexProps) {
+    const { t, i18n } = useTranslation();
+    const locale = i18n.language || 'en-US';
+    const notAvailableLabel = t('users.fallbacks.notAvailable');
     const { hasPermission } = usePermissions();
     const canViewUser = hasPermission('users.show');
     const canCreateUser = hasPermission('users.create');
@@ -201,6 +169,49 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
     const canDeleteUser = hasPermission('users.destroy');
     const canExportUsers = hasPermission('users.export');
 
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('users.breadcrumbs.management'),
+                href: usersIndexRoute().url,
+            },
+            {
+                title: t('users.title'),
+                href: '#',
+            },
+        ],
+        [t],
+    );
+
+    const DEFAULT_STATUS_OPTIONS: StatusOption[] = React.useMemo(
+        () => [
+            { label: t('users.filters.status.all'), value: 'all' },
+            { label: t('users.filters.status.verified'), value: 'verified' },
+            { label: t('users.filters.status.pending'), value: 'pending' },
+        ],
+        [t],
+    );
+
+    const getVerificationBadge = React.useCallback(
+        (status: VerificationStatus): React.ReactNode => {
+            if (status === 'verified') {
+                return (
+                    <Badge className="flex w-fit items-center gap-1 border-emerald-200 bg-emerald-100 text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200">
+                        <CheckCircle className="h-3 w-3" />
+                        {t('users.status.verified')}
+                    </Badge>
+                );
+            }
+
+            return (
+                <Badge className="flex w-fit items-center gap-1 border-amber-200 bg-amber-100 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/30 dark:text-amber-200">
+                    <XCircle className="h-3 w-3" />
+                    {t('users.status.pending')}
+                </Badge>
+            );
+        },
+        [t],
+    );
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedRole, setSelectedRole] = React.useState(() => {
         const role = filters?.role ?? null;
@@ -367,15 +378,15 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                 setSelectedUser(null);
                 setIsDeleting(false);
                 toast({
-                    title: '✅ User Deleted',
-                    description: `${name} has been removed successfully.`,
+                    title: t('users.delete.successTitle'),
+                    description: t('users.delete.successDescription', { name }),
                 });
             },
             onError: () => {
                 setIsDeleting(false);
                 toast({
-                    title: '❌ Delete Failed',
-                    description: 'Please try again or contact support if the issue persists.',
+                    title: t('users.delete.failedTitle'),
+                    description: t('users.delete.failedDescription'),
                     variant: 'destructive',
                 });
             },
@@ -401,13 +412,13 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
     const activeFilterChips = React.useMemo(
         () =>
             [
-                selectedRoleLabel ? { key: 'role' as FilterChipKey, label: `Role: ${selectedRoleLabel}` } : null,
-                selectedStatusLabel ? { key: 'status' as FilterChipKey, label: `Status: ${selectedStatusLabel}` } : null,
+                selectedRoleLabel ? { key: 'role' as FilterChipKey, label: t('users.filters.role.chip', { value: selectedRoleLabel }) } : null,
+                selectedStatusLabel ? { key: 'status' as FilterChipKey, label: t('users.filters.status.chip', { value: selectedStatusLabel }) } : null,
                 perPage !== String(resolvedPerPage)
-                    ? { key: 'perPage' as FilterChipKey, label: `Rows: ${perPage}` }
+                    ? { key: 'perPage' as FilterChipKey, label: t('users.filters.rows.chip', { value: perPage }) }
                     : null,
             ].filter(Boolean) as Array<{ key: FilterChipKey; label: string }>,
-        [perPage, resolvedPerPage, selectedRoleLabel, selectedStatusLabel],
+        [perPage, resolvedPerPage, selectedRoleLabel, selectedStatusLabel, t],
     );
 
     const clearFilter = React.useCallback(
@@ -435,7 +446,7 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
     const statsDefinitions = [
         {
             id: 'total-users',
-            label: 'Total Users',
+            label: t('users.stats.total.label'),
             icon: <UsersIcon className="h-3.5 w-3.5 text-blue-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
@@ -446,13 +457,13 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
             description: isLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                'All accounts'
+                t('users.stats.total.description')
             ),
             valueClassName: isLoading ? undefined : 'text-blue-600',
         },
         {
             id: 'verified-users',
-            label: 'Verified Users',
+            label: t('users.stats.verified.label'),
             icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
@@ -463,13 +474,13 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
             description: isLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Email confirmed'
+                t('users.stats.verified.description')
             ),
             valueClassName: isLoading ? undefined : 'text-emerald-600',
         },
         {
             id: 'pending-users',
-            label: 'Pending Verification',
+            label: t('users.stats.pending.label'),
             icon: <XCircle className="h-3.5 w-3.5 text-amber-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
@@ -480,13 +491,13 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
             description: isLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Awaiting confirmation'
+                t('users.stats.pending.description')
             ),
             valueClassName: isLoading ? undefined : 'text-amber-600',
         },
         {
             id: 'admin-users',
-            label: 'Admins',
+            label: t('users.stats.admins.label'),
             icon: <Shield className="h-3.5 w-3.5 text-rose-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
@@ -497,13 +508,13 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
             description: isLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Full access roles'
+                t('users.stats.admins.description')
             ),
             valueClassName: isLoading ? undefined : 'text-rose-600',
         },
         {
             id: 'manager-users',
-            label: 'Managers',
+            label: t('users.stats.managers.label'),
             icon: <Shield className="h-3.5 w-3.5 text-indigo-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
@@ -514,7 +525,7 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
             description: isLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Management roles'
+                t('users.stats.managers.description')
             ),
             valueClassName: isLoading ? undefined : 'text-indigo-600',
         },
@@ -524,17 +535,17 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
 
     const tableColumns = React.useMemo(
         () => [
-            { id: 'index', label: '#', align: 'center' as const },
+            { id: 'index', label: t('users.columns.index'), align: 'center' as const },
             ...COLUMN_DEFINITIONS.map((column) => ({
                 id: column.id,
-                label: column.label,
+                label: t(`users.columns.${column.id}`),
                 sortable: Boolean(column.sortKey),
                 sortKey: column.sortKey,
                 align: column.align,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
+            { id: 'actions', label: t('users.columns.actions'), align: 'center' as const },
         ],
-        [],
+        [t],
     );
 
     const renderColumnValue = React.useCallback((user: UserData, column: ColumnKey): React.ReactNode => {
@@ -543,7 +554,7 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                 return (
                     <div className="flex flex-col">
                         <span className="font-medium text-foreground">{user.name}</span>
-                        <span className="text-xs text-muted-foreground">ID #{user.id}</span>
+                        <span className="text-xs text-muted-foreground">{t('users.labels.id', { id: user.id })}</span>
                     </div>
                 );
             case 'email':
@@ -559,16 +570,16 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                         ))}
                     </div>
                 ) : (
-                    <span className="text-sm text-muted-foreground">No roles</span>
+                    <span className="text-sm text-muted-foreground">{t('users.fallbacks.noRoles')}</span>
                 );
             case 'verified':
                 return getVerificationBadge(resolveVerificationStatus(user));
             case 'created_at':
-                return <span className="text-sm text-muted-foreground">{formatDateValue(user.created_at)}</span>;
+                return <span className="text-sm text-muted-foreground">{formatDateValue(user.created_at, locale, notAvailableLabel)}</span>;
             default:
-                return '—';
+                return notAvailableLabel;
         }
-    }, []);
+    }, [getVerificationBadge, locale, notAvailableLabel, t]);
 
     const tableRows = isLoading
         ? Array.from({ length: 8 }).map((_, index) => (
@@ -621,17 +632,17 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                           <ListingRowActionsMenu
                               actions={[
                                   canViewUser && {
-                                      label: 'View',
+                                      label: t('users.actions.view'),
                                       icon: <Eye className="h-4 w-4" />,
                                       href: `/users/${user.id}`,
                                   },
                                   canEditUser && {
-                                      label: 'Edit',
+                                      label: t('users.actions.edit'),
                                       icon: <Edit className="h-4 w-4" />,
                                       href: `/users/${user.id}/edit`,
                                   },
                                   canDeleteUser && {
-                                      label: 'Delete',
+                                      label: t('users.actions.delete'),
                                       icon: <Trash2 className="h-4 w-4" />,
                                       danger: true,
                                       disabled: isDeleting && selectedUser?.id === user.id,
@@ -649,17 +660,17 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                             <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
                                 <UsersIcon className="h-10 w-10 text-muted-foreground" />
                             </div>
-                            <h3 className="mb-2 text-lg font-semibold">No users found</h3>
+                            <h3 className="mb-2 text-lg font-semibold">{t('users.empty.title')}</h3>
                             <p className="mb-6 max-w-md text-sm text-muted-foreground">
                                 {searchTerm
-                                    ? `No users match "${searchTerm}". Try adjusting your filters or search terms.`
-                                    : 'Get started by adding your first user to the system. Manage access and permissions effectively.'}
+                                    ? t('users.empty.filteredDescription', { term: searchTerm })
+                                    : t('users.empty.description')}
                             </p>
                             {canCreateUser && (
                                 <Button asChild size="sm" className="shadow-sm">
                                     <Link href="/users/create">
                                         <Plus className="mr-2 h-4 w-4" />
-                                        {searchTerm ? 'Clear Filters & Add User' : 'Add First User'}
+                                        {searchTerm ? t('users.empty.filteredAction') : t('users.empty.action')}
                                     </Link>
                                 </Button>
                             )}
@@ -727,24 +738,26 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Roles</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('users.mobile.roles')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {item.record.roles && item.record.roles.length > 0 ? (
                                 item.record.roles.map((role) => role.name).join(', ')
                             ) : (
-                                'No roles'
+                                t('users.fallbacks.noRoles')
                             )}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Verified</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('users.mobile.verified')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {getVerificationBadge(resolveVerificationStatus(item.record))}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Created</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">{formatDateValue(item.record.created_at)}</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('users.mobile.created')}</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatDateValue(item.record.created_at, locale, notAvailableLabel)}
+                        </span>
                     </div>
                 </div>
             )}
@@ -754,7 +767,7 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                         <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                             <Link href={`/users/${item.record.id}`}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t('users.actions.view')}
                             </Link>
                         </Button>
                     )}
@@ -762,7 +775,7 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/users/${item.record.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('users.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -775,17 +788,17 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                             disabled={isDeleting && selectedUser?.id === item.record.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('users.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No users found.
+                    {t('users.empty.title')}
                     {canCreateUser && (
                         <Link href="/users/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('users.empty.createOne')}
                         </Link>
                     )}
                 </div>
@@ -816,7 +829,7 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                         }}
                         className="text-xs text-primary underline"
                     >
-                        Clear search
+                        {t('users.filters.clearSearch')}
                     </button>
                 )}
             </div>
@@ -826,27 +839,27 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search by name or email...',
+                placeholder: t('users.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('users.filters.rows.label'),
                 onChange: handlePerPageChange,
                 options: availablePerPageOptions.map((option) => ({
                     value: String(option),
-                    label: `${option} / page`,
+                    label: t('users.filters.rows.perPageOption', { value: option }),
                 })),
             }}
             trailing={filterChips}
         >
             <Select value={selectedRole} onValueChange={handleRoleChange}>
                 <SelectTrigger className="w-full min-w-[160px] sm:w-auto">
-                    <SelectValue placeholder="Role" />
+                    <SelectValue placeholder={t('users.filters.role.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All roles</SelectItem>
+                    <SelectItem value="all">{t('users.filters.role.all')}</SelectItem>
                     {(roleOptions ?? []).map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -857,7 +870,7 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
 
             <Select value={selectedStatus} onValueChange={handleStatusChange}>
                 <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t('users.filters.status.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                     {(statusOptions ?? DEFAULT_STATUS_OPTIONS).map((option) => (
@@ -897,14 +910,14 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                         window.location.href = query ? `/users/export/csv?${query}` : '/users/export/csv';
                     }}
                 >
-                    Export CSV
+                    {t('users.actions.export')}
                 </Button>
             )}
             {canCreateUser && (
                 <Button asChild>
                     <Link href="/users/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add User
+                        {t('users.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -914,14 +927,14 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
     return (
         <>
             <ListPageLayout
-                headTitle="Users"
-                title="User Management"
-                description={`Manage ${formatCount(totalUsers)} system user${totalUsers === 1 ? '' : 's'}`}
+                headTitle={t('users.title')}
+                title={t('users.title')}
+                description={t('users.description', { count: formatCount(totalUsers), suffix: totalUsers === 1 ? '' : 's' })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
-                tableTitle="User Directory"
-                tableDescription={`${formatCount(totalUsers)} total user${totalUsers === 1 ? '' : 's'} in system`}
+                tableTitle={t('users.table.title')}
+                tableDescription={t('users.table.description', { count: formatCount(totalUsers), suffix: totalUsers === 1 ? '' : 's' })}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     !isLoading && users?.links ? (
@@ -958,8 +971,8 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                         setIsDeleting(false);
                     }
                 }}
-                title="Delete User"
-                description="Are you sure you want to delete this user? This action cannot be undone."
+                title={t('users.delete.title')}
+                description={t('users.delete.description')}
                 itemName={selectedUser?.name ?? undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}

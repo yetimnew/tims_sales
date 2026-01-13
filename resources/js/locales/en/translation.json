@@ -1598,6 +1598,133 @@
             }
         }
     },
+    "maintenanceReport": {
+        "title": "Maintenance Report",
+        "breadcrumbs": {
+            "reports": "Reports",
+            "maintenance": "Maintenance"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "filters": {
+            "dateError": "The start date must be before the end date.",
+            "types": {
+                "label": "Maintenance Types",
+                "triggerAll": "All maintenance types",
+                "summaryAll": "All maintenance types included",
+                "heading": "Maintenance types",
+                "searchPlaceholder": "Search maintenance type...",
+                "empty": "No maintenance types available."
+            },
+            "statuses": {
+                "label": "Statuses",
+                "triggerAll": "All statuses",
+                "summaryAll": "All statuses included",
+                "heading": "Statuses",
+                "searchPlaceholder": "Search status...",
+                "empty": "No statuses available."
+            },
+            "providers": {
+                "label": "Service Providers",
+                "triggerAll": "All service providers",
+                "summaryAll": "All service providers included",
+                "heading": "Service providers",
+                "searchPlaceholder": "Search service provider...",
+                "empty": "No service providers available."
+            }
+        },
+        "badges": {
+            "from": "From {{value}}",
+            "to": "To {{value}}",
+            "truck": "{{count}} truck",
+            "trucks": "{{count}} trucks",
+            "allTrucks": "All trucks",
+            "type": "{{count}} type",
+            "types": "{{count}} types",
+            "allTypes": "All types",
+            "status": "{{count}} status",
+            "statuses": "{{count}} statuses",
+            "allStatuses": "All statuses",
+            "provider": "{{count}} provider",
+            "providers": "{{count}} providers",
+            "allProviders": "All providers"
+        },
+        "summary": {
+            "tasks": "Maintenance tasks",
+            "completionRate": "Completion rate",
+            "overdue": "Overdue tasks",
+            "totalSpend": "Total spend",
+            "openCost": "Open cost",
+            "upcoming": "Upcoming (7d)"
+        },
+        "highlights": {
+            "title": "Highlights",
+            "description": "Key maintenance signals at a glance.",
+            "highestSpend": "Highest spend trucks",
+            "noSpend": "No spend recorded.",
+            "mostOverdue": "Most overdue trucks",
+            "noOverdue": "No overdue work orders.",
+            "overdueValue": "{{value}} overdue",
+            "daysValue": "{{value}} days",
+            "costliestTypes": "Costliest maintenance types",
+            "noTypes": "No type cost data available."
+        },
+        "upcoming": {
+            "title": "Upcoming maintenance",
+            "description": "Review scheduled work and service providers.",
+            "empty": "No upcoming maintenance scheduled.",
+            "tbd": "Date TBD",
+            "days": "{{value}} days",
+            "unassignedTruck": "Unassigned truck",
+            "generalMaintenance": "General maintenance"
+        },
+        "trend": {
+            "title": "Maintenance trend",
+            "description": "Throughput and cost by period.",
+            "empty": "No trend data available.",
+            "tasks": "{{value}} tasks",
+            "completed": "Completed",
+            "cost": "Total cost",
+            "avgCost": "Avg cost per task"
+        },
+        "typeBreakdown": {
+            "title": "Maintenance type breakdown",
+            "description": "Compare workload and spend across maintenance types.",
+            "empty": "No maintenance type data available."
+        },
+        "table": {
+            "detailTitle": "Maintenance Detail",
+            "detailDescription": "Asset workload, completion outcomes, and spend per truck.",
+            "rowsPerPage": "Rows per page",
+            "perPageOption": "{{value}} / page",
+            "showing": "Showing {{from}}–{{to}} of {{total}}",
+            "pageIndicator": "Page {{current}} of {{last}}",
+            "truck": "Truck",
+            "status": "Status",
+            "tasks": "Tasks",
+            "completed": "Completed",
+            "scheduled": "Scheduled",
+            "inProgress": "In progress",
+            "overdue": "Overdue",
+            "completionRate": "Completion %",
+            "overdueRate": "Overdue %",
+            "totalCost": "Total cost",
+            "completedCost": "Completed cost",
+            "openCost": "Open cost",
+            "averageCost": "Avg cost",
+            "averageCompletionDays": "Avg completion (days)",
+            "lastCompleted": "Last completed",
+            "nextScheduled": "Next scheduled",
+            "maxOverdue": "Max overdue (days)",
+            "type": "Maintenance type",
+            "category": "Category",
+            "completion": "Completion",
+            "avgCost": "Avg cost",
+            "empty": "No maintenance records match the selected filters.",
+            "totals": "Totals"
+        }
+    },
     "cargoTypes": {
         "title": "Cargo Types",
         "breadcrumb": "Cargo Types",
@@ -1811,6 +1938,2501 @@
                     "title": "Activity Log",
                     "description": "Recent actions and updates"
                 }
+            }
+        }
+    },
+    "outsources": {
+        "title": "Outsourcing",
+        "index": {
+            "headTitle": "Outsourcing",
+            "title": "Outsourcing Vendors",
+            "description": "Manage {{total}} outsourcing partners and their performance footprint.",
+            "columns": {
+                "name": "Vendor",
+                "serviceType": "Service Type",
+                "contact": "Contact",
+                "phone": "Phone",
+                "email": "Email",
+                "status": "Status",
+                "trips": "Trips",
+                "joinedOn": "Joined {{date}}"
+            },
+            "table": {
+                "title": "Vendor Directory",
+                "description": "Track vendor capabilities, contacts, and trip coverage",
+                "index": "#",
+                "actions": "Actions"
+            },
+            "stats": {
+                "total": {
+                    "label": "Vendors",
+                    "description": "{{count}} total"
+                },
+                "active": {
+                    "label": "Active",
+                    "description": "Currently engaged"
+                },
+                "tripsAverage": {
+                    "label": "Avg Trips / Vendor",
+                    "description": "Performance coverage"
+                },
+                "serviceLines": {
+                    "label": "Service Lines",
+                    "description": "Unique service categories"
+                }
+            },
+            "filters": {
+                "searchPlaceholder": "Search vendors or contacts",
+                "rowsLabel": "Rows",
+                "perPageOption": "{{value}} / page",
+                "statusPlaceholder": "Status",
+                "statusAll": "All statuses",
+                "servicePlaceholder": "Service type",
+                "serviceAll": "All services"
+            },
+            "fallbacks": {
+                "notAvailable": "—",
+                "serviceTypeUnknown": "Service type unknown"
+            },
+            "mobile": {
+                "position": "#{{value}}",
+                "contact": "Contact",
+                "phone": "Phone",
+                "email": "Email",
+                "status": "Status",
+                "trips": "Trips"
+            },
+            "empty": {
+                "title": "No outsourcing vendors found.",
+                "createAction": "Create one"
+            },
+            "pagination": {
+                "activeBadge": "Active: {{count}}"
+            }
+        },
+        "actions": {
+            "add": "Add Vendor",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "cancel": "Cancel",
+            "back": "Back to Vendors",
+            "create": "Create Vendor",
+            "createProcessing": "Saving...",
+            "save": "Save Changes",
+            "saveProcessing": "Saving..."
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive",
+            "unknown": "Unknown"
+        },
+        "tripStatus": {
+            "completed": "Completed",
+            "inProgress": "In progress",
+            "cancelled": "Cancelled",
+            "cancelledByVendor": "Cancelled by vendor"
+        },
+        "delete": {
+            "title": "Delete Vendor",
+            "description": "Are you sure you want to delete this vendor? This action cannot be undone.",
+            "formDescription": "This action will permanently remove the vendor and historical analytics will exclude it going forward.",
+            "detailDescription": "This will permanently remove the vendor profile. Linked dispatch history will remain for auditing purposes.",
+            "successTitle": "✅ Vendor Deleted",
+            "successDescription": "{{name}} has been removed successfully.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Failed to delete vendor. Please try again."
+        },
+        "form": {
+            "sections": {
+                "identity": {
+                    "title": "Vendor Identity",
+                    "descriptionCreate": "Define how this partner will appear across analytics and dispatch tools.",
+                    "descriptionEdit": "Keep these attributes current so dispatch analytics remain accurate."
+                },
+                "contact": {
+                    "title": "Contact Details",
+                    "descriptionCreate": "Provide direct contacts so dispatch and finance teams can coordinate quickly.",
+                    "descriptionEdit": "Provide up-to-date contacts for coordination and escalation."
+                },
+                "hints": {
+                    "title": "Quick Hints",
+                    "descriptionCreate": "Select a suggested service type or keep the field blank to define a custom specialization.",
+                    "descriptionEdit": "Reference common service categories to keep analytics aligned."
+                }
+            },
+            "hints": {
+                "empty": "We will surface existing service type suggestions here once vendors are registered.",
+                "suggestions": "Click a chip above to auto-fill common service categories such as {{suggestions}}.",
+                "emptyEdit": "Service categories will appear here automatically once at least one vendor shares them.",
+                "align": "Matching service labels help align performance analytics and comparison dashboards."
+            },
+            "validation": {
+                "backendTitle": "Validation error",
+                "reviewCreate": {
+                    "title": "Please review the form",
+                    "description": "Some fields need your attention before submission."
+                },
+                "reviewEdit": {
+                    "title": "Please review the form",
+                    "description": "Some fields need your attention before saving."
+                }
+            },
+            "errors": {
+                "email": "Please enter a valid email address.",
+                "status": "Status is required.",
+                "serviceTypeMax": "Service type cannot exceed 255 characters.",
+                "addressMax": "Address cannot exceed 500 characters."
+            },
+            "fields": {
+                "name": {
+                    "label": "Vendor Name",
+                    "placeholder": "e.g., Horizon Freight PLC"
+                },
+                "status": {
+                    "label": "Status",
+                    "placeholder": "Select status"
+                },
+                "serviceType": {
+                    "label": "Service Type",
+                    "placeholder": "e.g., Long-haul transport",
+                    "hint": "Tap a chip below to reuse a common service category."
+                },
+                "contact": {
+                    "label": "Primary Contact",
+                    "placeholder": "e.g., Meron Bekele"
+                },
+                "phone": {
+                    "label": "Phone Number",
+                    "placeholder": "e.g., +251 911 123 456"
+                },
+                "email": {
+                    "label": "Email",
+                    "placeholder": "e.g., ops@horizonfreight.com"
+                },
+                "address": {
+                    "label": "Head Office / Dispatch Address",
+                    "placeholder": "Include key directions or branch details for field teams"
+                }
+            },
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Register Outsource Partner",
+                "headTitle": "Register Outsource",
+                "description": "Capture vendor contacts, service specialisations, and onboarding status in one streamlined intake.",
+                "successTitle": "✅ Vendor Created",
+                "successDescription": "The vendor has been registered successfully."
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "fallbackName": "Vendor {{id}}",
+                "title": "Edit {{name}}",
+                "headTitle": "Edit {{name}}",
+                "description": "Update onboarding, contact, and service information for this outsource partner.",
+                "successTitle": "✅ Vendor Updated",
+                "successDescription": "The vendor record has been saved successfully."
+            }
+        },
+        "show": {
+            "subtitle": "Vendor dossier & performance insight",
+            "headTitle": "Vendor Overview - {{name}}",
+            "fallbacks": {
+                "notAvailable": "—"
+            },
+            "badges": {
+                "trips": "{{count}} recorded trips"
+            },
+            "metrics": {
+                "distance": "{{value}} km",
+                "volume": "{{value}} MT"
+            },
+            "stats": {
+                "totalTrips": {
+                    "label": "Total Trips",
+                    "helper": "Cumulative trips executed"
+                },
+                "activeTrips": {
+                    "label": "Active Trips",
+                    "helper": "Currently in progress"
+                },
+                "distanceCovered": {
+                    "label": "Distance Covered",
+                    "helper": "Kilometers logged"
+                },
+                "totalSpend": {
+                    "label": "Total Spend",
+                    "helper": "Aggregate cost allocation"
+                }
+            },
+            "recent": {
+                "title": "Recent Performance",
+                "description": "Dispatch history snapshot - the five most recent assignments",
+                "emptyTitle": "No dispatches logged yet",
+                "emptyDescription": "Once operations are recorded, they'll appear here for rapid assessment.",
+                "table": {
+                    "trip": "Trip #",
+                    "route": "Route",
+                    "dispatchDate": "Dispatch Date",
+                    "distance": "Distance",
+                    "cargo": "Cargo",
+                    "cost": "Cost",
+                    "status": "Status"
+                }
+            },
+            "contact": {
+                "title": "Contact Information",
+                "description": "Coordination details for smooth dispatch communication",
+                "primaryLabel": "Primary Contact",
+                "phoneLabel": "Phone",
+                "phoneFallback": "No phone on record",
+                "emailLabel": "Email",
+                "emailFallback": "No email on record",
+                "addressLabel": "Dispatch Hub",
+                "addressFallback": "No address provided"
+            },
+            "timeline": {
+                "title": "Record Timeline",
+                "description": "Audit checkpoints",
+                "created": "Created",
+                "updated": "Last Updated"
+            }
+        }
+    },
+    "zones": {
+        "title": "Zones",
+        "headTitle": "Zones",
+        "description": "Manage {{formattedCount}} zones and keep coverage aligned with regional strategy.",
+        "columns": {
+            "name": "Zone",
+            "code": "Code",
+            "status": "Status",
+            "region": "Region",
+            "administrativeCenter": "Admin Center",
+            "population": "Population",
+            "accessibility": "Accessibility",
+            "woredas": "Woredas"
+        },
+        "table": {
+            "title": "Zone Inventory",
+            "description": "Monitor readiness signals, demographic reach, and operational status by zone",
+            "index": "#",
+            "actions": "Actions"
+        },
+        "stats": {
+            "total": {
+                "label": "Total Zones",
+                "description": "{{count}} surveyed"
+            },
+            "active": {
+                "label": "Active Zones",
+                "description": "Operational coverage"
+            },
+            "inactive": {
+                "label": "Inactive Zones",
+                "description": "Awaiting activation"
+            },
+            "population": {
+                "label": "Population Reach",
+                "description": "Residents served"
+            },
+            "accessibility": {
+                "label": "Accessibility Index",
+                "description": "Logistics readiness"
+            }
+        },
+        "filters": {
+            "searchPlaceholder": "Search zones...",
+            "rowsLabel": "Rows",
+            "perPageOption": "{{value}} / page",
+            "statusPlaceholder": "Status",
+            "statusAll": "All statuses",
+            "statusOptions": {
+                "active": "Active",
+                "inactive": "Inactive"
+            }
+        },
+        "actions": {
+            "add": "Add Zone",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "cancel": "Cancel"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "noRegion": "No region assigned",
+            "status": "Status",
+            "population": "Population",
+            "woredas": "Woredas"
+        },
+        "empty": {
+            "title": "No zones found.",
+            "createAction": "Create one"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive",
+            "unknown": "Unknown"
+        },
+        "delete": {
+            "title": "Delete Zone",
+            "description": "Are you sure you want to delete this zone? This action cannot be undone.",
+            "successTitle": "✅ Zone Deleted",
+            "successDescription": "{{name}} has been removed successfully.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Failed to delete zone. Please try again."
+        },
+        "form": {
+            "badge": "Coverage Mapping",
+            "unsaved": "You have unsaved changes",
+            "validation": {
+                "title": "⚠️ Validation Error",
+                "inlineEdit": "Review the highlighted fields and correct validation issues before saving the zone update.",
+                "inlineCreate": "Please correct the validation errors before submitting the form.",
+                "resolve": "Please resolve the highlighted fields before submitting the form."
+            },
+            "sections": {
+                "identity": {
+                    "title": "Zone Identity",
+                    "descriptionCreate": "Capture the core identification and governance details for this zone.",
+                    "descriptionEdit": "Confirm naming, ownership, and governance context for this zone."
+                },
+                "geography": {
+                    "title": "Geographic Profile",
+                    "descriptionCreate": "Outline the spatial footprint and demographic scale for this zone.",
+                    "descriptionEdit": "Keep spatial footprint and demographic scale aligned with latest intel."
+                },
+                "infrastructure": {
+                    "title": "Infrastructure & Climate",
+                    "descriptionCreate": "Record the signals that drive logistics readiness across the zone.",
+                    "descriptionEdit": "Document logistics readiness, infrastructure notes, and environmental context."
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "Zone Name",
+                    "placeholder": "e.g., East Arsi"
+                },
+                "region": {
+                    "label": "Region",
+                    "placeholder": "Select a region"
+                },
+                "status": {
+                    "label": "Status",
+                    "placeholder": "Select status"
+                },
+                "code": {
+                    "label": "Zone Code",
+                    "placeholder": "e.g., EA-02"
+                },
+                "administrativeCenter": {
+                    "label": "Administrative Center",
+                    "placeholder": "Primary governance hub"
+                },
+                "area": {
+                    "label": "Area (km²)",
+                    "placeholder": "e.g., 12450"
+                },
+                "population": {
+                    "label": "Population",
+                    "placeholder": "e.g., 820000"
+                },
+                "elevation": {
+                    "label": "Elevation (m)",
+                    "placeholder": "e.g., 1325"
+                },
+                "latitude": {
+                    "label": "Latitude",
+                    "placeholder": "e.g., 7.123456"
+                },
+                "longitude": {
+                    "label": "Longitude",
+                    "placeholder": "e.g., 39.987654"
+                },
+                "accessibility": {
+                    "label": "Accessibility Score",
+                    "placeholder": "0 - 100"
+                },
+                "description": {
+                    "label": "Description",
+                    "placeholder": "Brief narrative on economic focus or network role"
+                },
+                "infrastructureNotes": {
+                    "label": "Infrastructure Notes",
+                    "placeholder": "Connectivity, utilities, telecom coverage, or constraints"
+                },
+                "climateProfile": {
+                    "label": "Climate Profile",
+                    "placeholder": "Seasonal patterns, weather alerts, or climate risks"
+                }
+            },
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Register New Zone",
+                "headTitle": "Create Zone",
+                "description": "Define sub-regional coverage, readiness signals, and logistics context for planning.",
+                "backToList": "Back to Zones",
+                "submit": "Create Zone",
+                "submitting": "Creating...",
+                "successTitle": "✅ Zone Created",
+                "successDescription": "The zone has been registered successfully."
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Update Zone",
+                "headTitle": "Edit {{name}}",
+                "description": "Keep sub-regional coverage details aligned with on-the-ground operations.",
+                "submit": "Update Zone",
+                "submitting": "Updating..."
+            }
+        }
+    },
+    "customers": {
+        "title": "Customers",
+        "breadcrumb": "Customers",
+        "description": "Manage {{count}} customer{{plural}} and monitor relationship health.",
+        "columns": {
+            "name": "Customer",
+            "contactPerson": "Relationship Owner",
+            "phone": "Phone",
+            "email": "Email",
+            "operations": "Operations",
+            "status": "Status",
+            "created": "Created"
+        },
+        "table": {
+            "title": "Customer Portfolio",
+            "description": "Track commercial accounts, their status, and operational engagement.",
+            "index": "#",
+            "actions": "Actions"
+        },
+        "actions": {
+            "add": "Add Customer",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "cancel": "Cancel"
+        },
+        "filters": {
+            "searchPlaceholder": "Search customers...",
+            "rowsLabel": "Rows",
+            "statusPlaceholder": "Status",
+            "allStatuses": "All statuses",
+            "perPageOption": "{{value}} / page"
+        },
+        "stats": {
+            "total": {
+                "label": "Total Customers",
+                "description": "Full portfolio"
+            },
+            "active": {
+                "label": "Active Accounts",
+                "description": "Currently active"
+            },
+            "inactive": {
+                "label": "Inactive",
+                "description": "Off duty"
+            },
+            "withOperations": {
+                "label": "With Operations",
+                "description": "Has operations"
+            }
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "email": "Email",
+            "phone": "Phone",
+            "operations": "Operations",
+            "status": "Status",
+            "joined": "Joined"
+        },
+        "empty": {
+            "title": "No customers found.",
+            "createAction": "Create one"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "unknown": "Unknown",
+            "address": "Address not provided",
+            "contactPerson": "Contact not specified",
+            "notProvided": "Not provided"
+        },
+        "delete": {
+            "title": "Delete Customer",
+            "description": "Are you sure you want to delete this customer? This action cannot be undone.",
+            "successTitle": "✅ Customer Deleted",
+            "successDescription": "The customer was removed successfully.",
+            "successDescriptionWithName": "The customer \"{{name}}\" was removed successfully.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Failed to delete customer. Please try again."
+        },
+        "form": {
+            "validation": {
+                "title": "⚠️ Validation Error",
+                "resolve": "Please resolve the highlighted fields before submitting.",
+                "resolveForm": "Please correct the validation errors before submitting the form.",
+                "statusRequired": "Status is required.",
+                "statusInvalid": "Invalid status."
+            },
+            "sections": {
+                "profile": {
+                    "title": "Relationship Profile",
+                    "description": "Core identifiers and client health metadata.",
+                    "descriptionEdit": "Update customer details."
+                },
+                "contacts": {
+                    "title": "Primary Contacts",
+                    "description": "Maintain outreach routing and channel hygiene."
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "Customer Name",
+                    "tooltip": "Provide the registered business or trading name.",
+                    "placeholder": "e.g., Horizon Logistics PLC"
+                },
+                "status": {
+                    "label": "Status",
+                    "tooltip": "Active customers appear in operational workflows.",
+                    "placeholder": "Select status"
+                },
+                "address": {
+                    "label": "Headquarters / Billing Address",
+                    "helper": "Optional. Street, city, and any billing instructions.",
+                    "placeholder": "Street, city, and any billing instructions"
+                },
+                "contactPerson": {
+                    "label": "Relationship Owner",
+                    "helper": "Optional. Primary point of contact on the customer side.",
+                    "placeholder": "e.g., Selam Tesfaye"
+                },
+                "phone": {
+                    "label": "Phone Number",
+                    "helper": "Optional. Include country code.",
+                    "placeholder": "e.g., +251 91 123 4567"
+                },
+                "email": {
+                    "label": "Email Address",
+                    "helper": "Optional. Used for notifications.",
+                    "placeholder": "e.g., partnerships@horizon-logistics.com"
+                }
+            },
+            "requiredNote": "Required fields for onboarding",
+            "unsavedNote": "Unsaved changes detected",
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Register New Customer",
+                "headTitle": "Create Customer",
+                "description": "Capture the relationship profile, primary contacts, and operating status.",
+                "backToList": "Back to Customers",
+                "badge": "CRM Intake",
+                "submit": "Create Customer",
+                "submitting": "Saving...",
+                "successTitle": "✅ Customer Created",
+                "successDescription": "The customer has been registered successfully."
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Edit Customer",
+                "headTitle": "Edit Customer: {{name}}",
+                "description": "Update {{name}}",
+                "submit": "Update Customer",
+                "submitting": "Updating..."
+            }
+        },
+        "show": {
+            "subtitle": "Strategic partner overview and live operation performance snapshot.",
+            "headTitle": "Customer: {{name}}",
+            "deleteDescription": "Are you sure you want to delete {{name}}? This action cannot be undone.",
+            "tabs": {
+                "overview": "Overview",
+                "operations": "Operations",
+                "analytics": "Analytics",
+                "activity": "Activity"
+            },
+            "badges": {
+                "activeOperations": "{{count}} active operations"
+            },
+            "summary": {
+                "activeOperations": "Active Operations",
+                "totalTrips": "{{count}} total trips",
+                "volumeDelivered": "Volume Delivered",
+                "tonnageValue": "{{value}} MT",
+                "plannedShare": "{{value}}% of planned",
+                "totalRevenue": "Total Revenue",
+                "marginRate": "Margin: {{value}}%",
+                "grossMargin": "Gross Margin",
+                "profitable": "Profitable",
+                "loss": "Loss"
+            },
+            "fields": {
+                "name": "Customer Name",
+                "status": "Status",
+                "contactPerson": "Contact Person",
+                "email": "Email",
+                "phone": "Phone",
+                "created": "Account Created",
+                "address": "Address"
+            },
+            "sections": {
+                "overview": {
+                    "title": "Customer Overview",
+                    "description": "Core identifiers and relationship contacts"
+                },
+                "quickLinks": {
+                    "title": "Quick Links"
+                },
+                "activeOperations": {
+                    "title": "Active Operations",
+                    "description": "Live engagements and their progress",
+                    "empty": "This customer has no active operations."
+                },
+                "activity": {
+                    "title": "Activity History",
+                    "description": "Auditable timeline of changes to this account",
+                    "empty": "No activity history available."
+                }
+            },
+            "actions": {
+                "viewOperations": "View All Operations",
+                "viewPerformances": "View All Performances"
+            },
+            "performanceSnapshot": {
+                "title": "Performance Snapshot",
+                "description": "Key metrics across operations",
+                "customerId": "Customer ID",
+                "tripsInProgress": "Trips In Progress",
+                "completedTrips": "Completed Trips",
+                "distanceCovered": "Distance Covered",
+                "totalRevenue": "Total Revenue",
+                "totalCost": "Total Cost",
+                "grossMargin": "Gross Margin"
+            },
+            "contactDetails": {
+                "title": "Contact Details",
+                "description": "Reach out directly"
+            },
+            "operationCard": {
+                "title": "Operation {{id}}",
+                "lastDispatch": "Last dispatch: {{date}}",
+                "tripProgress": "Trip Progress",
+                "completedTrips": "{{count}} completed",
+                "totalTrips": "{{count}} total",
+                "volumeProgress": "Volume Progress",
+                "remainingTonnage": "{{value}} MT left",
+                "inProgress": "In Progress",
+                "completion": "Completion",
+                "revenue": "Revenue",
+                "margin": "Margin",
+                "viewDetails": "View Details"
+            },
+            "analytics": {
+                "acrossOperations": "Across all operations"
+            },
+            "charts": {
+                "operationsPerformance": "Operations Performance",
+                "tripStatus": "Trip Status Distribution",
+                "tonnage": "Tonnage (MT)",
+                "trips": "Trips",
+                "status": {
+                    "completed": "Completed",
+                    "inProgress": "In Progress"
+                }
+            },
+            "financial": {
+                "title": "Financial Metrics",
+                "operationalExpenses": "Operational expenses",
+                "marginRate": "{{value}}% margin",
+                "avgPerOperation": "Avg per Operation",
+                "revenueAverage": "Revenue average",
+                "revenuePerTrip": "Revenue per Trip",
+                "costPerTrip": "Cost per Trip",
+                "costPerTonKm": "Cost per Ton-Km",
+                "avgRevenuePerOperation": "Avg Revenue/Operation",
+                "avgCostPerOperation": "Avg Cost/Operation",
+                "totalTonKm": "Total Ton-Km"
+            },
+            "units": {
+                "km": "km"
+            },
+            "valueWithUnit": "{{value}} {{unit}}",
+            "percent": "{{value}}%"
+        }
+    },
+    "performances": {
+        "title": "Performances",
+        "breadcrumb": "Performances",
+        "description": "Manage your fleet performance ({{count}} in last 30 days)",
+        "columns": {
+            "foNumber": "FO Number",
+            "dispatchDate": "Dispatch Date",
+            "truckDriver": "Truck / Driver",
+            "origin": "Origin",
+            "destination": "Destination",
+            "distance": "Distance (KM)"
+        },
+        "table": {
+            "title": "Performance Records",
+            "description": "Track every performance entry",
+            "index": "#",
+            "actions": "Actions"
+        },
+        "actions": {
+            "add": "Add Performance",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "cancel": "Cancel"
+        },
+        "filters": {
+            "searchPlaceholder": "Search performances...",
+            "rowsLabel": "Rows",
+            "statusPlaceholder": "Status",
+            "allStatuses": "All statuses",
+            "loadPhasePlaceholder": "Load phase",
+            "allLoadPhases": "All phases",
+            "perPageOption": "{{value}} / page"
+        },
+        "stats": {
+            "windowLabel": "Last 30 days",
+            "total": {
+                "label": "Total Performances",
+                "description": "Overall throughput"
+            },
+            "active": {
+                "label": "Active",
+                "description": "Active in last 30 days"
+            },
+            "completed": {
+                "label": "Completed",
+                "description": "Completed in last 30 days"
+            },
+            "failed": {
+                "label": "Failed",
+                "description": "Failed in last 30 days"
+            }
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "driver": "Driver",
+            "truck": "Truck",
+            "origin": "Origin",
+            "destination": "Destination",
+            "distance": "Distance"
+        },
+        "empty": {
+            "title": "No performances found.",
+            "createAction": "Create one"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "unknown": "Unknown",
+            "truckDriver": "{{plate}} • {{driver}}",
+            "distanceValue": "{{value}} km"
+        },
+        "dateLabels": {
+            "today": "Today",
+            "yesterday": "Yesterday",
+            "tomorrow": "Tomorrow",
+            "daysAgo": "{{count}} days ago",
+            "inDays": "In {{count}} days",
+            "withRelative": "{{date}} ({{label}})"
+        },
+        "delete": {
+            "title": "Delete Performance",
+            "description": "Are you sure you want to delete this performance? This action cannot be undone.",
+            "successTitle": "✅ Performance Deleted",
+            "successDescription": "{{foNumber}} has been removed successfully.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Failed to delete performance. Please try again."
+        },
+        "form": {
+            "create": {
+                "breadcrumb": "Create Performance",
+                "title": "Create Performance",
+                "headTitle": "Create Performance",
+                "description": "Log a new performance record.",
+                "backToList": "Back to performances",
+                "badge": "New",
+                "successTitle": "✅ Performance Created",
+                "successDescription": "{{foNumber}} has been created successfully."
+            },
+            "validation": {
+                "toastTitle": "⚠️ Validation Error",
+                "title": "Missing required fields",
+                "required": "This field is required.",
+                "returnedRequired": "Returned date is required when trip is returned.",
+                "resolve": "Please resolve the highlighted fields to continue.",
+                "resolveForm": "Fix the highlighted fields before submitting.",
+                "resolveUpdate": "Please resolve the highlighted fields before saving."
+            },
+            "distance": {
+                "autoFilled": "Distance auto-filled: {{value}} km",
+                "autoFilledFromRoute": "Distance auto-filled from registered route ({{value}} km).",
+                "notRegistered": "Distance is not registered for this route.",
+                "notRegisteredDefaulted": "Distance for this origin and destination is not registered yet. Values defaulted to 0 km.",
+                "unableResolve": "Unable to resolve distance for this route.",
+                "unableResolveDefaulted": "Unable to resolve distance. Distance was set to 0 km.",
+                "resolving": "Resolving distance...",
+                "applied": "Distance applied",
+                "missing": "Distance missing"
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "recordFallback": "Record #{{id}}",
+                "title": "Update Performance",
+                "headTitle": "Edit Performance",
+                "headTitleWithTrip": "Edit Performance • {{trip}}",
+                "description": "Refine this trip’s operational metrics with quick favorites and inline validation.",
+                "backToList": "Back to performances",
+                "tripLabel": "Trip: {{trip}}",
+                "controlBadge": "Performance Control",
+                "successTitle": "✅ Performance Updated",
+                "successDescription": "{{trip}} has been refreshed with the latest metrics.",
+                "successDescriptionFallback": "Trip metrics have been updated."
+            },
+            "sections": {
+                "overview": {
+                    "title": "Trip Overview",
+                    "description": "Capture the core trip details."
+                },
+                "costs": {
+                    "title": "Costs & Metrics",
+                    "description": "Capture distance, tonnage, and cost elements."
+                },
+                "status": {
+                    "title": "Status & Return",
+                    "description": "Update lifecycle state and return info."
+                }
+            },
+            "fields": {
+                "loadPhase": {
+                    "label": "Load Phase",
+                    "placeholder": "Select load phase",
+                    "main": "Main",
+                    "return": "Return"
+                },
+                "loadCompletion": {
+                    "label": "Load Completion",
+                    "placeholder": "Select completion",
+                    "full": "Full",
+                    "partial": "Partial"
+                },
+                "foNumber": {
+                    "label": "FO Number",
+                    "placeholder": "Enter FO number"
+                },
+                "operation": {
+                    "label": "Operation",
+                    "placeholder": "Select operation",
+                    "searchPlaceholder": "Search operations...",
+                    "loading": "Loading operations..."
+                },
+                "driverTruck": {
+                    "label": "Driver & Truck",
+                    "placeholder": "Select driver and truck",
+                    "searchPlaceholder": "Search drivers or trucks...",
+                    "unknownDriver": "Unknown driver",
+                    "fallbackDriver": "Driver"
+                },
+                "dispatchDate": {
+                    "label": "Dispatch Date & Time"
+                },
+                "origin": {
+                    "label": "Origin",
+                    "placeholder": "Select origin"
+                },
+                "destination": {
+                    "label": "Destination",
+                    "placeholder": "Select destination"
+                },
+                "distanceWithCargo": {
+                    "label": "Distance with Cargo (km)",
+                    "helper": "Auto-filled when the route distance is registered.",
+                    "placeholder": "Auto-filled from distance table"
+                },
+                "distanceEmpty": {
+                    "label": "Distance Empty (km)"
+                },
+                "cargoVolume": {
+                    "label": "Cargo Volume (MT)"
+                },
+                "tonKm": {
+                    "label": "Ton-Km"
+                },
+                "fuelLiters": {
+                    "label": "Fuel (L)"
+                },
+                "fuelCost": {
+                    "label": "Fuel Cost (Birr)"
+                },
+                "perDiem": {
+                    "label": "Per Diem (Birr)"
+                },
+                "otherCost": {
+                    "label": "Other Cost (Birr)"
+                },
+                "status": {
+                    "label": "Status",
+                    "placeholder": "Select status",
+                    "options": {
+                        "active": "Active",
+                        "inactive": "Inactive"
+                    }
+                },
+                "returned": {
+                    "label": "Returned?",
+                    "helper": "Trip returned to origin"
+                },
+                "returnedDate": {
+                    "label": "Returned Date & Time"
+                },
+                "comment": {
+                    "label": "Comment / Notes",
+                    "placeholder": "Add any observations, delays, or unexpected events."
+                }
+            },
+            "actions": {
+                "required": "All required fields must be completed before submission.",
+                "requiredUpdate": "All required fields must be completed before updating.",
+                "accurate": "Accurate logs keep fleet performance insights reliable.",
+                "cancel": "Cancel",
+                "saving": "Saving...",
+                "save": "Save Performance",
+                "updating": "Updating...",
+                "update": "Update Performance"
+            }
+        },
+        "show": {
+            "title": "FO {{foNumber}}",
+            "notAvailable": "N/A",
+            "pending": "Pending",
+            "deleteUnexpectedError": "An unexpected error occurred while deleting the performance.",
+            "currency": {
+                "birr": "Birr"
+            },
+            "units": {
+                "km": "km",
+                "kmLabel": "km",
+                "mt": "MT",
+                "liter": "L",
+                "kmPerLiter": "km/L",
+                "tonKm": "ton-km",
+                "tonKmLabel": "ton-km",
+                "hourShort": "h",
+                "minuteShort": "m"
+            },
+            "timing": {
+                "onTime": "On time",
+                "lateBy": "Late by {{duration}}",
+                "earlyBy": "Early by {{duration}}"
+            },
+            "actions": {
+                "back": "Back",
+                "edit": "Edit",
+                "delete": "Delete"
+            },
+            "tabs": {
+                "overview": "Overview",
+                "economics": "Economics",
+                "operation": "Operation",
+                "activity": "Activity"
+            },
+            "kpi": {
+                "distanceLabel": "Distance",
+                "distanceHelper": "Load Factor: {{value}}",
+                "cargoLabel": "Cargo Volume",
+                "cargoHelper": "Ton-km: {{value}}",
+                "totalCostLabel": "Total Cost",
+                "revenueLabel": "Revenue",
+                "revenueHelper": "Margin: {{value}} {{indicator}}",
+                "positive": "✓",
+                "negative": "✗"
+            },
+            "sections": {
+                "tripDetails": "Trip Details",
+                "cargoFuel": "Cargo & Fuel",
+                "driverTruck": "Driver & Truck",
+                "comments": "Comments",
+                "operation": "Operation",
+                "dates": "Dates",
+                "costBreakdown": "Cost Breakdown",
+                "revenueProfitability": "Revenue & Profitability",
+                "yieldMetrics": "Yield Metrics",
+                "efficiencyMetrics": "Efficiency Metrics",
+                "contribution": "Contribution to Operation",
+                "operationProgress": "Operation Progress",
+                "recentTrips": "Recent Trips Trend",
+                "activityHistory": "Activity History"
+            },
+            "fields": {
+                "origin": "Origin",
+                "destination": "Destination",
+                "loadPhase": "Load Phase",
+                "loadCompletion": "Load Completion",
+                "avgDurationRoute": "Avg Duration (Route)",
+                "actualDuration": "Actual Duration",
+                "delayVsAverage": "Delay vs Average",
+                "distanceWithCargo": "Distance W/Cargo",
+                "distanceWithoutCargo": "Distance W/O Cargo",
+                "totalDistance": "Total Distance",
+                "loadFactor": "Load Factor",
+                "loadFactorHelper": "{{loaded}} / {{total}} {{unit}}",
+                "cargoVolume": "Cargo Volume",
+                "fuelLiters": "Fuel (Liters)",
+                "fuelEfficiency": "Fuel Efficiency",
+                "driver": "Driver",
+                "license": "License",
+                "phone": "Phone",
+                "truck": "Truck",
+                "model": "Model",
+                "capacity": "Capacity",
+                "operationId": "Operation ID",
+                "customer": "Customer",
+                "tariff": "Tariff",
+                "dispatch": "Dispatch",
+                "returned": "Returned",
+                "fuel": "Fuel",
+                "perDiem": "Per Diem",
+                "other": "Other",
+                "total": "Total",
+                "tonKm": "Ton-Km",
+                "revenue": "Revenue",
+                "totalCost": "Total Cost",
+                "grossMargin": "Gross Margin",
+                "marginPercent": "Margin %",
+                "costPerTonKm": "Cost/Ton-km",
+                "costPerKm": "Cost/km",
+                "yieldPerTon": "Yield per Ton",
+                "yieldPerKm": "Yield per Km",
+                "costPerTon": "Cost per Ton",
+                "fuelCostShare": "Fuel Cost Share",
+                "revenuePerTonnage": "Revenue / Tonnage",
+                "revenuePerDistance": "Revenue / Distance",
+                "costPerTonnage": "Cost / Tonnage",
+                "fuelCostOfTotal": "{{value}} of total",
+                "emptyBackhaul": "Empty Backhaul",
+                "emptyDistanceLabel": "{{value}} {{unit}} empty",
+                "fuelConsumedLabel": "{{value}} {{unit}} consumed",
+                "tonnageShare": "Tonnage Share",
+                "distanceShare": "Distance Share",
+                "costShare": "Cost Share",
+                "plannedContribution": "Planned Contribution",
+                "plannedVolume": "Planned Volume",
+                "plannedDistance": "Planned Distance",
+                "volumeCompletion": "Volume Completion",
+                "volumeCompletionHelper": "{{total}} / {{planned}} {{unit}}",
+                "tonKmCompletion": "Ton-Km Completion",
+                "tonKmCompletionHelper": "{{total}} / {{planned}}",
+                "operationRevenue": "Operation Revenue",
+                "operationMargin": "Operation Margin",
+                "totalEarned": "Total earned",
+                "totalTrips": "Total Trips",
+                "completedTrips": "Completed",
+                "ongoingTrips": "Ongoing"
+            },
+            "trends": {
+                "tripLabel": "Trip {{number}}"
+            },
+            "operation": {
+                "title": "Operation {{id}}",
+                "viewFull": "View Full Operation"
+            },
+            "contribution": {
+                "summary": "This trip contributed {{tonnage}} of the operation's total tonnage and {{planned}} towards the planned target."
+            },
+            "activity": {
+                "empty": "No activity history available."
+            },
+            "deleteDescription": "Are you sure you want to delete this performance record? This action cannot be undone."
+        }
+    },
+    "regions": {
+        "title": "Regions",
+        "description": "Manage {{count}} regions and track readiness signals.",
+        "columns": {
+            "name": "Region",
+            "code": "Code",
+            "status": "Status",
+            "capital": "Capital",
+            "population": "Population",
+            "accessibility": "Accessibility",
+            "zones": "Zones",
+            "lastSurveyed": "Last Surveyed"
+        },
+        "table": {
+            "title": "Region Inventory",
+            "description": "Monitor coverage, readiness, and survey data across the network",
+            "actions": "Actions"
+        },
+        "actions": {
+            "add": "Add Region",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete"
+        },
+        "filters": {
+            "searchPlaceholder": "Search regions...",
+            "rowsLabel": "Rows",
+            "statusPlaceholder": "Status",
+            "allStatuses": "All statuses",
+            "perPageOption": "{{value}} / page"
+        },
+        "stats": {
+            "total": {
+                "label": "Total Regions",
+                "description": "{{count}} zones"
+            },
+            "active": {
+                "label": "Active Regions",
+                "description": "Operational coverage"
+            },
+            "inactive": {
+                "label": "Inactive Regions",
+                "description": "Pending validation"
+            },
+            "surveyed": {
+                "label": "Surveyed Regions",
+                "description": "{{count}} residents"
+            }
+        },
+        "empty": {
+            "title": "No regions found.",
+            "createAction": "Create one"
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive",
+            "unknown": "Unknown"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "mobile": {
+            "noCapital": "No capital set",
+            "status": "Status",
+            "population": "Population",
+            "zones": "Zones",
+            "lastSurveyed": "Last Surveyed"
+        },
+        "delete": {
+            "title": "Delete Region",
+            "description": "Are you sure you want to delete this region? This action cannot be undone.",
+            "successTitle": "✅ Region Deleted",
+            "successDescription": "{{name}} has been removed successfully.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Failed to delete region. Please try again."
+        },
+        "form": {
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Register New Region",
+                "headTitle": "Create Region",
+                "description": "Capture administrative details, geospatial context, and logistics readiness for accurate planning.",
+                "backToList": "Back to Regions",
+                "badge": "Regional Planning",
+                "successTitle": "✅ Region Created",
+                "successDescription": "The region has been registered successfully.",
+                "submit": "Create Region"
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Update Region",
+                "headTitle": "Edit {{name}}",
+                "description": "Refine administrative data and geospatial insights to keep logistics planning current.",
+                "successTitle": "✅ Region Updated",
+                "successDescription": "{{name}} has been updated successfully."
+            },
+            "validation": {
+                "toastTitle": "⚠️ Validation Error",
+                "resolve": "Please resolve the highlighted fields before submitting.",
+                "resolveForm": "Please correct the validation errors before submitting the form."
+            },
+            "sections": {
+                "identity": {
+                    "title": "Region Identity",
+                    "description": "Define how the region should appear across the platform.",
+                    "descriptionEdit": "Ensure naming and governance metadata stays aligned with the latest records."
+                },
+                "geography": {
+                    "title": "Geographic Profile",
+                    "description": "Provide the spatial footprint and demographics for analytics.",
+                    "descriptionEdit": "Update the region footprint, demographics, and positioning for analytics."
+                },
+                "infrastructure": {
+                    "title": "Infrastructure & Climate",
+                    "description": "Document readiness signals for logistics and service deployment.",
+                    "descriptionEdit": "Capture readiness signals, climate context, and operational notes."
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "Region Name",
+                    "placeholder": "e.g., Oromia"
+                },
+                "code": {
+                    "label": "Region Code",
+                    "placeholder": "e.g., OR-01"
+                },
+                "status": {
+                    "label": "Status",
+                    "placeholder": "Select status"
+                },
+                "capital": {
+                    "label": "Capital City",
+                    "placeholder": "e.g., Adama"
+                },
+                "area": {
+                    "label": "Area (km²)",
+                    "placeholder": "e.g., 35363"
+                },
+                "population": {
+                    "label": "Population",
+                    "placeholder": "e.g., 4800000"
+                },
+                "elevation": {
+                    "label": "Elevation (m)",
+                    "placeholder": "e.g., 1325"
+                },
+                "latitude": {
+                    "label": "Latitude",
+                    "placeholder": "e.g., 8.980603"
+                },
+                "longitude": {
+                    "label": "Longitude",
+                    "placeholder": "e.g., 38.757761"
+                },
+                "accessibility": {
+                    "label": "Accessibility Score",
+                    "placeholder": "0 - 100"
+                },
+                "lastSurveyed": {
+                    "label": "Last Surveyed"
+                },
+                "description": {
+                    "label": "Description",
+                    "placeholder": "Regional overview, economic focus, or key logistics partners"
+                },
+                "infrastructureNotes": {
+                    "label": "Infrastructure Notes",
+                    "placeholder": "Connectivity, utilities, telecom coverage, or known constraints"
+                },
+                "climateProfile": {
+                    "label": "Climate Profile",
+                    "placeholder": "Seasonal patterns, temperature ranges, or weather alerts"
+                }
+            },
+            "actions": {
+                "cancel": "Cancel",
+                "updating": "Updating...",
+                "update": "Update Region"
+            }
+        },
+        "show": {
+            "notAvailable": "N/A",
+            "fallbackTitle": "Region {{id}}",
+            "subtitle": "Administrative profile and regional performance.",
+            "actions": {
+                "back": "Back to Regions"
+            },
+            "tabs": {
+                "overview": "Overview",
+                "zones": "Zones",
+                "history": "History"
+            },
+            "kpi": {
+                "population": {
+                    "label": "Population",
+                    "helper": "Reported residents"
+                },
+                "area": {
+                    "label": "Area",
+                    "helper": "Land coverage footprint"
+                },
+                "accessibility": {
+                    "label": "Accessibility",
+                    "helper": "Mobility index (0-100)"
+                },
+                "activeZones": {
+                    "label": "Active Zones",
+                    "helper": "Of {{count}} mapped zones"
+                }
+            },
+            "units": {
+                "km2": "km²",
+                "m": "m",
+                "peoplePerKm2": "people / km²"
+            },
+            "zoneCount": "{{count}} zones",
+            "capitalLabel": "Capital: {{name}}",
+            "sections": {
+                "overview": {
+                    "title": "Region Overview",
+                    "description": "Core identifiers and administrative context"
+                },
+                "environment": {
+                    "title": "Environmental Notes",
+                    "description": "Infrastructure readiness and climate outlook"
+                },
+                "quickActions": {
+                    "title": "Quick Actions",
+                    "description": "Regional administration shortcuts"
+                },
+                "recordInfo": {
+                    "title": "Record Info",
+                    "description": "System tracking"
+                },
+                "zones": {
+                    "title": "Zones within {{name}}",
+                    "description": "Administrative clusters and their statuses"
+                },
+                "history": {
+                    "title": "Activity History",
+                    "description": "Auditable timeline of changes"
+                }
+            },
+            "fields": {
+                "code": "Region Code",
+                "capital": "Capital City",
+                "coordinates": "Coordinates",
+                "elevation": "Elevation",
+                "lastSurveyed": "Last Surveyed",
+                "populationDensity": "Population Density",
+                "infrastructure": "Infrastructure",
+                "climateProfile": "Climate Profile",
+                "created": "Created",
+                "updated": "Last Updated"
+            },
+            "quickActions": {
+                "edit": "Edit Region Details",
+                "manageZones": "Manage Zones",
+                "addZone": "Add New Zone"
+            },
+            "zones": {
+                "empty": "No zones have been mapped to this region yet."
+            },
+            "history": {
+                "empty": "No activity recorded for this region yet."
+            }
+        }
+    },
+    "woredas": {
+        "title": "Woredas",
+        "description": "Manage {{count}} woredas and align coverage with operational needs.",
+        "columns": {
+            "name": "Woreda",
+            "code": "Code",
+            "status": "Status",
+            "zone": "Zone",
+            "region": "Region",
+            "adminCenter": "Admin Center",
+            "population": "Population",
+            "area": "Area (km²)",
+            "accessibility": "Accessibility",
+            "places": "Places"
+        },
+        "table": {
+            "title": "Woreda Inventory",
+            "description": "Review administrative coverage, readiness signals, and child places per woreda",
+            "actions": "Actions"
+        },
+        "actions": {
+            "add": "Add Woreda",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete"
+        },
+        "filters": {
+            "searchPlaceholder": "Search woredas...",
+            "rowsLabel": "Rows",
+            "statusPlaceholder": "Status",
+            "allStatuses": "All statuses",
+            "perPageOption": "{{value}} / page"
+        },
+        "stats": {
+            "total": {
+                "label": "Total Woredas",
+                "description": "{{count}} active"
+            },
+            "inactive": {
+                "label": "Inactive Woredas",
+                "description": "Paused districts"
+            },
+            "population": {
+                "label": "Population Reach",
+                "description": "Residents covered"
+            },
+            "accessibility": {
+                "label": "Accessibility Index",
+                "description": "{{count}} road intel"
+            }
+        },
+        "empty": {
+            "title": "No woredas found.",
+            "createAction": "Create one"
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive",
+            "unknown": "Unknown"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "mobile": {
+            "noZone": "No zone assigned",
+            "status": "Status",
+            "region": "Region",
+            "population": "Population",
+            "places": "Places"
+        },
+        "delete": {
+            "title": "Delete Woreda",
+            "description": "Are you sure you want to delete this woreda? This action cannot be undone.",
+            "successTitle": "✅ Woreda Deleted",
+            "successDescription": "{{name}} was removed successfully.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Failed to delete woreda. Please try again."
+        },
+        "form": {
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Register New Woreda",
+                "headTitle": "Create Woreda",
+                "description": "Document administrative districts with spatial context and infrastructure readiness for deployment planning.",
+                "backToList": "Back to Woredas",
+                "badge": "District Coverage",
+                "successTitle": "✅ Woreda Created",
+                "successDescription": "The woreda has been registered successfully.",
+                "submit": "Create Woreda"
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Update Woreda",
+                "headTitle": "Edit {{name}}",
+                "description": "Keep district intelligence synchronized with the latest field information.",
+                "successTitle": "✅ Woreda Updated",
+                "successDescription": "{{name}} has been updated successfully."
+            },
+            "validation": {
+                "toastTitle": "⚠️ Validation Error",
+                "resolve": "Please resolve the highlighted fields before submitting.",
+                "resolveForm": "Review the highlighted fields and correct validation issues before saving the woreda update."
+            },
+            "sections": {
+                "identity": {
+                    "title": "Woreda Identity",
+                    "description": "Capture core governance and classification details for the woreda.",
+                    "descriptionEdit": "Confirm governance and classification details for the woreda."
+                },
+                "geography": {
+                    "title": "Geographic Profile",
+                    "description": "Outline the spatial footprint and demographic scale for this woreda.",
+                    "descriptionEdit": "Update geographic metrics that drive coverage analytics."
+                },
+                "infrastructure": {
+                    "title": "Infrastructure & Logistics",
+                    "description": "Document readiness signals and deployment context for this woreda.",
+                    "descriptionEdit": "Capture readiness signals and surface route quality considerations."
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "Woreda Name",
+                    "placeholder": "e.g., Adaba"
+                },
+                "zone": {
+                    "label": "Zone",
+                    "placeholder": "Select a zone"
+                },
+                "status": {
+                    "label": "Status",
+                    "placeholder": "Select status"
+                },
+                "code": {
+                    "label": "Woreda Code",
+                    "placeholder": "e.g., AD-01"
+                },
+                "administrativeCenter": {
+                    "label": "Administrative Center",
+                    "placeholder": "Primary governance hub"
+                },
+                "area": {
+                    "label": "Area (km²)",
+                    "placeholder": "e.g., 1250",
+                    "placeholderEdit": "e.g., 8450"
+                },
+                "population": {
+                    "label": "Population",
+                    "placeholder": "e.g., 82000",
+                    "placeholderEdit": "e.g., 120000"
+                },
+                "elevation": {
+                    "label": "Elevation (m)",
+                    "placeholder": "e.g., 1325",
+                    "placeholderEdit": "e.g., 1800"
+                },
+                "latitude": {
+                    "label": "Latitude",
+                    "placeholder": "e.g., 7.123456"
+                },
+                "longitude": {
+                    "label": "Longitude",
+                    "placeholder": "e.g., 39.987654"
+                },
+                "accessibility": {
+                    "label": "Accessibility Score",
+                    "placeholder": "0 - 100"
+                },
+                "description": {
+                    "label": "Description",
+                    "placeholder": "Brief narrative on economic focus or network role",
+                    "placeholderEdit": "Brief narrative on service coverage or economic relevance"
+                },
+                "infrastructureNotes": {
+                    "label": "Infrastructure Notes",
+                    "placeholder": "Connectivity, utilities, telecom coverage, or constraints"
+                },
+                "roadQualityNotes": {
+                    "label": "Road Quality Notes",
+                    "placeholder": "Road conditions, seasonal access, or maintenance schedules"
+                }
+            },
+            "actions": {
+                "cancel": "Cancel",
+                "updating": "Updating...",
+                "update": "Update Woreda"
+            }
+        },
+        "show": {
+            "notAvailable": "N/A",
+            "fallbackTitle": "Woreda {{id}}",
+            "subtitle": "Sub-regional administration and service delivery overview.",
+            "actions": {
+                "back": "Back to Woredas"
+            },
+            "tabs": {
+                "overview": "Overview",
+                "places": "Places",
+                "history": "History"
+            },
+            "kpi": {
+                "population": {
+                    "label": "Population",
+                    "helper": "Reported residents"
+                },
+                "area": {
+                    "label": "Area",
+                    "helper": "Land coverage"
+                },
+                "accessibility": {
+                    "label": "Accessibility",
+                    "helper": "Logistics readiness (0-100)"
+                },
+                "places": {
+                    "label": "Mapped Places",
+                    "helper": "Service delivery locations"
+                }
+            },
+            "units": {
+                "km2": "km²",
+                "m": "m",
+                "peoplePerKm2": "people / km²"
+            },
+            "zoneLabel": "Zone: {{name}}",
+            "adminCenterLabel": "Admin Center: {{name}}",
+            "sections": {
+                "overview": {
+                    "title": "Woreda Overview",
+                    "description": "Administrative identifiers and geography"
+                },
+                "infrastructure": {
+                    "title": "Infrastructure Notes",
+                    "description": "Accessibility and road conditions"
+                },
+                "recordInfo": {
+                    "title": "Record Info",
+                    "description": "System tracking"
+                },
+                "places": {
+                    "title": "Places within {{name}}",
+                    "description": "Service delivery locations"
+                },
+                "history": {
+                    "title": "Activity History",
+                    "description": "Auditable timeline of changes"
+                }
+            },
+            "fields": {
+                "code": "Woreda Code",
+                "administrativeCenter": "Administrative Center",
+                "zone": "Zone",
+                "elevation": "Elevation",
+                "coordinates": "Coordinates",
+                "populationDensity": "Population Density",
+                "infrastructure": "Infrastructure",
+                "roadQuality": "Road Quality",
+                "created": "Created",
+                "updated": "Last Updated"
+            },
+            "places": {
+                "logisticsHub": "Logistics Hub",
+                "empty": "No places have been mapped to this woreda yet."
+            },
+            "history": {
+                "empty": "No activity recorded for this woreda yet."
+            }
+        }
+    },
+    "places": {
+        "title": "Places",
+        "description": "Monitor {{count}} place{{plural}} and their logistics readiness.",
+        "columns": {
+            "name": "Place",
+            "code": "Code",
+            "status": "Status",
+            "location": "Location",
+            "coordinates": "Coordinates",
+            "population": "Population",
+            "accessibility": "Accessibility",
+            "logisticsHub": "Logistics Hub",
+            "originPerformance": "Origin Perf.",
+            "destinationPerformance": "Destination Perf."
+        },
+        "table": {
+            "title": "Place Inventory",
+            "description": "Track locations, hub capabilities, and route performance signals",
+            "actions": "Actions",
+            "codePrefix": "Code {{code}}"
+        },
+        "actions": {
+            "add": "Add Place",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "cancel": "Cancel"
+        },
+        "filters": {
+            "searchPlaceholder": "Search places...",
+            "rowsLabel": "Rows",
+            "statusPlaceholder": "Status",
+            "allStatuses": "All statuses",
+            "perPageOption": "{{value}} / page"
+        },
+        "stats": {
+            "total": {
+                "label": "Total Places",
+                "description": "Locations monitored"
+            },
+            "hubs": {
+                "label": "Logistics Hubs",
+                "description": "Strategic hubs"
+            },
+            "population": {
+                "label": "Population Reach",
+                "description": "Residents covered"
+            },
+            "accessibility": {
+                "label": "Accessibility Score",
+                "description": "Infrastructure readiness"
+            }
+        },
+        "empty": {
+            "title": "No places found.",
+            "createAction": "Create one"
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive",
+            "unknown": "Unknown"
+        },
+        "hub": {
+            "standard": "Standard",
+            "hub": "Hub"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "noWoreda": "No woreda assigned",
+            "status": "Status",
+            "hub": "Hub",
+            "population": "Population",
+            "accessibility": "Accessibility"
+        },
+        "delete": {
+            "title": "Delete Place",
+            "description": "Are you sure you want to delete this place? This action cannot be undone.",
+            "successTitle": "✅ Place Deleted",
+            "successDescription": "{{name}} has been removed successfully.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Failed to delete place. Please try again."
+        },
+        "form": {
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Register New Place",
+                "headTitle": "Create Place",
+                "description": "Capture granular destination data, accessibility signals, and logistics capabilities for routing.",
+                "backToList": "Back to Places",
+                "badge": "Location Intelligence",
+                "successTitle": "✅ Place Created",
+                "successDescription": "The place has been registered successfully.",
+                "submit": "Create Place"
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Update Place",
+                "headTitle": "Edit {{name}}",
+                "description": "Ensure location intelligence stays accurate for planning and dispatch workflows."
+            },
+            "validation": {
+                "toastTitle": "⚠️ Validation Error",
+                "resolve": "Please resolve the highlighted fields before submitting.",
+                "resolveForm": "Please correct the validation errors before submitting the form.",
+                "resolveEdit": "Please review the highlighted fields and correct the validation errors before saving the place record."
+            },
+            "sections": {
+                "identity": {
+                    "title": "Place Identity",
+                    "description": "Define how this location appears across planning and operations."
+                },
+                "geo": {
+                    "title": "Geo Coordinates & Scale",
+                    "description": "Provide accurate coordinates and coverage for routing accuracy."
+                },
+                "operations": {
+                    "title": "Operational Insights",
+                    "description": "Document infrastructure readiness and road intelligence for dispatch teams."
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "Place Name",
+                    "placeholder": "e.g., Modjo Dry Port"
+                },
+                "woreda": {
+                    "label": "Woreda",
+                    "placeholder": "Select a woreda"
+                },
+                "status": {
+                    "label": "Status",
+                    "placeholder": "Select status"
+                },
+                "code": {
+                    "label": "Place Code",
+                    "placeholder": "e.g., PL-204"
+                },
+                "isLogisticsHub": "Mark as logistics hub (key fulfillment or consolidation point)",
+                "latitude": {
+                    "label": "Latitude",
+                    "placeholder": "e.g., 8.980603"
+                },
+                "longitude": {
+                    "label": "Longitude",
+                    "placeholder": "e.g., 38.757761"
+                },
+                "elevation": {
+                    "label": "Elevation (m)",
+                    "placeholder": "e.g., 2145"
+                },
+                "population": {
+                    "label": "Population",
+                    "placeholder": "e.g., 45000"
+                },
+                "accessibility": {
+                    "label": "Accessibility Score",
+                    "placeholder": "0 - 100"
+                },
+                "description": {
+                    "label": "Description",
+                    "placeholder": "Purpose, services available, or notable details about this location"
+                },
+                "infrastructureNotes": {
+                    "label": "Infrastructure Notes",
+                    "placeholder": "Utilities, storage capacity, security, or communication coverage"
+                },
+                "roadQualityNotes": {
+                    "label": "Road Quality Notes",
+                    "placeholder": "Surface conditions, seasonal risks, or alternate routes"
+                },
+                "boundaryGeojson": {
+                    "label": "Boundary GeoJSON",
+                    "placeholder": "Paste GeoJSON Feature or FeatureCollection describing the place boundary",
+                    "hint": "Optional — leave blank to rely on coordinates only."
+                }
+            },
+            "actions": {
+                "updating": "Updating...",
+                "update": "Update Place"
+            }
+        },
+        "show": {
+            "notAvailable": "N/A",
+            "fallbackTitle": "Place {{id}}",
+            "subtitle": "Granular service delivery location and logistics waypoint.",
+            "logisticsHub": "Logistics Hub",
+            "actions": {
+                "back": "Back to Places"
+            },
+            "kpi": {
+                "population": {
+                    "label": "Population",
+                    "helper": "Local residents"
+                },
+                "accessibility": {
+                    "label": "Accessibility",
+                    "helper": "Logistics score (0-100)"
+                },
+                "elevation": {
+                    "label": "Elevation",
+                    "helper": "Above sea level"
+                },
+                "hubStatus": {
+                    "label": "Hub Status",
+                    "helper": "Logistics hub designation",
+                    "yes": "Yes",
+                    "no": "No"
+                }
+            },
+            "sections": {
+                "overview": {
+                    "title": "Place Overview",
+                    "description": "Identifiers and geographic data"
+                },
+                "infrastructure": {
+                    "title": "Infrastructure Notes",
+                    "description": "Accessibility and road conditions"
+                },
+                "history": {
+                    "title": "Activity History",
+                    "description": "Auditable timeline"
+                },
+                "recordInfo": {
+                    "title": "Record Info",
+                    "description": "System tracking"
+                }
+            },
+            "fields": {
+                "code": "Place Code",
+                "woreda": "Woreda",
+                "coordinates": "Coordinates",
+                "elevation": "Elevation",
+                "infrastructure": "Infrastructure",
+                "roadQuality": "Road Quality",
+                "created": "Created",
+                "updated": "Last Updated"
+            }
+        }
+    },
+    "distances": {
+        "title": "Distances",
+        "index": {
+            "title": "Route Distances",
+            "description": "Monitor {{count}} route{{plural}} and seasonal risk factors.",
+            "descriptionEmpty": "Monitor corridor readiness, travel times, and seasonal risks across logistics routes."
+        },
+        "columns": {
+            "route": "Route",
+            "status": "Status",
+            "distance": "Distance (km)",
+            "time": "Time (hrs)",
+            "routeType": "Route Type",
+            "averageSpeed": "Avg Speed",
+            "roadQuality": "Road Quality",
+            "tollRoad": "Toll Road",
+            "heavyVehicle": "Heavy Vehicle"
+        },
+        "table": {
+            "title": "Distance Matrix",
+            "description": "Analyse corridor performance, infrastructure indicators, and travel constraints",
+            "actions": "Actions"
+        },
+        "actions": {
+            "add": "Add Distance",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "cancel": "Cancel"
+        },
+        "filters": {
+            "searchPlaceholder": "Search routes or notes...",
+            "routeTypePlaceholder": "Route type",
+            "regionPlaceholder": "Filter by region",
+            "zonePlaceholder": "Filter by zone",
+            "woredaPlaceholder": "Filter by woreda"
+        },
+        "routeTypes": {
+            "all": "All routes",
+            "primary": "Primary",
+            "secondary": "Secondary",
+            "alternative": "Alternative"
+        },
+        "stats": {
+            "total": {
+                "label": "Tracked Routes",
+                "description": "Active corridor records"
+            },
+            "speed": {
+                "label": "Avg Speed (km/h)",
+                "description": "Mean corridor velocity"
+            },
+            "quality": {
+                "label": "Road Quality Index",
+                "description": "Infrastructure readiness"
+            },
+            "seasonal": {
+                "label": "Seasonal Alerts",
+                "description": "Routes with seasonal risks"
+            }
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive",
+            "unknown": "Unknown"
+        },
+        "flags": {
+            "toll": {
+                "true": "Toll",
+                "false": "No Toll"
+            },
+            "heavyVehicle": {
+                "true": "Restricted",
+                "false": "Allowed"
+            }
+        },
+        "boolean": {
+            "yes": "Yes",
+            "no": "No"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "unknown": "Unknown",
+            "origin": "Origin",
+            "destination": "Destination"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "status": "Status",
+            "distance": "Distance",
+            "time": "Travel Time",
+            "routeType": "Route Type"
+        },
+        "loading": {
+            "alt": "Loading distances",
+            "message": "Loading distances..."
+        },
+        "empty": {
+            "title": "No distances found.",
+            "createAction": "Create one"
+        },
+        "delete": {
+            "title": "Delete Distance",
+            "description": "Are you sure you want to delete this distance? This action cannot be undone.",
+            "successTitle": "✅ Distance Record Deleted",
+            "successDescription": "Route {{route}} has been removed successfully.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Unable to delete distance. Please try again."
+        },
+        "form": {
+            "validation": {
+                "toastTitle": "⚠️ Validation Error",
+                "resolve": "Please resolve the highlighted fields before submitting.",
+                "resolveForm": "Please resolve the highlighted fields before submitting the form.",
+                "resolveEdit": "Please correct the validation errors below before submitting.",
+                "fromRequired": "From place is required",
+                "toRequired": "To place is required",
+                "toDifferent": "To place must be different from from place",
+                "distanceRequired": "Distance is required",
+                "distancePositive": "Distance must be a positive number",
+                "timeRequired": "Estimated time is required",
+                "timePositive": "Estimated time must be a positive number"
+            },
+            "actions": {
+                "creating": "Creating...",
+                "create": "Create Distance",
+                "updating": "Updating...",
+                "update": "Update Distance"
+            },
+            "fields": {
+                "fromPlace": {
+                    "label": "From Place *",
+                    "placeholder": "Select from place"
+                },
+                "toPlace": {
+                    "label": "To Place *",
+                    "placeholder": "Select to place"
+                },
+                "distance": {
+                    "label": "Distance (KM) *",
+                    "placeholder": "Auto-calculated from map",
+                    "calculated": "✓ Calculated from drawn route",
+                    "manual": "Enter manually if you skipped drawing the route."
+                },
+                "time": {
+                    "label": "Estimated Time (Hours) *",
+                    "placeholder": "Auto-calculated from route",
+                    "calculated": "✓ Based on route speed assumptions",
+                    "manual": "Provide an estimate when no map route is available."
+                },
+                "routeType": {
+                    "label": "Route Type",
+                    "primary": "Primary Route (80 km/h)",
+                    "secondary": "Secondary Route (50 km/h)",
+                    "alternative": "Alternative Route (40 km/h)"
+                },
+                "roadCondition": {
+                    "label": "Road Condition Factor",
+                    "placeholder": "1.0 = normal, 1.5 = poor condition"
+                },
+                "routeDescription": {
+                    "label": "Route Description",
+                    "placeholder": "Describe the route..."
+                },
+                "routeNotes": {
+                    "label": "Route Notes",
+                    "placeholder": "Additional notes about the route..."
+                },
+                "tollRoad": {
+                    "label": "Toll Road",
+                    "costLabel": "Toll Cost (ETB)",
+                    "costPlaceholder": "Enter toll cost"
+                },
+                "heavyVehicle": {
+                    "label": "Restricted for Heavy Vehicles"
+                }
+            },
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Create Distance",
+                "headTitle": "Create Distance",
+                "description": "Capture mileage and travel time between key logistics locations.",
+                "backToList": "Back to Distances",
+                "badge": "Route Planning",
+                "successTitle": "✅ Distance Record Created",
+                "successDescription": "The route distance has been registered successfully.",
+                "stats": {
+                    "placesAvailable": "Places Available",
+                    "withCoordinates": "{{count}} have map coordinates",
+                    "coverage": "Coverage",
+                    "coverageValue": "{{value}}% geocoded",
+                    "ready": "Ready for route planning",
+                    "currentDraft": "Current Draft",
+                    "currentDraftFallback": "Awaiting route",
+                    "currentDraftValue": "{{value}} km",
+                    "currentDraftTime": "{{value}} hrs estimated",
+                    "currentDraftTimeFallback": "Draw a route on the map"
+                },
+                "tabs": {
+                    "form": "Form",
+                    "map": "Map",
+                    "preview": "Preview"
+                },
+                "form": {
+                    "title": "Distance Information",
+                    "description": "Select the endpoints and confirm the calculated metrics."
+                },
+                "map": {
+                    "title": "Route Planning Map",
+                    "description": "Plot the path to automatically calculate distance and travel time.",
+                    "note": "Click on two places or draw a custom route to capture accurate mileage. Clear the drawing to enter values manually."
+                },
+                "preview": {
+                    "title": "Route Preview",
+                    "description": "Check the summary before saving.",
+                    "fromLabel": "From:",
+                    "toLabel": "To:",
+                    "notSelected": "Not selected",
+                    "notAvailable": "N/A",
+                    "routePoints": "Route Points",
+                    "totalDistance": "Total Distance",
+                    "estimatedTime": "Estimated Time",
+                    "detailsTitle": "Route Details",
+                    "details": {
+                        "routeType": "Route Type",
+                        "roadCondition": "Road Condition Factor",
+                        "tollRoad": "Toll Road",
+                        "tollCost": "Toll Cost",
+                        "heavyVehicle": "Heavy Vehicle Restricted",
+                        "routePoints": "Route Points",
+                        "routePointsSaved": "{{count}} saved"
+                    },
+                    "empty": "No route drawn yet. Use the Map tab to plot a route or enter metrics manually."
+                }
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Edit Distance",
+                "headTitle": "Edit Distance: {{route}}",
+                "description": "Update distance information between {{from}} and {{to}}",
+                "successTitle": "✅ Distance Updated",
+                "successDescription": "Distance record has been saved successfully.",
+                "failedTitle": "❌ Update Failed",
+                "failedDescription": "Failed to update distance record.",
+                "section": {
+                    "title": "Distance Information",
+                    "description": "Define the route and travel parameters"
+                },
+                "fields": {
+                    "distancePlaceholder": "Enter distance in kilometers",
+                    "timePlaceholder": "Enter estimated time in hours"
+                }
+            }
+        },
+        "show": {
+            "subtitle": "Route distance and logistics corridor specifications.",
+            "headTitle": "Distance Details: {{route}}",
+            "actions": {
+                "back": "Back to Distances",
+                "edit": "Edit Distance"
+            },
+            "kpi": {
+                "distance": {
+                    "label": "Distance",
+                    "helper": "Route length"
+                },
+                "time": {
+                    "label": "Estimated Time",
+                    "helper": "Travel duration"
+                },
+                "speed": {
+                    "label": "Average Speed",
+                    "helper": "Calculated pace"
+                },
+                "routeType": {
+                    "label": "Route Type",
+                    "helper": "Road classification",
+                    "default": "Standard"
+                }
+            },
+            "sections": {
+                "map": {
+                    "title": "Route Map",
+                    "description": "Visual representation of the route"
+                },
+                "info": {
+                    "title": "Distance Information",
+                    "description": "Origin and destination details"
+                },
+                "details": {
+                    "title": "Route Details",
+                    "description": "Road conditions and restrictions"
+                }
+            },
+            "mapUnavailable": "Map not available - missing coordinates",
+            "fields": {
+                "from": "From Place",
+                "to": "To Place",
+                "distance": "Distance",
+                "time": "Estimated Time",
+                "roadCondition": "Road Condition Factor",
+                "tollRoad": "Toll Road",
+                "tollCost": "Cost: {{value}} ETB",
+                "heavyVehicle": "Heavy Vehicle Restriction",
+                "routeDescription": "Route Description",
+                "routeNotes": "Route Notes"
+            }
+        },
+        "units": {
+            "km": "km",
+            "hours": "hrs",
+            "kmh": "km/h"
+        }
+    },
+    "outsourcePerformances": {
+        "title": "Outsource Performances",
+        "description": "Manage vendor delivery performance ({{count}} records).",
+        "columns": {
+            "tripNumber": "Trip #",
+            "dispatchDate": "Dispatch Date",
+            "vendor": "Vendor",
+            "route": "Route",
+            "distance": "Distance (KM)",
+            "cargo": "Cargo (MT)",
+            "tonkm": "Ton-KM",
+            "cost": "Cost",
+            "status": "Status"
+        },
+        "table": {
+            "title": "Outsource Trip Ledger",
+            "description": "Analyse partner performance across distance, volume, and spend",
+            "actions": "Actions"
+        },
+        "actions": {
+            "add": "Log Trip",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "cancel": "Cancel"
+        },
+        "filters": {
+            "searchPlaceholder": "Search trips or vendors",
+            "rowsLabel": "Rows",
+            "vendorPlaceholder": "Vendor",
+            "allVendors": "All vendors",
+            "perPageOption": "{{value}} / page"
+        },
+        "stats": {
+            "trips": {
+                "label": "Trips Logged",
+                "description": "{{count}} active trips underway"
+            },
+            "cargo": {
+                "label": "Cargo Moved",
+                "description": "Total tonnage handled by vendors"
+            },
+            "distance": {
+                "label": "Distance Covered",
+                "description": "Kilometres logged across the period"
+            },
+            "cost": {
+                "label": "Total Cost",
+                "description": "Aggregate spend with vendors"
+            }
+        },
+        "status": {
+            "active": "Active",
+            "completed": "Completed",
+            "cancelled": "Cancelled",
+            "unknown": "Unknown"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "unknown": "Unknown"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "vendorUnknown": "Vendor unknown",
+            "dispatch": "Dispatch",
+            "route": "Route",
+            "distance": "Distance",
+            "cost": "Cost",
+            "status": "Status"
+        },
+        "empty": {
+            "title": "No outsource performance records found.",
+            "createAction": "Log one"
+        },
+        "tableFooter": {
+            "distance": "Distance: {{value}}",
+            "cargo": "Cargo: {{value}}",
+            "cost": "Cost: {{value}}",
+            "active": "Active: {{count}}"
+        },
+        "delete": {
+            "title": "Delete Trip",
+            "description": "Are you sure you want to delete this outsource performance record? This action cannot be undone.",
+            "successTitle": "✅ Trip Deleted",
+            "successDescription": "Trip {{trip}} has been removed successfully.",
+            "successDescriptionFallback": "The outsource performance record was removed successfully.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Failed to delete outsource performance. Please try again."
+        },
+        "form": {
+            "validation": {
+                "toastTitle": "Validation error",
+                "resolve": "Please resolve the highlighted fields before submitting the form.",
+                "reviewTitle": "Please review the form",
+                "reviewDescription": "Some fields need your attention before submission."
+            },
+            "distanceStatus": {
+                "applied": "Distance auto-filled from registered route ({{value}} km).",
+                "missing": "Distance for this origin and destination is not registered yet. Values defaulted to 0 km.",
+                "failed": "Unable to resolve distance. Distance was set to 0 km.",
+                "resolving": "Resolving registered distance...",
+                "appliedTitle": "Distance applied",
+                "missingTitle": "Distance missing"
+            },
+            "sections": {
+                "overview": {
+                    "title": "Trip Overview",
+                    "description": "Link the vendor, operation, and trip identifiers."
+                },
+                "route": {
+                    "title": "Route & Distance",
+                    "description": "Select the origin and destination to auto-resolve registered distances."
+                },
+                "cost": {
+                    "title": "Cost & Notes",
+                    "description": "Record spend and supporting remarks for context."
+                }
+            },
+            "fields": {
+                "vendor": {
+                    "label": "Vendor",
+                    "placeholder": "Select vendor"
+                },
+                "operation": {
+                    "label": "Operation",
+                    "placeholder": "Search operation...",
+                    "searchPlaceholder": "Search operations...",
+                    "loading": "Searching operations..."
+                },
+                "tripNumber": {
+                    "label": "Trip Number",
+                    "placeholder": "e.g., OUT-TRIP-2309"
+                },
+                "dispatchDate": {
+                    "label": "Dispatch Date & Time"
+                },
+                "status": {
+                    "label": "Trip Status",
+                    "placeholder": "Select status"
+                },
+                "origin": {
+                    "label": "Origin",
+                    "placeholder": "Select origin"
+                },
+                "destination": {
+                    "label": "Destination",
+                    "placeholder": "Select destination"
+                },
+                "distance": {
+                    "label": "Distance (km)",
+                    "placeholder": "e.g., 540"
+                },
+                "cargo": {
+                    "label": "Cargo Volume (MT)",
+                    "placeholder": "e.g., 32.5"
+                },
+                "tonkm": {
+                    "label": "Ton-Kilometres"
+                },
+                "cost": {
+                    "label": "Trip Cost",
+                    "placeholder": "e.g., 125000"
+                },
+                "remarks": {
+                    "label": "Remarks",
+                    "placeholder": "Add optional context such as special conditions or vendor notes"
+                }
+            },
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Log Outsource Trip",
+                "headTitle": "Log Outsource Trip",
+                "description": "Capture vendor dispatch metrics, route details, and cost insights in one streamlined form.",
+                "backToList": "Back to Outsource Trips",
+                "badge": "Vendor Ledger",
+                "successTitle": "✅ Trip Logged",
+                "successDescription": "The outsource performance record has been saved successfully."
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "showBreadcrumb": "Show",
+                "title": "Update Outsource Trip",
+                "headTitle": "Edit Trip {{trip}}",
+                "description": "Adjust vendor dispatch metrics while keeping audit trails intact.",
+                "overviewDescription": "Review vendor, operation, and schedule details.",
+                "routeDescription": "Adjust the origin and destination to recalculate registered distances.",
+                "costDescription": "Update spend and contextual remarks as the trip progresses.",
+                "reset": "Reset",
+                "successTitle": "✅ Trip Updated",
+                "successDescription": "The outsource performance record has been updated successfully.",
+                "remarksPlaceholder": "Add optional context such as transit challenges or vendor notes",
+                "tip": "Tip: when actuals are unknown, leave numeric fields blank and update them once the vendor shares evidence.",
+                "deleteTitle": "Delete outsource trip?",
+                "deleteDescription": "This will permanently remove the outsource performance record. Historical analytics will exclude this trip."
+            },
+            "actions": {
+                "save": "Save Trip",
+                "saving": "Saving...",
+                "saveChanges": "Save Changes"
+            },
+            "tip": "Tip: leave cost and cargo fields blank if they are not yet confirmed. You can update them after the trip closes."
+        },
+        "show": {
+            "title": "Trip {{trip}}",
+            "headTitle": "Outsource Trip {{trip}}",
+            "breadcrumbTrip": "Trip {{trip}}",
+            "vendorFallback": "Vendor not linked",
+            "operationFallback": "Operation not linked",
+            "routeFallback": "Route not specified",
+            "system": "System",
+            "actions": {
+                "back": "Back"
+            },
+            "kpi": {
+                "distance": {
+                    "label": "Distance",
+                    "helper": "Kilometres travelled"
+                },
+                "cargo": {
+                    "label": "Cargo Volume",
+                    "helper": "Freight moved"
+                },
+                "tonkm": {
+                    "label": "Ton-Kilometres",
+                    "helper": "Productive output"
+                },
+                "cost": {
+                    "label": "Trip Cost",
+                    "helper": "Total spend"
+                }
+            },
+            "sections": {
+                "snapshot": {
+                    "title": "Trip Snapshot",
+                    "description": "Key operational figures"
+                },
+                "vendor": {
+                    "title": "Vendor Metrics",
+                    "description": "Performance across vendor history"
+                },
+                "route": {
+                    "title": "Route & Context",
+                    "description": "Logistical details"
+                },
+                "trends": {
+                    "title": "Recent Vendor Trends",
+                    "description": "Cost trajectory"
+                }
+            },
+            "fields": {
+                "distance": "Distance",
+                "cargo": "Cargo",
+                "tonkm": "Ton-km",
+                "cost": "Cost",
+                "costPerKm": "Cost per km",
+                "costPerKmHelper": "Spend per kilometre travelled",
+                "costPerTonkm": "Cost per ton-km",
+                "costPerTonkmHelper": "Efficiency of spend across tonnage",
+                "distanceShare": "Distance share",
+                "distanceShareHelper": "Contribution to vendor portfolio",
+                "cargoShare": "Cargo share",
+                "cargoShareHelper": "Portion of cargo moved",
+                "tonkmShare": "Ton-km share",
+                "tonkmShareHelper": "Share of productivity",
+                "costShare": "Cost share",
+                "costShareHelper": "Percentage of vendor spend",
+                "route": "Route",
+                "routeRecorded": "{{value}} recorded",
+                "dispatchDate": "Dispatch date",
+                "executionWindow": "Execution window",
+                "operation": "Operation",
+                "vendor": "Vendor",
+                "capturedBy": "Captured by {{name}}",
+                "notes": "Trip Notes"
+            },
+            "vendorMetrics": {
+                "trips": "Vendor trips"
+            },
+            "trends": {
+                "title": "Recent Vendor Trends",
+                "description": "Cost trajectory",
+                "trip": "Trip",
+                "date": "Date",
+                "cost": "Cost",
+                "empty": "No trend data available yet.",
+                "emptyTable": "No recent trips recorded."
             }
         }
     },
@@ -2240,8 +4862,1032 @@
                 "fallbackName": "Driver"
             }
         },
+    "statusTypes": {
+        "title": "Status Types",
+        "description": "Manage {{count}} lifecycle status categories.",
+        "table": {
+            "title": "Status Type Catalog",
+            "description": "Track and govern the lifecycle categories used across the platform"
+        },
+        "columns": {
+            "index": "#",
+            "name": "Name",
+            "description": "Description",
+            "statuses": "Statuses",
+            "created": "Created",
+            "actions": "Actions"
+        },
+        "stats": {
+            "total": {
+                "label": "Total Types",
+                "description": "All lifecycle categories"
+            },
+            "inUse": {
+                "label": "In Use",
+                "description": "{{count}} statuses linked"
+            },
+            "unused": {
+                "label": "Unused",
+                "description": "Ready for assignment"
+            },
+            "average": {
+                "label": "Avg. Statuses",
+                "description": "Per status type"
+            },
+            "recent": {
+                "label": "Created ({{days}}d)",
+                "description": "Recently added types"
+            },
+            "statuses": {
+                "label": "Statuses",
+                "description": "Across all types"
+            }
+        },
+        "filters": {
+            "searchPlaceholder": "Search status types...",
+            "rowsLabel": "Rows",
+            "usagePlaceholder": "Usage",
+            "allUsage": "All usage states",
+            "perPageOption": "{{value}} / page"
+        },
+        "labels": {
+            "statuses": "Statuses"
+        },
+        "actions": {
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "export": "Export CSV",
+            "add": "Add Status Type",
+            "cancel": "Cancel",
+            "back": "Back"
+        },
+        "empty": {
+            "title": "No status types found.",
+            "action": "Create one"
+        },
+        "validation": {
+            "title": "Validation Error",
+            "description": "Please fix the errors",
+            "allDescription": "Please fix all errors",
+            "formDescription": "Please fix all errors in the form below"
+        },
+        "form": {
+            "sections": {
+                "details": {
+                    "title": "Status Type Details",
+                    "description": "Provide a name and optional description for the status type.",
+                    "editDescription": "Update the status type information"
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "Name",
+                    "placeholder": "Enter status type name"
+                },
+                "description": {
+                    "label": "Description",
+                    "placeholder": "Enter status type description"
+                }
+            }
+        },
+        "create": {
+            "title": "Create Status Type",
+            "headTitle": "Create Status Type",
+            "description": "Define a new status type for categorizing statuses.",
+            "submit": "Create Status Type"
+        },
+        "edit": {
+            "breadcrumb": "Edit",
+            "title": "Edit Status Type",
+            "headTitle": "Edit Status Type",
+            "description": "Update status type details",
+            "submit": "Update Status Type",
+            "submitting": "Updating..."
+        },
+        "show": {
+            "subtitleFallback": "Status type classification for operational tracking.",
+            "headTitle": "Status Type: {{name}}",
+            "sections": {
+                "basic": {
+                    "title": "Basic Information",
+                    "description": "Core status type details"
+                },
+                "record": {
+                    "title": "Record Information",
+                    "description": "System tracking"
+                },
+                "activity": {
+                    "title": "Activity Log",
+                    "description": "Auditable timeline"
+                }
+            },
+            "fields": {
+                "name": "Name",
+                "id": "Status Type ID",
+                "description": "Description",
+                "created": "Created",
+                "updated": "Last Updated"
+            },
+            "toast": {
+                "successTitle": "Success",
+                "successDescription": "Status type deleted successfully",
+                "errorTitle": "Error",
+                "errorDescription": "Failed to delete status type"
+            }
+        },
+        "delete": {
+            "title": "Delete Status Type",
+            "description": "Are you sure you want to delete this status type? This action cannot be undone.",
+            "confirmLabel": "Delete Status Type",
+            "successTitle": "Status type deleted",
+            "successDescription": "The status type has been removed.",
+            "failedTitle": "Delete failed",
+            "failedDescription": "Failed to delete status type. Please review the requirements and try again.",
+            "failedUnknownDescription": "An unexpected error occurred while deleting the status type. Please try again."
+        },
         "fallbacks": {
-            "notAvailable": "N/A"
+            "notAvailable": "—",
+            "noStatuses": "No statuses yet",
+            "noDescription": "No description provided."
         }
+    },
+    "truckStatusBoard": {
+        "title": "Truck Status Board",
+        "header": {
+            "description": "Manage daily truck operational status - {{count}} truck{{suffix}}"
+        },
+        "filters": {
+            "searchPlaceholder": "Search trucks by plate, type, or driver...",
+            "button": "Filters",
+            "clear": "Clear filters",
+            "dialogTitle": "Filter trucks",
+            "dialogDescription": "Choose the drivers, equipment, and plates you want to display on the board.",
+            "drivers": {
+                "label": "Drivers",
+                "triggerAll": "All drivers",
+                "summaryAll": "All drivers shown",
+                "heading": "Drivers",
+                "searchPlaceholder": "Search driver...",
+                "empty": "No drivers found."
+            },
+            "equipment": {
+                "label": "Equipment",
+                "triggerAll": "All equipment",
+                "summaryAll": "All equipment shown",
+                "heading": "Equipment",
+                "searchPlaceholder": "Search equipment...",
+                "empty": "No equipment found."
+            },
+            "plates": {
+                "label": "Plates",
+                "triggerAll": "All plates",
+                "summaryAll": "All plates shown",
+                "heading": "Plates",
+                "searchPlaceholder": "Search plate...",
+                "empty": "No plates found."
+            },
+            "clearSelections": "Clear selections",
+            "close": "Close"
+        },
+        "card": {
+            "notes": "Notes",
+            "syncing": "Syncing",
+            "driver": "Driver: {{name}}",
+            "notesTooltipUpdate": "View or update notes",
+            "notesTooltipAdd": "Add a quick note",
+            "changedBy": "By {{name}}",
+            "viewDetails": "View details →"
+        },
+        "column": {
+            "noMatches": "No trucks match the current filters",
+            "dropHere": "Drop trucks here"
+        },
+        "board": {
+            "title": "Status Overview",
+            "description": "Drag and drop trucks between columns to update their status",
+            "noResults": "No trucks found for the current filters."
+        },
+        "comment": {
+            "title": "Add Comment for {{plate}}",
+            "description": "Add notes or comments about this truck's status",
+            "placeholder": "Enter your comment here...",
+            "cancel": "Cancel",
+            "save": "Save Comment"
+        },
+        "toast": {
+            "updateFailedTitle": "Status update failed",
+            "updateFailedDescription": "We could not sync this move. The truck was returned to its previous column."
+        }
+    },
+    "truckStatusHistory": {
+        "breadcrumbs": {
+            "trucks": "Trucks",
+            "history": "History {{plate}}"
+        },
+        "headTitle": "Status History - {{plate}}",
+        "title": "{{plate}} • Status History",
+        "filters": {
+            "label": "Filter"
+        },
+        "labels": {
+            "by": "by {{name}}"
+        },
+        "empty": "No history found."
+    },
+    "truckStatusShow": {
+        "breadcrumbs": {
+            "board": "Truck Status Board",
+            "overview": "{{plate}} • Status Overview"
+        },
+        "headTitle": "Status Overview - {{plate}}",
+        "title": "{{plate}} • Status Overview",
+        "labels": {
+            "assignedTo": "Assigned to {{name}}",
+            "trackingWindow": "Tracking last {{days}} days",
+            "to": "to",
+            "by": "by {{name}}"
+        },
+        "kpi": {
+            "currentStatus": {
+                "title": "Current Status",
+                "description": "Latest captured state from the status board",
+                "updatedOn": "Updated on {{date}}"
+            },
+            "updatesLogged": {
+                "title": "Updates Logged",
+                "description": "Total entries captured within the window",
+                "daysWithUpdates": "days with updates: {{count}}"
+            },
+            "distinctStatuses": {
+                "title": "Distinct Statuses",
+                "description": "Unique statuses recorded recently"
+            },
+            "boardActions": {
+                "title": "Board Actions",
+                "description": "Quick navigation",
+                "backToBoard": "Back to board",
+                "openTruckProfile": "Open truck profile"
+            }
+        },
+        "distribution": {
+            "title": "Status distribution",
+            "description": "How often each status appears in the recent window",
+            "empty": "No status activity recorded in this window."
+        },
+        "timeline": {
+            "title": "Recent timeline",
+            "description": "The most recent status changes captured per day",
+            "updateCount": "{{count}} update{{suffix}}",
+            "empty": "No recent status changes found for this truck."
+        },
+        "fallbacks": {
+            "noStatusRecorded": "No status recorded",
+            "unknownStatus": "Unknown status",
+            "unknownDate": "Unknown date",
+            "timeNotCaptured": "Time not captured"
+        }
+    },
+    "users": {
+        "title": "User Management",
+        "description": "Manage {{count}} system user{{suffix}}",
+        "breadcrumbs": {
+            "management": "User management"
+        },
+        "columns": {
+            "index": "#",
+            "name": "Name",
+            "email": "Email",
+            "roles": "Roles",
+            "verified": "Verified",
+            "created_at": "Created",
+            "actions": "Actions"
+        },
+        "labels": {
+            "id": "ID #{{id}}"
+        },
+        "table": {
+            "title": "User Directory",
+            "description": "{{count}} total user{{suffix}} in system"
+        },
+        "stats": {
+            "total": {
+                "label": "Total Users",
+                "description": "All accounts"
+            },
+            "verified": {
+                "label": "Verified Users",
+                "description": "Email confirmed"
+            },
+            "pending": {
+                "label": "Pending Verification",
+                "description": "Awaiting confirmation"
+            },
+            "admins": {
+                "label": "Admins",
+                "description": "Full access roles"
+            },
+            "managers": {
+                "label": "Managers",
+                "description": "Management roles"
+            }
+        },
+        "status": {
+            "verified": "Verified",
+            "pending": "Pending",
+            "unverified": "Unverified"
+        },
+        "filters": {
+            "searchPlaceholder": "Search by name or email...",
+            "clearSearch": "Clear search",
+            "role": {
+                "placeholder": "Role",
+                "all": "All roles",
+                "chip": "Role: {{value}}"
+            },
+            "status": {
+                "placeholder": "Status",
+                "all": "All statuses",
+                "verified": "Verified",
+                "pending": "Pending",
+                "chip": "Status: {{value}}"
+            },
+            "rows": {
+                "label": "Rows",
+                "perPageOption": "{{value}} / page",
+                "chip": "Rows: {{value}}"
+            }
+        },
+        "actions": {
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "export": "Export CSV",
+            "add": "Add User",
+            "cancel": "Cancel",
+            "backToList": "Back to users",
+            "actions": "Actions",
+            "quick": "Quick actions",
+            "resendInvite": "Resend invite (pending)",
+            "sendReset": "Send reset link"
+        },
+        "empty": {
+            "title": "No users found",
+            "description": "Get started by adding your first user to the system. Manage access and permissions effectively.",
+            "filteredDescription": "No users match \"{{term}}\". Try adjusting your filters or search terms.",
+            "action": "Add First User",
+            "filteredAction": "Clear Filters & Add User",
+            "createOne": "Create one"
+        },
+        "mobile": {
+            "roles": "Roles",
+            "verified": "Verified",
+            "created": "Created"
+        },
+        "validation": {
+            "title": "Validation Error",
+            "description": "Please resolve the highlighted fields before submitting.",
+            "formDescription": "Please fix all errors in the form below"
+        },
+        "form": {
+            "sections": {
+                "profile": {
+                    "title": "Profile & Contact",
+                    "description": "Name and sign-in email for the new teammate."
+                },
+                "access": {
+                    "title": "Access & Security",
+                    "description": "Assign the right role and set a strong starter password."
+                },
+                "notifications": {
+                    "title": "Notification Preferences",
+                    "description": "Fine-tune advanced notification defaults for this account.",
+                    "optional": "Optional",
+                    "helper": "Select which lifecycle notifications this user should receive by default. They can personalize their channels later inside their profile.",
+                    "adminHint": "Admins automatically receive every notification across all channels.",
+                    "addPlaceholder": "Add notification type",
+                    "allAssigned": "All notification types are already assigned.",
+                    "addAction": "Add notification",
+                    "assignAll": "Assign all",
+                    "clear": "Clear",
+                    "overview": {
+                        "title": "Assignment overview",
+                        "selected": "{{count}} of {{total}} notifications selected",
+                        "coverage": "{{value}}% coverage"
+                    },
+                    "searchPlaceholder": "Search assigned notifications",
+                    "empty": "No notifications selected. The user will inherit only default alerts from their permissions.",
+                    "noMatches": "No notifications match your search.",
+                    "noDescription": "No description available for this notification.",
+                    "remove": "Remove",
+                    "channels": {
+                        "inApp": {
+                            "title": "In-app alerts",
+                            "description": "Deliver real-time messages inside the dashboard."
+                        },
+                        "email": {
+                            "title": "Email alerts",
+                            "description": "Send transactional emails when this event occurs."
+                        }
+                    }
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "Name",
+                    "placeholder": "Enter user name"
+                },
+                "email": {
+                    "label": "Email",
+                    "placeholder": "Enter email address"
+                },
+                "role": {
+                    "label": "Role",
+                    "placeholder": "Select a role"
+                },
+                "password": {
+                    "label": "Password",
+                    "placeholder": "Enter password",
+                    "show": "Show password",
+                    "hide": "Hide password"
+                },
+                "passwordStrength": {
+                    "label": "Password strength",
+                    "waiting": "Waiting for input",
+                    "helper": "Start typing to evaluate this password."
+                },
+                "passwordConfirmation": {
+                    "label": "Confirm Password",
+                    "placeholder": "Confirm password",
+                    "show": "Show password confirmation",
+                    "hide": "Hide password confirmation"
+                }
+            }
+        },
+        "create": {
+            "breadcrumb": "Create",
+            "title": "Create New User",
+            "headTitle": "Create User",
+            "description": "Add a new teammate, set their role, and configure notification preferences.",
+            "submit": "Create User",
+            "submitting": "Creating...",
+            "successTitle": "✅ User Created",
+            "successDescription": "The new user has been added successfully."
+        },
+        "edit": {
+            "breadcrumb": "Edit",
+            "title": "Edit User",
+            "description": "Refresh profile details, adjust access, and keep credentials secure.",
+            "headTitle": "Edit {{name}}",
+            "backToProfile": "Back to profile",
+            "fields": {
+                "fullName": {
+                    "label": "Full name",
+                    "placeholder": "e.g. Jane Smith"
+                },
+                "role": {
+                    "helper": "Roles define which areas of the platform this teammate can access."
+                },
+                "password": {
+                    "label": "New password",
+                    "helper": "Leave blank to keep the current password.",
+                    "placeholder": "Generate a stronger secret"
+                }
+            },
+            "sections": {
+                "profile": {
+                    "description": "Keep the name and email aligned with your directory."
+                },
+                "access": {
+                    "description": "Adjust the user's role or rotate their credentials when needed."
+                }
+            },
+            "sidebar": {
+                "title": "Account snapshot",
+                "description": "Quickly confirm the essentials before saving.",
+                "labels": {
+                    "userId": "User ID",
+                    "role": "Assigned role",
+                    "verification": "Verification",
+                    "memberSince": "Member since"
+                }
+            },
+            "tip": {
+                "title": "Tip",
+                "description": "If you rotate credentials, let the teammate know so they can sign in with the updated password immediately."
+            },
+            "requiredFields": "Required fields",
+            "saving": "Saving…",
+            "save": "Save changes"
+        },
+        "show": {
+            "subtitle": "#{{id}} · Last updated {{date}}",
+            "headTitle": "User · {{name}}",
+            "kpi": {
+                "emailStatus": {
+                    "label": "Email Status",
+                    "helperUnverified": "Not yet verified"
+                },
+                "roles": {
+                    "label": "Roles Assigned",
+                    "helperSingle": "1 role",
+                    "helperMultiple": "{{count}} roles"
+                },
+                "activity": {
+                    "label": "Activity Entries",
+                    "helper": "Total logged actions"
+                },
+                "lastActivity": {
+                    "label": "Last Activity",
+                    "helper": "Most recent action",
+                    "empty": "No activity"
+                }
+            },
+            "sections": {
+                "profile": {
+                    "title": "User Profile",
+                    "description": "Core account information"
+                },
+                "roles": {
+                    "title": "Roles & Permissions",
+                    "description": "Assigned access levels",
+                    "empty": "No roles assigned yet."
+                },
+                "activity": {
+                    "title": "Activity History",
+                    "description": "Recent actions by this user",
+                    "empty": "No activity recorded yet."
+                }
+            },
+            "fields": {
+                "name": "Full Name",
+                "email": "Email Address",
+                "emailStatus": "Email Status",
+                "verifiedOn": "Verified on {{date}}"
+            }
+        },
+        "delete": {
+            "title": "Delete User",
+            "description": "Are you sure you want to delete this user? This action cannot be undone.",
+            "successTitle": "✅ User Deleted",
+            "successDescription": "{{name}} has been removed successfully.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Please try again or contact support if the issue persists."
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "noRoles": "No roles",
+            "unassigned": "Unassigned"
+        }
+    },
+    "roles": {
+        "title": "Role Management",
+        "description": "Manage {{count}} role{{suffix}} across the platform",
+        "breadcrumbs": {
+            "management": "User management"
+        },
+        "columns": {
+            "index": "#",
+            "name": "Role",
+            "permissions": "Permissions",
+            "created_at": "Created",
+            "actions": "Actions"
+        },
+        "labels": {
+            "guard": "Guard: {{value}}",
+            "more": "+{{count}} more"
+        },
+        "table": {
+            "title": "Role Directory",
+            "description": "{{count}} total role{{suffix}} in system"
+        },
+        "stats": {
+            "total": {
+                "label": "Total Roles",
+                "description": "Defined access groups"
+            },
+            "admins": {
+                "label": "Admin Variants",
+                "description": "High privilege profiles"
+            },
+            "averagePermissions": {
+                "label": "Avg Permissions",
+                "description": "Per role on average"
+            },
+            "guards": {
+                "label": "Guard Types",
+                "description": "Unique guard names"
+            }
+        },
+        "filters": {
+            "searchPlaceholder": "Search by role name...",
+            "clearSearch": "Clear search",
+            "permissionGroup": {
+                "placeholder": "Permission group",
+                "all": "All groups",
+                "chip": "Group: {{value}}"
+            },
+            "rows": {
+                "label": "Rows",
+                "perPageOption": "{{value}} / page",
+                "chip": "Rows: {{value}}"
+            }
+        },
+        "actions": {
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "export": "Export CSV",
+            "add": "Add Role",
+            "cancel": "Cancel",
+            "backToList": "Back to Roles"
+        },
+        "empty": {
+            "title": "No roles found",
+            "description": "Start by creating your first role to manage access levels effectively.",
+            "filteredDescription": "No roles match \"{{term}}\". Try adjusting your filters or search terms.",
+            "action": "Add First Role",
+            "filteredAction": "Clear Filters & Add Role",
+            "createOne": "Create one"
+        },
+        "mobile": {
+            "permissions": "Permissions",
+            "created": "Created"
+        },
+        "validation": {
+            "title": "Validation Error",
+            "description": "Please fix the errors",
+            "allDescription": "Please fix all errors",
+            "formDescription": "Please resolve the highlighted issues before submitting."
+        },
+        "form": {
+            "sections": {
+                "overview": {
+                    "title": "Role Overview",
+                    "description": "Give the role a clear name and, optionally, a description to help teammates understand its purpose."
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "Role Name",
+                    "placeholder": "e.g., Dispatch Supervisor"
+                },
+                "description": {
+                    "label": "Role Description",
+                    "helper": "Optional context for other administrators.",
+                    "placeholder": "Describe where this role is used and any high-level responsibility."
+                }
+            }
+        },
+        "permissions": {
+            "title": "Permission Library",
+            "description": "Browse grouped permissions, filter by keyword, and toggle exactly what this role should be able to do.",
+            "searchPlaceholder": "Search permissions or modules",
+            "matchingGroups": "{{count}} matching group{{suffix}}",
+            "showingGroups": "Showing {{count}} permission group{{suffix}}",
+            "moduleMeta": "{{total}} available · {{selected}} selected",
+            "deselect": "Deselect",
+            "selectAll": "Select All",
+            "dependencyHint": "Dependencies auto-selected if needed.",
+            "empty": "No permission groups match your search.",
+            "emptyHint": "Try refining or clearing the filter to view all modules.",
+            "summary": {
+                "title": "Selection summary",
+                "description": "Focus on the exact access this role needs.",
+                "coverage": "Coverage",
+                "selected": "Selected",
+                "remaining": "Remaining"
+            },
+            "selectEverything": "Select everything",
+            "clearSelection": "Clear selection",
+            "dependencyCard": {
+                "title": "Dependencies handled for you",
+                "description": "When a permission requires another, both are automatically selected. Review module notes for details before finalizing."
+            }
+        },
+        "requiredFields": "Required fields",
+        "create": {
+            "breadcrumb": "Create",
+            "title": "Create Role",
+            "headTitle": "Create Role",
+            "description": "Define a new role, describe its purpose, and curate the exact permissions it should carry.",
+            "submit": "Create Role"
+        },
+        "edit": {
+            "breadcrumb": "Edit",
+            "title": "Edit Role",
+            "headTitle": "Edit {{name}}",
+            "description": "Adjust role information, fine-tune its permissions, and keep your access model in sync.",
+            "backToRole": "Back to Role",
+            "sections": {
+                "overview": {
+                    "description": "Update the role's name and ensure the description still reflects its responsibilities."
+                },
+                "permissions": {
+                    "description": "Review grouped permissions and adjust what this role should be allowed to do."
+                }
+            },
+            "fields": {
+                "description": {
+                    "helper": "Share context to help teammates understand this role's remit.",
+                    "placeholder": "Document the scope, reporting lines, or escalation responsibilities."
+                }
+            },
+            "summary": {
+                "description": "Keep the role lean by reviewing totals."
+            },
+            "dependencyCard": {
+                "description": "When a permission requires another, both stay aligned automatically. Review notes before finalizing."
+            },
+            "submit": "Update Role"
+        },
+        "show": {
+            "subtitleFallback": "No description provided for this role yet.",
+            "headTitle": "Role · {{name}}",
+            "updatedBadge": "#{{id}} · Updated {{date}}",
+            "kpi": {
+                "permissions": {
+                    "label": "Permissions",
+                    "helper": "Total capabilities"
+                },
+                "users": {
+                    "label": "Assigned Users",
+                    "helper": "Team members"
+                },
+                "modules": {
+                    "label": "Modules",
+                    "helper": "Areas covered"
+                },
+                "created": {
+                    "label": "Created",
+                    "helper": "Initial setup"
+                }
+            },
+            "sections": {
+                "permissions": {
+                    "title": "Permission Library",
+                    "description": "Organized view of every capability attached to this role",
+                    "moduleCount": "{{count}} permission{{suffix}}",
+                    "empty": "No permissions assigned to this role yet.",
+                    "assignAction": "Assign Permissions"
+                },
+                "people": {
+                    "title": "People With This Role",
+                    "description": "Understand who inherits the permissions defined above",
+                    "empty": "No users currently linked to this role.",
+                    "emptyHint": "Assign it to teammates to extend access."
+                },
+                "glance": {
+                    "title": "At a Glance",
+                    "description": "Quick audit summary",
+                    "modules": "Modules covered",
+                    "permissions": "Permissions total",
+                    "members": "Members assigned"
+                },
+                "activity": {
+                    "title": "Activity Log",
+                    "description": "Review every change captured for this role"
+                }
+            },
+            "tip": {
+                "title": "Need to refine this role?",
+                "description": "Use the edit action to adjust responsibilities or prune unneeded access as your security posture evolves."
+            }
+        },
+        "delete": {
+            "title": "Delete Role",
+            "description": "Are you sure you want to delete this role? This action cannot be undone.",
+            "successTitle": "Success",
+            "successDescription": "{{name}} has been removed from the system successfully.",
+            "failedTitle": "Error",
+            "failedDescription": "Failed to delete role"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "noPermissions": "No permissions"
+        }
+    },
+    "permissions": {
+        "title": "Permission Management",
+        "description": "Manage {{count}} permission{{suffix}} across the platform",
+        "breadcrumbs": {
+            "management": "User management"
+        },
+        "columns": {
+            "index": "#",
+            "name": "Permission",
+            "module": "Module",
+            "action": "Action",
+            "guard": "Guard",
+            "created_at": "Created"
+        },
+        "labels": {
+            "id": "ID #{{id}}",
+            "guard": "Guard: {{value}}"
+        },
+        "table": {
+            "title": "Permission Directory",
+            "description": "{{count}} total permission{{suffix}} in system"
+        },
+        "stats": {
+            "total": {
+                "label": "Total Permissions",
+                "description": "Across the platform"
+            },
+            "modules": {
+                "label": "Modules",
+                "description": "Permission groups"
+            },
+            "guards": {
+                "label": "Guard Types",
+                "description": "Distinct guard names"
+            }
+        },
+        "filters": {
+            "searchPlaceholder": "Search permissions...",
+            "clearSearch": "Clear search",
+            "module": {
+                "placeholder": "Module",
+                "all": "All modules",
+                "chip": "Module: {{value}}"
+            },
+            "rows": {
+                "label": "Rows",
+                "perPageOption": "{{value}} / page",
+                "chip": "Rows: {{value}}"
+            }
+        },
+        "mobile": {
+            "module": "Module",
+            "action": "Action",
+            "created": "Created"
+        },
+        "actions": {
+            "export": "Export CSV"
+        },
+        "empty": {
+            "title": "No permissions found",
+            "description": "Permissions are managed automatically. Adjust filters or roles to view assigned access.",
+            "filteredDescription": "No permissions match \"{{term}}\". Try adjusting your filters or search terms."
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        }
+    },
+    "notifications": {
+        "title": "Notifications",
+        "subtitle": "Stay up to date with the latest activity across your fleet.",
+        "inApp": {
+            "title": "In-app notifications",
+            "description": "Manage recent events and keep your team aligned.",
+            "unreadBadge": "{{count}} unread",
+            "caughtUp": "All caught up",
+            "unreadLabel": "Unread notifications"
+        },
+        "recent": {
+            "title": "Recent activity",
+            "description": "Notifications expire after they are archived or older than 30 days.",
+            "markAll": "Mark all as read",
+            "markSingle": "Mark as read",
+            "marking": "Marking…"
+        },
+        "empty": {
+            "title": "Nothing new to review",
+            "description": "We will notify you here as soon as something changes."
+        }
+    },
+    "notificationAssignments": {
+        "title": "Notification assignments",
+        "breadcrumbs": {
+            "management": "User management"
+        },
+        "subtitle": "Grant notification types to team members and configure their default delivery methods. Users can fine-tune the channels you enable for them via their personal settings.",
+        "search": {
+            "placeholder": "Search people by name or email",
+            "submit": "Search",
+            "clear": "Clear"
+        },
+        "people": {
+            "title": "People",
+            "description": "Select a person to manage their notification access.",
+            "empty": "No users match your search criteria."
+        },
+        "types": {
+            "title": "Notification types",
+            "description": "Enable notification channels for the selected person. Removing a notification stops all deliveries until it is added again."
+        },
+        "filters": {
+            "categories": {
+                "placeholder": "Select category",
+                "all": "All categories",
+                "empty": "No notification categories available yet."
+            },
+            "rows": {
+                "all": "All",
+                "active": "Active",
+                "pending": "Pending removal"
+            }
+        },
+        "typePicker": {
+            "disabled": "Insufficient permissions",
+            "selectCategory": "Select a category first",
+            "allAssigned": "All types assigned",
+            "selectTypes": "Select notification types",
+            "selectedAll": "Selected all ({{count}})",
+            "selected": "{{count}} selected",
+            "searchPlaceholder": "Search notification types",
+            "emptyAllAssigned": "All notification types in this category are already assigned.",
+            "emptyNoMatch": "No notification types match your search.",
+            "selectAll": "Select all",
+            "clear": "Clear",
+            "addSelected": "Add selected",
+            "selectedBadge": "{{count}} type{{suffix}} selected"
+        },
+        "empty": {
+            "noUser": "Select a person on the left to view their notification access.",
+            "noTypes": "{{name}} does not have any notification types assigned yet. Use the selector above to grant access.",
+            "noMatch": "No notification types match the selected filter. Adjust the filter to view assignments."
+        },
+        "summary": {
+            "fullyEnabled": "{{count}} fully enabled",
+            "pendingRemoval": "{{count}} pending removal",
+            "inApp": "{{count}} in-app",
+            "email": "{{count}} email",
+            "available": "{{count}} available",
+            "unsaved": "Unsaved changes"
+        },
+        "rows": {
+            "noDescription": "No description available.",
+            "assignedBy": "Grant by {{name}}",
+            "newAssignment": "New assignment",
+            "willRemove": "Will be removed",
+            "deliveryDisabled": "Delivery disabled",
+            "updatedAt": "Updated {{date}}",
+            "restore": "Restore",
+            "remove": "Remove"
+        },
+        "channels": {
+            "inApp": {
+                "title": "In-app alerts",
+                "description": "Deliver real-time notifications within the dashboard."
+            },
+            "email": {
+                "title": "Email alerts",
+                "description": "Send transactional emails when this event occurs."
+            }
+        },
+        "sidebar": {
+            "title": "Not yet assigned",
+            "description": "Notifications in {{category}} that are still available to grant.",
+            "assignAll": "Assign all",
+            "empty": "Every notification in this category is already assigned.",
+            "add": "Add"
+        },
+        "actions": {
+            "saving": "Saving…",
+            "save": "Save changes",
+            "reset": "Reset"
+        }
+    },
+    "notificationPreferences": {
+        "title": "Notification preferences",
+        "header": {
+            "title": "Manage notifications",
+            "description": "Choose how you want to be notified. Contact your administrator if you need access to additional notification types."
+        },
+        "empty": {
+            "title": "No notifications assigned yet",
+            "description": "Your administrator has not enabled any notifications for your account. You will see options here once a notification type is assigned to you."
+        },
+        "coverage": {
+            "title": "Notification coverage",
+            "description": "{{enabled}} of {{total}} notifications are fully enabled (in-app & email).",
+            "enableAll": "Enable all",
+            "disableAll": "Disable all"
+        },
+        "rows": {
+            "noDescription": "No additional description provided.",
+            "enabledBy": "Enabled by {{name}}",
+            "updatedAt": "Updated {{date}}"
+        },
+        "channels": {
+            "inApp": {
+                "title": "In-app alerts",
+                "description": "Receive notifications inside the application."
+            },
+            "email": {
+                "title": "Email alerts",
+                "description": "We will send emails when this event occurs."
+            }
+        },
+        "actions": {
+            "saving": "Saving…",
+            "save": "Save preferences",
+            "saved": "Saved"
+        }
+    },
+    "fallbacks": {
+        "notAvailable": "N/A"
     }
+}
 }

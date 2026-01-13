@@ -38,6 +38,7 @@ import {
 import { type BreadcrumbItem } from '@/types';
 import { index as usersIndexRoute } from '@/routes/users';
 import { index as rolesIndexRoute, create as createRoleRoute } from '@/routes/roles';
+import { useTranslation } from 'react-i18next';
 
 type Permission = PermissionRecord;
 
@@ -51,18 +52,13 @@ interface RoleCreateProps {
     permissions: Record<string, Permission[]>;
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'User management', href: usersIndexRoute().url },
-    { title: 'Roles', href: rolesIndexRoute().url },
-    { title: 'Create', href: createRoleRoute().url },
-];
-
 const formatModuleLabel = (value: string): string => {
     const normalized = value.replace(/\./g, ' / ').replace(/[_-]/g, ' ');
     return normalized.replace(/\b\w/g, (segment) => segment.toUpperCase());
 };
 
 export default function RolesCreate({ permissions }: RoleCreateProps) {
+    const { t } = useTranslation();
     const { toast } = useToast();
     const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({});
     const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
@@ -77,6 +73,15 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
         description: '',
         permissions: [],
     });
+
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(
+        () => [
+            { title: t('roles.breadcrumbs.management'), href: usersIndexRoute().url },
+            { title: t('roles.title'), href: rolesIndexRoute().url },
+            { title: t('roles.create.breadcrumb'), href: createRoleRoute().url },
+        ],
+        [t],
+    );
 
     useEffect(() => {
         const container = formRef.current;
@@ -96,9 +101,9 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
 
     useEffect(() => {
         if (Object.keys(errors).length > 0) {
-            toast({ title: 'Validation Error', description: 'Please fix the errors', variant: 'destructive' });
+            toast({ title: t('roles.validation.title'), description: t('roles.validation.description'), variant: 'destructive' });
         }
-    }, [errors, toast]);
+    }, [errors, t, toast]);
 
     const groupedPermissions = useMemo(() => permissions || {}, [permissions]);
     const dependencyMaps = useMemo(
@@ -239,7 +244,7 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
 
         if (Object.keys(validationErrors).length > 0) {
             setFrontendErrors(validationErrors);
-            toast({ title: 'Validation Error', description: 'Please fix all errors', variant: 'destructive' });
+            toast({ title: t('roles.validation.title'), description: t('roles.validation.allDescription'), variant: 'destructive' });
             return;
         }
 
@@ -256,9 +261,9 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
 
     return (
         <FormPageLayout
-            title="Create Role"
-            description="Define a new role, describe its purpose, and curate the exact permissions it should carry."
-            headTitle="Create Role"
+            title={t('roles.create.title')}
+            description={t('roles.create.description')}
+            headTitle={t('roles.create.headTitle')}
             breadcrumbs={breadcrumbs}
             icon={<ShieldCheck className="h-5 w-5" />}
             headerAside={
@@ -266,7 +271,7 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                     <Button variant="ghost" size="sm" asChild>
                         <Link href="/roles">
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Roles
+                            {t('roles.actions.backToList')}
                         </Link>
                     </Button>
                     {isDirty && <UnsavedChangesBadge />}
@@ -282,13 +287,13 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                 {hasErrors && (
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>Please resolve the highlighted issues before submitting.</AlertDescription>
+                        <AlertDescription>{t('roles.validation.formDescription')}</AlertDescription>
                     </Alert>
                 )}
 
                 <FormSection
-                    title="Role Overview"
-                    description="Give the role a clear name and, optionally, a description to help teammates understand its purpose."
+                    title={t('roles.form.sections.overview.title')}
+                    description={t('roles.form.sections.overview.description')}
                     icon={
                         <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                             <ListChecks className="h-4 w-4" />
@@ -298,7 +303,7 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                 >
                     <FormField
                         id="name"
-                        label="Role Name"
+                        label={t('roles.form.fields.name.label')}
                         required
                         error={frontendErrors.name || errors.name}
                         className="flex-1"
@@ -308,22 +313,22 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                             type="text"
                             value={data.name}
                             onChange={(event) => handleFieldChange('name', event.target.value)}
-                            placeholder="e.g., Dispatch Supervisor"
+                            placeholder={t('roles.form.fields.name.placeholder')}
                             className={frontendErrors.name || errors.name ? 'border-red-500 focus:border-red-500 focus-visible:ring-red-500/20' : ''}
                         />
                     </FormField>
 
                     <FormField
                         id="description"
-                        label="Role Description"
-                        helperText="Optional context for other administrators."
+                        label={t('roles.form.fields.description.label')}
+                        helperText={t('roles.form.fields.description.helper')}
                         error={frontendErrors.description || errors.description}
                     >
                         <Textarea
                             id="description"
                             value={data.description}
                             onChange={(event) => handleFieldChange('description', event.target.value)}
-                            placeholder="Describe where this role is used and any high-level responsibility."
+                            placeholder={t('roles.form.fields.description.placeholder')}
                             rows={4}
                             className={frontendErrors.description || errors.description ? 'border-red-500 focus:border-red-500 focus-visible:ring-red-500/20' : ''}
                         />
@@ -331,8 +336,8 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                 </FormSection>
 
                 <FormSection
-                    title="Permission Library"
-                    description="Browse grouped permissions, filter by keyword, and toggle exactly what this role should be able to do."
+                    title={t('roles.permissions.title')}
+                    description={t('roles.permissions.description')}
                     icon={
                         <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
                             <Layers className="h-4 w-4" />
@@ -349,7 +354,7 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                                     <Input
                                         value={moduleFilter}
                                         onChange={(event) => setModuleFilter(event.target.value)}
-                                        placeholder="Search permissions or modules"
+                                        placeholder={t('roles.permissions.searchPlaceholder')}
                                         className="pl-9"
                                     />
                                     {moduleFilter && (
@@ -364,8 +369,14 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                                 </div>
                                 <span className="text-xs font-medium text-muted-foreground">
                                     {hasFilter
-                                        ? `${filteredModuleEntries.length} matching group${filteredModuleEntries.length === 1 ? '' : 's'}`
-                                        : `Showing ${moduleEntries.length} permission group${moduleEntries.length === 1 ? '' : 's'}`}
+                                        ? t('roles.permissions.matchingGroups', {
+                                              count: filteredModuleEntries.length,
+                                              suffix: filteredModuleEntries.length === 1 ? '' : 's',
+                                          })
+                                        : t('roles.permissions.showingGroups', {
+                                              count: moduleEntries.length,
+                                              suffix: moduleEntries.length === 1 ? '' : 's',
+                                          })}
                                 </span>
                             </div>
 
@@ -402,7 +413,7 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                                                                             {formatModuleLabel(module)}
                                                                         </p>
                                                                         <p className="text-xs text-muted-foreground">
-                                                                            {modulePermissions.length} available · {selectedCount} selected
+                                                                            {t('roles.permissions.moduleMeta', { total: modulePermissions.length, selected: selectedCount })}
                                                                         </p>
                                                                     </div>
                                                                 </div>
@@ -430,12 +441,12 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                                                                 {allSelected ? (
                                                                     <>
                                                                         <Square className="h-4 w-4" />
-                                                                        Deselect
+                                                                        {t('roles.permissions.deselect')}
                                                                     </>
                                                                 ) : (
                                                                     <>
                                                                         <CheckSquare className="h-4 w-4" />
-                                                                        Select All
+                                                                        {t('roles.permissions.selectAll')}
                                                                     </>
                                                                 )}
                                                             </Button>
@@ -472,7 +483,7 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                                                                                 {permissionLabel}
                                                                             </span>
                                                                             <span className="text-xs text-muted-foreground">
-                                                                                Dependencies auto-selected if needed.
+                                                                                {t('roles.permissions.dependencyHint')}
                                                                             </span>
                                                                         </span>
                                                                     </label>
@@ -488,8 +499,8 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                                     <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-300/70 bg-white/60 p-12 text-center text-sm text-muted-foreground dark:border-slate-700/60 dark:bg-slate-900/30">
                                         <Search className="h-6 w-6 text-slate-400" />
                                         <div>
-                                            <p>No permission groups match your search.</p>
-                                            {hasFilter && <p className="mt-1 text-xs">Try refining or clearing the filter to view all modules.</p>}
+                                            <p>{t('roles.permissions.empty')}</p>
+                                            {hasFilter && <p className="mt-1 text-xs">{t('roles.permissions.emptyHint')}</p>}
                                         </div>
                                     </div>
                                 )}
@@ -506,8 +517,8 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                             <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/50">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
-                                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Selection summary</p>
-                                        <p className="text-xs text-muted-foreground">Focus on the exact access this role needs.</p>
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('roles.permissions.summary.title')}</p>
+                                        <p className="text-xs text-muted-foreground">{t('roles.permissions.summary.description')}</p>
                                     </div>
                                     <Badge
                                         variant={isEverythingSelected ? 'default' : 'outline'}
@@ -523,7 +534,7 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                                 </div>
                                 <div className="mt-6 space-y-3">
                                     <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
-                                        <span>Coverage</span>
+                                        <span>{t('roles.permissions.summary.coverage')}</span>
                                         <span>{selectionProgress}%</span>
                                     </div>
                                     <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800">
@@ -534,11 +545,11 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                                     </div>
                                     <dl className="mt-4 space-y-2 text-[11px] text-muted-foreground">
                                         <div className="flex items-center justify-between">
-                                            <dt className="font-medium text-slate-700 dark:text-slate-200">Selected</dt>
+                                            <dt className="font-medium text-slate-700 dark:text-slate-200">{t('roles.permissions.summary.selected')}</dt>
                                             <dd className="text-slate-900 dark:text-slate-100">{selectedPermissions.length}</dd>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <dt className="font-medium text-slate-700 dark:text-slate-200">Remaining</dt>
+                                            <dt className="font-medium text-slate-700 dark:text-slate-200">{t('roles.permissions.summary.remaining')}</dt>
                                             <dd className="text-slate-900 dark:text-slate-100">
                                                 {Math.max(0, totalPermissions - selectedPermissions.length)}
                                             </dd>
@@ -553,7 +564,7 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                                         onClick={handleSelectAllPermissions}
                                         className="w-full justify-between gap-2"
                                     >
-                                        <span>Select everything</span>
+                                        <span>{t('roles.permissions.selectEverything')}</span>
                                         <CheckSquare className="h-4 w-4" />
                                     </Button>
                                     <Button
@@ -564,7 +575,7 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                                         disabled={selectedPermissions.length === 0}
                                         className="w-full justify-between gap-2"
                                     >
-                                        <span>Clear selection</span>
+                                        <span>{t('roles.permissions.clearSelection')}</span>
                                         <X className="h-4 w-4" />
                                     </Button>
                                 </div>
@@ -574,10 +585,9 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                                 <div className="flex items-start gap-3">
                                     <AlertCircle className="mt-0.5 h-4 w-4 text-slate-400" />
                                     <div>
-                                        <p className="font-medium text-slate-700 dark:text-slate-200">Dependencies handled for you</p>
+                                        <p className="font-medium text-slate-700 dark:text-slate-200">{t('roles.permissions.dependencyCard.title')}</p>
                                         <p className="mt-1 leading-relaxed">
-                                            When a permission requires another, both are automatically selected. Review module notes for
-                                            details before finalizing.
+                                            {t('roles.permissions.dependencyCard.description')}
                                         </p>
                                     </div>
                                 </div>
@@ -590,16 +600,16 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
                     left={
                         <>
                             <span className="text-red-500">*</span>
-                            <span>Required fields</span>
+                            <span>{t('roles.requiredFields')}</span>
                         </>
                     }
                     right={
                         <>
                             <Button type="button" variant="outline" asChild>
-                                <Link href="/roles">Cancel</Link>
+                                <Link href="/roles">{t('roles.actions.cancel')}</Link>
                             </Button>
                             <Button type="submit" disabled={processing || hasErrors}>
-                                Create Role
+                                {t('roles.create.submit')}
                             </Button>
                         </>
                     }

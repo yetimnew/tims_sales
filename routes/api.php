@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DriverController;
+use App\Http\Controllers\Api\DriverEmergencyController;
+use App\Http\Controllers\Api\DriverFCMController;
+use App\Http\Controllers\Api\DriverFuelController;
 use App\Http\Controllers\Api\DriverLocationController;
 use App\Http\Controllers\Api\DriverMaintenanceController;
 use App\Http\Controllers\Api\DriverNotificationController;
@@ -24,6 +27,8 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes - Authentication
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 
 // Public routes - Storage (for images with CORS)
 Route::get('/storage/{path}', [StorageController::class, 'serve'])
@@ -62,6 +67,8 @@ Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     Route::get('/driver/trips', [DriverTripController::class, 'index']);
     Route::get('/driver/trips/{id}', [DriverTripController::class, 'show']);
     Route::post('/driver/trips/{id}/update', [DriverTripController::class, 'update']);
+    Route::post('/driver/trips/{id}/documents', [DriverTripController::class, 'uploadDocument']);
+    Route::get('/driver/trips/{id}/documents', [DriverTripController::class, 'getDocuments']);
 
     // Notifications
     Route::get('/driver/notifications', [DriverNotificationController::class, 'index']);
@@ -71,5 +78,16 @@ Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     // Maintenance
     Route::get('/driver/maintenance', [DriverMaintenanceController::class, 'index']);
     Route::get('/driver/maintenance/{id}', [DriverMaintenanceController::class, 'show']);
-});
 
+    // Fuel Tracking
+    Route::get('/driver/fuel', [DriverFuelController::class, 'index']);
+    Route::get('/driver/fuel/{id}', [DriverFuelController::class, 'show']);
+    Route::post('/driver/fuel', [DriverFuelController::class, 'store']);
+
+    // Emergency
+    Route::post('/driver/emergency', [DriverEmergencyController::class, 'sendAlert']);
+
+    // FCM Token Management
+    Route::post('/driver/fcm-token', [DriverFCMController::class, 'updateToken']);
+    Route::delete('/driver/fcm-token', [DriverFCMController::class, 'deleteToken']);
+});

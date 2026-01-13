@@ -1,0 +1,151 @@
+{
+  "@@locale": "en",
+  "appTitle": "TIMS Driver",
+  "@appTitle": {
+    "description": "The application title"
+  },
+  "welcomeBack": "Welcome Back!",
+  "@welcomeBack": {
+    "description": "Welcome message on dashboard"
+  },
+  "dashboardOverview": "Here's your dashboard overview",
+  "@dashboardOverview": {
+    "description": "Dashboard subtitle"
+  },
+  "quickActions": "Quick Actions",
+  "@quickActions": {
+    "description": "Quick actions section title"
+  },
+  "updateStatus": "Update Status",
+  "@updateStatus": {
+    "description": "Update status button label"
+  },
+  "changeWorkStatus": "Change your work status",
+  "@changeWorkStatus": {
+    "description": "Update status button subtitle"
+  },
+  "locationTracking": "Location Tracking",
+  "@locationTracking": {
+    "description": "Location tracking button label"
+  },
+  "sendLocationTrackHistory": "Send your location and track history",
+  "@sendLocationTrackHistory": {
+    "description": "Location tracking button subtitle"
+  },
+  "maintenanceAlerts": "Maintenance Alerts",
+  "@maintenanceAlerts": {
+    "description": "Maintenance alerts button label"
+  },
+  "viewScheduledOverdueMaintenance": "View scheduled and overdue maintenance",
+  "@viewScheduledOverdueMaintenance": {
+    "description": "Maintenance alerts button subtitle"
+  },
+  "fuelTracking": "Fuel Tracking",
+  "@fuelTracking": {
+    "description": "Fuel tracking button label"
+  },
+  "recordViewFuelPurchases": "Record and view fuel purchases",
+  "@recordViewFuelPurchases": {
+    "description": "Fuel tracking button subtitle"
+  },
+  "emergency": "EMERGENCY",
+  "@emergency": {
+    "description": "Emergency button label"
+  },
+  "home": "Home",
+  "@home": {
+    "description": "Home tab label"
+  },
+  "performance": "Performance",
+  "@performance": {
+    "description": "Performance tab label"
+  },
+  "trips": "Trips",
+  "@trips": {
+    "description": "Trips tab label"
+  },
+  "profile": "Profile",
+  "@profile": {
+    "description": "Profile tab label"
+  },
+  "notifications": "Notifications",
+  "@notifications": {
+    "description": "Notifications label"
+  },
+  "logout": "Logout",
+  "@logout": {
+    "description": "Logout button label"
+  },
+  "login": "Login",
+  "@login": {
+    "description": "Login button label"
+  },
+  "email": "Email",
+  "@email": {
+    "description": "Email field label"
+  },
+  "password": "Password",
+  "@password": {
+    "description": "Password field label"
+  },
+  "forgotPassword": "Forgot password?",
+  "@forgotPassword": {
+    "description": "Forgot password link"
+  },
+  "rememberMe": "Remember me",
+  "@rememberMe": {
+    "description": "Remember me checkbox label"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings screen title"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language setting label"
+  },
+  "selectLanguage": "Select Language",
+  "@selectLanguage": {
+    "description": "Language selection dialog title"
+  },
+  "english": "English",
+  "@english": {
+    "description": "English language option"
+  },
+  "amharic": "አማርኛ",
+  "@amharic": {
+    "description": "Amharic language option"
+  },
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading indicator text"
+  },
+  "error": "Error",
+  "@error": {
+    "description": "Error label"
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry button label"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Save button label"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button label"
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button label"
+  },
+  "yes": "Yes",
+  "@yes": {
+    "description": "Yes button label"
+  },
+  "no": "No",
+  "@no": {
+    "description": "No button label"
+  }
+}

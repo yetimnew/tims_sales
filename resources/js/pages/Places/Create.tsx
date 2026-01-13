@@ -17,6 +17,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
 import { AlertCircle, ArrowLeft, Compass, FileText, MapPin, Navigation } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface WoredaOption {
   id: number;
@@ -43,12 +44,8 @@ interface PlacesCreateProps {
   woredas: WoredaOption[];
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Places', href: '/places' },
-  { title: 'Create', href: '/places/create' },
-];
-
 export default function PlacesCreate({ woredas }: PlacesCreateProps) {
+  const { t } = useTranslation();
   const { data, setData, post, processing, errors, reset, clearErrors } = useForm<PlaceFormData>({
     name: '',
     status: 'active',
@@ -88,12 +85,12 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
 
     if (errorMessages.length > 0) {
       toast({
-        title: '⚠️ Validation Error',
+        title: t('places.form.validation.toastTitle'),
         description: errorMessages.join(', '),
         variant: 'destructive',
       });
     }
-  }, [errors]);
+  }, [errors, t]);
 
   const setFieldError = useCallback((field: keyof PlaceFormData, message: string) => {
     setFrontendErrors(prev => {
@@ -141,8 +138,8 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
     if (Object.keys(validationResults).length > 0) {
       setFrontendErrors(validationResults);
       toast({
-        title: '⚠️ Validation Error',
-        description: 'Please resolve the highlighted fields before submitting.',
+        title: t('places.form.validation.toastTitle'),
+        description: t('places.form.validation.resolve'),
         variant: 'destructive',
       });
       return;
@@ -155,8 +152,8 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
         setIsDirty(false);
         reset();
         toast({
-          title: '✅ Place Created',
-          description: 'The place has been registered successfully.',
+          title: t('places.form.create.successTitle'),
+          description: t('places.form.create.successDescription'),
         });
       },
     });
@@ -182,11 +179,19 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
     [errors, frontendErrors]
   );
 
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('places.title'), href: '/places' },
+      { title: t('places.form.create.breadcrumb'), href: '/places/create' },
+    ],
+    [t],
+  );
+
   return (
     <FormPageLayout
-      title="Register New Place"
-      headTitle="Create Place"
-      description="Capture granular destination data, accessibility signals, and logistics capabilities for routing."
+      title={t('places.form.create.title')}
+      headTitle={t('places.form.create.headTitle')}
+      description={t('places.form.create.description')}
       breadcrumbs={breadcrumbs}
       icon={<Navigation className="h-5 w-5" />}
       headerAside={
@@ -194,13 +199,13 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
           <Button variant="ghost" size="sm" asChild>
             <Link href="/places">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Places
+              {t('places.form.create.backToList')}
             </Link>
           </Button>
           {isDirty && <UnsavedChangesBadge />}
           <div className="flex items-center gap-2 rounded-full bg-rose-100 px-3 py-1.5 text-sm font-medium text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
             <div className="h-2 w-2 animate-pulse rounded-full bg-rose-500" />
-            Location Intelligence
+            {t('places.form.create.badge')}
           </div>
         </>
       }
@@ -215,14 +220,14 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Please correct the validation errors before submitting the form.
+              {t('places.form.validation.resolveForm')}
             </AlertDescription>
           </Alert>
         )}
 
         <FormSection
-          title="Place Identity"
-          description="Define how this location appears across planning and operations."
+          title={t('places.form.sections.identity.title')}
+          description={t('places.form.sections.identity.description')}
           icon={
             <div className="rounded-lg bg-rose-100 p-2 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
               <MapPin className="h-4 w-4" />
@@ -230,20 +235,20 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
           }
           contentClassName="gap-6 md:grid-cols-2"
         >
-          <FormField id="name" label="Place Name" required error={getFieldError('name')}>
+          <FormField id="name" label={t('places.form.fields.name.label')} required error={getFieldError('name')}>
             <Input
               id="name"
               value={data.name}
               onChange={event => handleFieldChange('name', event.target.value)}
-              placeholder="e.g., Modjo Dry Port"
+              placeholder={t('places.form.fields.name.placeholder')}
               className={getFieldError('name') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
 
-          <FormField id="woreda_id" label="Woreda" required error={getFieldError('woreda_id')}>
+          <FormField id="woreda_id" label={t('places.form.fields.woreda.label')} required error={getFieldError('woreda_id')}>
             <Select value={data.woreda_id} onValueChange={value => handleFieldChange('woreda_id', value)}>
               <SelectTrigger className={getFieldError('woreda_id') ? 'border-red-500 focus:ring-red-500/20' : ''}>
-                <SelectValue placeholder="Select a woreda" />
+                <SelectValue placeholder={t('places.form.fields.woreda.placeholder')} />
               </SelectTrigger>
               <SelectContent>
                 {woredas.map(woreda => (
@@ -255,24 +260,24 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
             </Select>
           </FormField>
 
-          <FormField id="status" label="Status" required error={getFieldError('status')}>
+          <FormField id="status" label={t('places.form.fields.status.label')} required error={getFieldError('status')}>
             <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
               <SelectTrigger className={getFieldError('status') ? 'border-red-500 focus:ring-red-500/20' : ''}>
-                <SelectValue placeholder="Select status" />
+                <SelectValue placeholder={t('places.form.fields.status.placeholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="active">{t('places.status.active')}</SelectItem>
+                <SelectItem value="inactive">{t('places.status.inactive')}</SelectItem>
               </SelectContent>
             </Select>
           </FormField>
 
-          <FormField id="code" label="Place Code" error={getFieldError('code')}>
+          <FormField id="code" label={t('places.form.fields.code.label')} error={getFieldError('code')}>
             <Input
               id="code"
               value={data.code}
               onChange={event => handleFieldChange('code', event.target.value)}
-              placeholder="e.g., PL-204"
+              placeholder={t('places.form.fields.code.placeholder')}
               className={getFieldError('code') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
@@ -284,14 +289,14 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
               onCheckedChange={value => handleCheckboxChange(Boolean(value))}
             />
             <Label htmlFor="is_logistics_hub" className="cursor-pointer">
-              Mark as logistics hub (key fulfillment or consolidation point)
+              {t('places.form.fields.isLogisticsHub')}
             </Label>
           </div>
         </FormSection>
 
         <FormSection
-          title="Geo Coordinates & Scale"
-          description="Provide accurate coordinates and coverage for routing accuracy."
+          title={t('places.form.sections.geo.title')}
+          description={t('places.form.sections.geo.description')}
           icon={
             <div className="rounded-lg bg-rose-100 p-2 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
               <Compass className="h-4 w-4" />
@@ -299,55 +304,60 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
           }
           contentClassName="gap-6 md:grid-cols-3"
         >
-          <FormField id="latitude" label="Latitude" error={getFieldError('latitude')}>
+          <FormField id="latitude" label={t('places.form.fields.latitude.label')} error={getFieldError('latitude')}>
             <Input
               id="latitude"
               type="number"
               step="0.000001"
               value={data.latitude}
               onChange={event => handleFieldChange('latitude', event.target.value)}
-              placeholder="e.g., 8.980603"
+              placeholder={t('places.form.fields.latitude.placeholder')}
               className={getFieldError('latitude') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
 
-          <FormField id="longitude" label="Longitude" error={getFieldError('longitude')}>
+          <FormField id="longitude" label={t('places.form.fields.longitude.label')} error={getFieldError('longitude')}>
             <Input
               id="longitude"
               type="number"
               step="0.000001"
               value={data.longitude}
               onChange={event => handleFieldChange('longitude', event.target.value)}
-              placeholder="e.g., 38.757761"
+              placeholder={t('places.form.fields.longitude.placeholder')}
               className={getFieldError('longitude') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
 
-          <FormField id="elevation_m" label="Elevation (m)" error={getFieldError('elevation_m')}>
+          <FormField id="elevation_m" label={t('places.form.fields.elevation.label')} error={getFieldError('elevation_m')}>
             <Input
               id="elevation_m"
               type="number"
               step="0.01"
               value={data.elevation_m}
               onChange={event => handleFieldChange('elevation_m', event.target.value)}
-              placeholder="e.g., 2145"
+              placeholder={t('places.form.fields.elevation.placeholder')}
               className={getFieldError('elevation_m') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
 
-          <FormField id="population" label="Population" error={getFieldError('population')} className="md:col-span-1">
+          <FormField id="population" label={t('places.form.fields.population.label')} error={getFieldError('population')} className="md:col-span-1">
             <Input
               id="population"
               type="number"
               step="1"
               value={data.population}
               onChange={event => handleFieldChange('population', event.target.value)}
-              placeholder="e.g., 45000"
+              placeholder={t('places.form.fields.population.placeholder')}
               className={getFieldError('population') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
 
-          <FormField id="accessibility_score" label="Accessibility Score" error={getFieldError('accessibility_score')} className="md:col-span-1">
+          <FormField
+            id="accessibility_score"
+            label={t('places.form.fields.accessibility.label')}
+            error={getFieldError('accessibility_score')}
+            className="md:col-span-1"
+          >
             <Input
               id="accessibility_score"
               type="number"
@@ -356,15 +366,15 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
               step="0.01"
               value={data.accessibility_score}
               onChange={event => handleFieldChange('accessibility_score', event.target.value)}
-              placeholder="0 - 100"
+              placeholder={t('places.form.fields.accessibility.placeholder')}
               className={getFieldError('accessibility_score') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
         </FormSection>
 
         <FormSection
-          title="Operational Insights"
-          description="Document infrastructure readiness and road intelligence for dispatch teams."
+          title={t('places.form.sections.operations.title')}
+          description={t('places.form.sections.operations.description')}
           icon={
             <div className="rounded-lg bg-rose-100 p-2 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
               <FileText className="h-4 w-4" />
@@ -372,32 +382,40 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
           }
           contentClassName="gap-6 md:grid-cols-1"
         >
-          <FormField id="description" label="Description" error={getFieldError('description')}>
+          <FormField id="description" label={t('places.form.fields.description.label')} error={getFieldError('description')}>
             <Textarea
               id="description"
               value={data.description}
               onChange={event => handleFieldChange('description', event.target.value)}
-              placeholder="Purpose, services available, or notable details about this location"
+              placeholder={t('places.form.fields.description.placeholder')}
               className={`min-h-[100px] ${getFieldError('description') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
             />
           </FormField>
 
-          <FormField id="infrastructure_notes" label="Infrastructure Notes" error={getFieldError('infrastructure_notes')}>
+          <FormField
+            id="infrastructure_notes"
+            label={t('places.form.fields.infrastructureNotes.label')}
+            error={getFieldError('infrastructure_notes')}
+          >
             <Textarea
               id="infrastructure_notes"
               value={data.infrastructure_notes}
               onChange={event => handleFieldChange('infrastructure_notes', event.target.value)}
-              placeholder="Utilities, storage capacity, security, or communication coverage"
+              placeholder={t('places.form.fields.infrastructureNotes.placeholder')}
               className={`min-h-[120px] ${getFieldError('infrastructure_notes') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
             />
           </FormField>
 
-          <FormField id="road_quality_notes" label="Road Quality Notes" error={getFieldError('road_quality_notes')}>
+          <FormField
+            id="road_quality_notes"
+            label={t('places.form.fields.roadQualityNotes.label')}
+            error={getFieldError('road_quality_notes')}
+          >
             <Textarea
               id="road_quality_notes"
               value={data.road_quality_notes}
               onChange={event => handleFieldChange('road_quality_notes', event.target.value)}
-              placeholder="Surface conditions, seasonal risks, or alternate routes"
+              placeholder={t('places.form.fields.roadQualityNotes.placeholder')}
               className={`min-h-[120px] ${getFieldError('road_quality_notes') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
             />
           </FormField>
@@ -407,7 +425,7 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
           processing={processing}
           disabled={processing || Object.keys(frontendErrors).length > 0}
           cancelHref="/places"
-          submitLabel="Create Place"
+          submitLabel={t('places.form.create.submit')}
           isDirty={isDirty}
         />
       </form>

@@ -8,6 +8,7 @@ import '../../config/app_config.dart';
 import '../../models/driver.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_service.dart';
+import '../settings/settings_screen.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -834,75 +835,21 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
           ),
         ),
-        // Change Password
+        // Open Settings Screen
         _buildSettingTile(
           context,
-          icon: Icons.lock_outline,
-          title: 'Change Password',
-          subtitle: 'Update your account password',
-          onTap: () => _showChangePasswordBottomSheet(context),
-          iconColor: Colors.orange,
-        ),
-        const SizedBox(height: 8),
-
-        // Email Verification (if not verified)
-        if (_user!.emailVerifiedAt == null)
-          _buildSettingTile(
-            context,
-            icon: Icons.email_outlined,
-            title: 'Verify Email',
-            subtitle: 'Verify your email address',
-            onTap: () => _showEmailVerificationInfo(context),
-            iconColor: Colors.orange,
-          ),
-        if (_user!.emailVerifiedAt == null) const SizedBox(height: 8),
-
-        // Appearance/Theme
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: SwitchListTile(
-            secondary: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.indigo.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.brightness_6, color: Colors.indigo),
-            ),
-            title: const Text('Dark Mode'),
-            subtitle: const Text('Toggle dark/light theme'),
-            value: Theme.of(context).brightness == Brightness.dark,
-            onChanged: (value) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Theme toggle feature coming soon'),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 8),
-
-        // Notification Preferences
-        _buildSettingTile(
-          context,
-          icon: Icons.notifications_outlined,
-          title: 'Notification Preferences',
-          subtitle: 'Manage notification settings',
+          icon: Icons.settings,
+          title: 'App Settings',
+          subtitle: 'Manage app preferences and settings',
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Notification preferences coming soon'),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
             );
           },
-          iconColor: Colors.purple,
+          iconColor: Theme.of(context).primaryColor,
         ),
+        const SizedBox(height: 8),
       ],
     );
   }
@@ -1053,10 +1000,12 @@ class _ProfileTabState extends State<ProfileTab> {
   void _showEditProfileBottomSheet(BuildContext context) {
     final nameController = TextEditingController(text: _user!.name);
     final emailController = TextEditingController(text: _user!.email);
+    final mobileController = TextEditingController(text: _user!.mobile ?? '');
     final formKey = GlobalKey<FormState>();
     bool isSaving = false;
     String? nameError;
     String? emailError;
+    String? mobileError;
 
     showModalBottomSheet(
       context: context,
@@ -1150,6 +1099,44 @@ class _ProfileTabState extends State<ProfileTab> {
                       return null;
                     },
                   ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: mobileController,
+                    decoration: InputDecoration(
+                      labelText: 'Mobile Number (Optional)',
+                      prefixIcon: const Icon(Icons.phone),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      helperText: 'Enter your phone number',
+                      errorText: mobileError,
+                    ),
+                    keyboardType: TextInputType.phone,
+                    onChanged: (value) {
+                      if (value.trim().isNotEmpty) {
+                        // Basic phone validation - digits only, at least 9 digits
+                        final phoneRegex = RegExp(r'^\+?[0-9]{9,15}$');
+                        final cleanPhone = value.replaceAll(RegExp(r'[^\d+]'), '');
+                        if (!phoneRegex.hasMatch(cleanPhone)) {
+                          setDialogState(() => mobileError = 'Invalid phone number format');
+                        } else {
+                          setDialogState(() => mobileError = null);
+                        }
+                      } else {
+                        setDialogState(() => mobileError = null);
+                      }
+                    },
+                    validator: (value) {
+                      if (value != null && value.trim().isNotEmpty) {
+                        final phoneRegex = RegExp(r'^\+?[0-9]{9,15}$');
+                        final cleanPhone = value.replaceAll(RegExp(r'[^\d+]'), '');
+                        if (!phoneRegex.hasMatch(cleanPhone)) {
+                          return 'Invalid phone number format';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
@@ -1163,12 +1150,19 @@ class _ProfileTabState extends State<ProfileTab> {
 
                               setDialogState(() => isSaving = true);
                               try {
+                                final updateData = {
+                                  'name': nameController.text.trim(),
+                                  'email': emailController.text.trim().toLowerCase(),
+                                };
+                                
+                                // Add mobile if provided
+                                if (mobileController.text.trim().isNotEmpty) {
+                                  updateData['mobile'] = mobileController.text.trim();
+                                }
+                                
                                 final response = await _apiService.put(
                                   AppConfig.profileUpdateEndpoint,
-                                  data: {
-                                    'name': nameController.text.trim(),
-                                    'email': emailController.text.trim().toLowerCase(),
-                                  },
+                                  data: updateData,
                                 );
 
                                 if (response.statusCode == 200 && response.data['success'] == true) {

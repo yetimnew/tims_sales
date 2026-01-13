@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import { ArrowLeft, Edit, Trash2, MapPin, ThermometerSun, Warehouse, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { DetailPageLayout } from '@/components/detail/detail-page-layout';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { DetailSummaryGrid, type DetailSummaryItem } from '@/components/detail/detail-summary-grid';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
 
 interface Woreda {
   id: number;
@@ -65,41 +66,67 @@ interface PlacesShowProps {
 
 const getStatusBadgeStyles = (status: string) => (status === 'active' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200' : 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200');
 
-const formatNumber = (value?: number | string | null, options?: Intl.NumberFormatOptions) => {
-  if (value === null || value === undefined || value === '') return 'N/A';
-  const numeric = Number(value);
-  if (Number.isNaN(numeric)) return 'N/A';
-  return numeric.toLocaleString('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-    ...options,
-  });
-};
-
-const formatCoordinate = (value?: number | string | null) => {
-  if (value === null || value === undefined || value === '') return 'N/A';
-  const numeric = Number(value);
-  if (Number.isNaN(numeric)) return 'N/A';
-  return `${numeric.toFixed(5)}°`;
-};
-
-const formatDate = (value?: string | null) => {
-  if (!value) return 'N/A';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'N/A';
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-};
-
 export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const { hasPermission } = usePermissions();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const breadcrumbs = useMemo<BreadcrumbItem[]>(() => [{ title: 'Places', href: '/places' }, { title: place.name || `Place ${place.id}`, href: `/places/${place.id}` }], [place.id, place.name]);
+  const locale = i18n.language || 'en-US';
+  const notAvailableLabel = t('places.show.notAvailable');
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('places.title'), href: '/places' },
+      { title: place.name || t('places.show.fallbackTitle', { id: place.id }), href: `/places/${place.id}` },
+    ],
+    [place.id, place.name, t],
+  );
+
+  const formatNumber = useCallback(
+    (value?: number | string | null, options?: Intl.NumberFormatOptions) => {
+      if (value === null || value === undefined || value === '') return notAvailableLabel;
+      const numeric = Number(value);
+      if (Number.isNaN(numeric)) return notAvailableLabel;
+      return numeric.toLocaleString(locale, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+        ...options,
+      });
+    },
+    [locale, notAvailableLabel],
+  );
+
+  const formatCoordinate = useCallback(
+    (value?: number | string | null) => {
+      if (value === null || value === undefined || value === '') return notAvailableLabel;
+      const numeric = Number(value);
+      if (Number.isNaN(numeric)) return notAvailableLabel;
+      return `${numeric.toFixed(5)}°`;
+    },
+    [notAvailableLabel],
+  );
+
+  const formatDate = useCallback(
+    (value?: string | null) => {
+      if (!value) return notAvailableLabel;
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return notAvailableLabel;
+      return date.toLocaleDateString(locale, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    },
+    [locale, notAvailableLabel],
+  );
+
+  const statusLabel = useMemo(() => {
+    const normalized = place.status?.toLowerCase();
+    if (normalized === 'active') return t('places.status.active');
+    if (normalized === 'inactive') return t('places.status.inactive');
+    if (place.status) return place.status;
+    return t('places.status.unknown');
+  }, [place.status, t]);
 
   const activityLogRows = useMemo(
     () =>
@@ -116,10 +143,26 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
   );
 
   const kpiSummary: DetailSummaryItem[] = [
-    { label: 'Population', value: formatNumber(place.population), helper: 'Local residents' },
-    { label: 'Accessibility', value: formatNumber(place.accessibility_score), helper: 'Logistics score (0-100)' },
-    { label: 'Elevation', value: `${formatNumber(place.elevation_m)} m`, helper: 'Above sea level' },
-    { label: 'Hub Status', value: place.is_logistics_hub ? 'Yes' : 'No', helper: 'Logistics hub designation' },
+    {
+      label: t('places.show.kpi.population.label'),
+      value: formatNumber(place.population),
+      helper: t('places.show.kpi.population.helper'),
+    },
+    {
+      label: t('places.show.kpi.accessibility.label'),
+      value: formatNumber(place.accessibility_score),
+      helper: t('places.show.kpi.accessibility.helper'),
+    },
+    {
+      label: t('places.show.kpi.elevation.label'),
+      value: `${formatNumber(place.elevation_m)} m`,
+      helper: t('places.show.kpi.elevation.helper'),
+    },
+    {
+      label: t('places.show.kpi.hubStatus.label'),
+      value: place.is_logistics_hub ? t('places.show.kpi.hubStatus.yes') : t('places.show.kpi.hubStatus.no'),
+      helper: t('places.show.kpi.hubStatus.helper'),
+    },
   ];
 
   const confirmDelete = () => {
@@ -127,14 +170,20 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
     router.delete(`/places/${place.id}`, {
       preserveScroll: true,
       onSuccess: () => {
-        toast({ title: '✅ Place Deleted', description: `${place.name} was removed successfully.` });
+        toast({
+          title: t('places.delete.successTitle'),
+          description: t('places.delete.successDescription', { name: place.name }),
+        });
         setDeleteDialogOpen(false);
         setIsDeleting(false);
       },
       onError: errors => {
-        const errorMessage = errors && typeof errors === 'object' && 'message' in errors ? String(errors.message) : 'Unable to delete the place. Try again later.';
+        const errorMessage =
+          errors && typeof errors === 'object' && 'message' in errors
+            ? String(errors.message)
+            : t('places.delete.failedDescription');
         toast({
-          title: '❌ Delete Failed',
+          title: t('places.delete.failedTitle'),
           description: errorMessage,
           variant: 'destructive',
         });
@@ -146,24 +195,24 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
   return (
     <DetailPageLayout
       title={place.name}
-      subtitle={place.description || 'Granular service delivery location and logistics waypoint.'}
+      subtitle={place.description || t('places.show.subtitle')}
       breadcrumbs={breadcrumbs}
       icon={<MapPin className="h-6 w-6 text-purple-700 dark:text-purple-300" />}
       iconWrapperClassName="bg-purple-100 dark:bg-purple-900/30"
       leading={
         <Button variant="outline" size="sm" onClick={() => router.get('/places')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Places
+          {t('places.show.actions.back')}
         </Button>
       }
       actions={
         <>
           <div className="flex flex-wrap gap-2">
-            <Badge className={getStatusBadgeStyles(place.status)}>{place.status.charAt(0).toUpperCase() + place.status.slice(1)}</Badge>
+            <Badge className={getStatusBadgeStyles(place.status)}>{statusLabel}</Badge>
             {place.is_logistics_hub && (
               <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200">
                 <Warehouse className="h-3.5 w-3.5 mr-1" />
-                Logistics Hub
+                {t('places.show.logisticsHub')}
               </Badge>
             )}
             {place.woreda && (
@@ -178,14 +227,14 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
                 <Button variant="outline" asChild>
                   <Link href={`/places/${place.id}/edit`}>
                     <Edit className="h-4 w-4 mr-2" />
-                    Edit
+                    {t('places.actions.edit')}
                   </Link>
                 </Button>
               )}
               {hasPermission('places.destroy') && (
                 <Button variant="outline" onClick={() => setDeleteDialogOpen(true)} className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50">
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
+                  {t('places.actions.delete')}
                 </Button>
               )}
             </div>
@@ -197,40 +246,48 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
 
       <div className="grid gap-6 lg:grid-cols-[1fr,20rem]">
         <div className="space-y-6">
-          <DetailSectionCard title="Place Overview" description="Identifiers and geographic data" icon={<MapPin className="h-5 w-5" />}>
+          <DetailSectionCard
+            title={t('places.show.sections.overview.title')}
+            description={t('places.show.sections.overview.description')}
+            icon={<MapPin className="h-5 w-5" />}
+          >
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-lg border p-4">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Place Code</p>
-                <p className="mt-2 text-sm font-semibold">{place.code || 'N/A'}</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('places.show.fields.code')}</p>
+                <p className="mt-2 text-sm font-semibold">{place.code || notAvailableLabel}</p>
               </div>
               <div className="rounded-lg border p-4">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Woreda</p>
-                <p className="mt-2 text-sm font-semibold">{place.woreda.name}</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('places.show.fields.woreda')}</p>
+                <p className="mt-2 text-sm font-semibold">{place.woreda?.name || notAvailableLabel}</p>
               </div>
               <div className="rounded-lg border p-4">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Coordinates</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('places.show.fields.coordinates')}</p>
                 <p className="mt-2 text-sm font-semibold">
                   {formatCoordinate(place.latitude)} / {formatCoordinate(place.longitude)}
                 </p>
               </div>
               <div className="rounded-lg border p-4">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Elevation</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('places.show.fields.elevation')}</p>
                 <p className="mt-2 text-sm font-semibold">{formatNumber(place.elevation_m)} m</p>
               </div>
             </div>
           </DetailSectionCard>
 
           {(place.infrastructure_notes || place.road_quality_notes) && (
-            <DetailSectionCard title="Infrastructure Notes" description="Accessibility and road conditions" icon={<ThermometerSun className="h-5 w-5" />}>
+            <DetailSectionCard
+              title={t('places.show.sections.infrastructure.title')}
+              description={t('places.show.sections.infrastructure.description')}
+              icon={<ThermometerSun className="h-5 w-5" />}
+            >
               {place.infrastructure_notes && (
                 <div className="rounded-lg border p-4">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide">Infrastructure</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide">{t('places.show.fields.infrastructure')}</h3>
                   <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{place.infrastructure_notes}</p>
                 </div>
               )}
               {place.road_quality_notes && (
                 <div className="rounded-lg border p-4">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide">Road Quality</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide">{t('places.show.fields.roadQuality')}</h3>
                   <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{place.road_quality_notes}</p>
                 </div>
               )}
@@ -238,7 +295,11 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
           )}
 
           {activityLogRows.length > 0 && (
-            <DetailSectionCard title="Activity History" description="Auditable timeline" icon={<ShieldCheck className="h-5 w-5" />}>
+            <DetailSectionCard
+              title={t('places.show.sections.history.title')}
+              description={t('places.show.sections.history.description')}
+              icon={<ShieldCheck className="h-5 w-5" />}
+            >
               <ActivityLogTable logs={activityLogRows} />
             </DetailSectionCard>
           )}
@@ -247,16 +308,16 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Record Info</CardTitle>
-              <CardDescription>System tracking</CardDescription>
+              <CardTitle className="text-lg">{t('places.show.sections.recordInfo.title')}</CardTitle>
+              <CardDescription>{t('places.show.sections.recordInfo.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <div className="flex items-center justify-between">
-                <span>Created</span>
+                <span>{t('places.show.fields.created')}</span>
                 <span>{formatDate(place.created_at)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span>Last Updated</span>
+                <span>{t('places.show.fields.updated')}</span>
                 <span>{formatDate(place.updated_at)}</span>
               </div>
             </CardContent>
@@ -264,7 +325,15 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
         </div>
       </div>
 
-      <DeleteConfirmationDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} title="Delete Place" description="Are you sure you want to delete this place? This action cannot be undone." itemName={place.name} onConfirm={confirmDelete} isLoading={isDeleting} />
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title={t('places.delete.title')}
+        description={t('places.delete.description')}
+        itemName={place.name}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+      />
     </DetailPageLayout>
   );
 }

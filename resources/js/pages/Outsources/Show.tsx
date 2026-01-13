@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { usePermissions } from '@/hooks/use-permissions';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, BarChart3, Building2, CircleDot, Edit, Mail, MapPin, Phone, Trash2, UserRound, Activity } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { DetailPageLayout } from '@/components/detail/detail-page-layout';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { DetailSummaryGrid, type DetailSummaryItem } from '@/components/detail/detail-summary-grid';
@@ -51,46 +52,6 @@ interface OutsourcesShowProps {
   recentPerformances: RecentPerformance[];
 }
 
-const formatCurrency = (value: number | null | undefined) => {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 2,
-  }).format(value);
-};
-
-const formatDistance = (value: number | null | undefined) => {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  return `${Number(value).toLocaleString(undefined, { maximumFractionDigits: 1 })} km`;
-};
-
-const formatVolume = (value: number | null | undefined) => {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  return `${Number(value).toLocaleString(undefined, { maximumFractionDigits: 1 })} MT`;
-};
-
-const formatDate = (value: string | null | undefined) => {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-};
-
-const formatStatus = (status: string | null | undefined) => {
-  if (!status) return 'Unknown';
-  return status
-    .replace(/_/g, ' ')
-    .toLowerCase()
-    .split(' ')
-    .map(chunk => chunk.charAt(0).toUpperCase() + chunk.slice(1))
-    .join(' ');
-};
-
 const getStatusBadgeClasses = (status: string | null | undefined) => {
   switch (status) {
     case 'active':
@@ -118,16 +79,150 @@ const getTripStatusClasses = (status: string | null | undefined) => {
 };
 
 export default function OutsourcesShow({ outsource, metrics, recentPerformances }: OutsourcesShowProps) {
-  const breadcrumbs = useMemo<BreadcrumbItem[]>(() => [{ title: 'Outsourcing', href: '/outsources' }, { title: outsource.name || `Vendor ${outsource.id}`, href: `/outsources/${outsource.id}` }], [outsource.id, outsource.name]);
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language || undefined;
+  const notAvailableLabel = t('outsources.show.fallbacks.notAvailable');
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('outsources.title'), href: '/outsources' },
+      {
+        title: outsource.name || t('outsources.form.edit.fallbackName', { id: outsource.id }),
+        href: `/outsources/${outsource.id}`,
+      },
+    ],
+    [outsource.id, outsource.name, t],
+  );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { hasPermission } = usePermissions();
 
+  const formatCurrency = useCallback(
+    (value: number | null | undefined) => {
+      if (value === null || value === undefined || Number.isNaN(value)) {
+        return notAvailableLabel;
+      }
+
+      try {
+        return new Intl.NumberFormat(locale, {
+          style: 'currency',
+          currency: 'USD',
+          maximumFractionDigits: 2,
+        }).format(value);
+      } catch {
+        return value.toString();
+      }
+    },
+    [locale, notAvailableLabel],
+  );
+
+  const formatDistance = useCallback(
+    (value: number | null | undefined) => {
+      if (value === null || value === undefined || Number.isNaN(value)) {
+        return notAvailableLabel;
+      }
+
+      return t('outsources.show.metrics.distance', {
+        value: Number(value).toLocaleString(locale, { maximumFractionDigits: 1 }),
+      });
+    },
+    [locale, notAvailableLabel, t],
+  );
+
+  const formatVolume = useCallback(
+    (value: number | null | undefined) => {
+      if (value === null || value === undefined || Number.isNaN(value)) {
+        return notAvailableLabel;
+      }
+
+      return t('outsources.show.metrics.volume', {
+        value: Number(value).toLocaleString(locale, { maximumFractionDigits: 1 }),
+      });
+    },
+    [locale, notAvailableLabel, t],
+  );
+
+  const formatCount = useCallback(
+    (value: number | null | undefined) => {
+      if (value === null || value === undefined || Number.isNaN(value)) {
+        return notAvailableLabel;
+      }
+
+      return Number(value).toLocaleString(locale);
+    },
+    [locale, notAvailableLabel],
+  );
+
+  const formatDate = useCallback(
+    (value: string | null | undefined) => {
+      if (!value) {
+        return notAvailableLabel;
+      }
+
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return notAvailableLabel;
+      }
+
+      return new Intl.DateTimeFormat(locale, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }).format(date);
+    },
+    [locale, notAvailableLabel],
+  );
+
+  const formatStatus = useCallback(
+    (status: string | null | undefined) => {
+      if (!status) {
+        return t('outsources.status.unknown');
+      }
+
+      const normalized = status.toLowerCase();
+      const translations: Record<string, string> = {
+        active: t('outsources.status.active'),
+        inactive: t('outsources.status.inactive'),
+        completed: t('outsources.tripStatus.completed'),
+        'in-progress': t('outsources.tripStatus.inProgress'),
+        cancelled: t('outsources.tripStatus.cancelled'),
+        cancelled_by_vendor: t('outsources.tripStatus.cancelledByVendor'),
+      };
+
+      if (translations[normalized]) {
+        return translations[normalized];
+      }
+
+      return status
+        .replace(/_/g, ' ')
+        .toLowerCase()
+        .split(' ')
+        .map(chunk => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+        .join(' ');
+    },
+    [t],
+  );
+
   const kpiSummary: DetailSummaryItem[] = [
-    { label: 'Total Trips', value: metrics.totalTrips, helper: 'Cumulative trips executed' },
-    { label: 'Active Trips', value: metrics.activeTrips, helper: 'Currently in progress' },
-    { label: 'Distance Covered', value: formatDistance(metrics.totalDistance), helper: 'Kilometers logged' },
-    { label: 'Total Spend', value: formatCurrency(metrics.totalCost), helper: 'Aggregate cost allocation' },
+    {
+      label: t('outsources.show.stats.totalTrips.label'),
+      value: formatCount(metrics.totalTrips),
+      helper: t('outsources.show.stats.totalTrips.helper'),
+    },
+    {
+      label: t('outsources.show.stats.activeTrips.label'),
+      value: formatCount(metrics.activeTrips),
+      helper: t('outsources.show.stats.activeTrips.helper'),
+    },
+    {
+      label: t('outsources.show.stats.distanceCovered.label'),
+      value: formatDistance(metrics.totalDistance),
+      helper: t('outsources.show.stats.distanceCovered.helper'),
+    },
+    {
+      label: t('outsources.show.stats.totalSpend.label'),
+      value: formatCurrency(metrics.totalCost),
+      helper: t('outsources.show.stats.totalSpend.helper'),
+    },
   ];
 
   const canUpdate = hasPermission('outsources.update');
@@ -141,15 +236,16 @@ export default function OutsourcesShow({ outsource, metrics, recentPerformances 
         setDeleteDialogOpen(false);
         setIsDeleting(false);
         toast({
-          title: '✅ Vendor Deleted',
-          description: `${outsource.name} has been removed successfully.`,
+          title: t('outsources.delete.successTitle'),
+          description: t('outsources.delete.successDescription', { name: outsource.name }),
         });
       },
       onError: errors => {
         setIsDeleting(false);
-        const errorMessage = errors && typeof errors === 'object' && 'message' in errors ? String(errors.message) : 'An unexpected error occurred while deleting the vendor.';
+        const fallback = t('outsources.delete.failedDescription');
+        const errorMessage = errors && typeof errors === 'object' && 'message' in errors ? String(errors.message) : fallback;
         toast({
-          title: '❌ Delete Failed',
+          title: t('outsources.delete.failedTitle'),
           description: errorMessage,
           variant: 'destructive',
         });
@@ -160,16 +256,16 @@ export default function OutsourcesShow({ outsource, metrics, recentPerformances 
   return (
     <DetailPageLayout
       title={outsource.name}
-      subtitle="Vendor dossier & performance insight"
+      subtitle={t('outsources.show.subtitle')}
       breadcrumbs={breadcrumbs}
-      headTitle={`Vendor Overview - ${outsource.name}`}
+      headTitle={t('outsources.show.headTitle', { name: outsource.name })}
       icon={<Building2 className="h-6 w-6 text-emerald-700 dark:text-emerald-300" />}
       iconWrapperClassName="bg-emerald-100 dark:bg-emerald-900/30"
       leading={
         <Button variant="ghost" size="sm" asChild>
           <Link href="/outsources">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Vendors
+            {t('outsources.actions.back')}
           </Link>
         </Button>
       }
@@ -181,20 +277,20 @@ export default function OutsourcesShow({ outsource, metrics, recentPerformances 
               {outsource.service_type}
             </Badge>
           )}
-          <Badge variant="outline">{outsource.outsource_performances_count ?? 0} recorded trips</Badge>
+          <Badge variant="outline">{t('outsources.show.badges.trips', { count: formatCount(outsource.outsource_performances_count) })}</Badge>
           <div className="flex gap-2">
             {canUpdate && (
               <Button variant="outline" asChild>
                 <Link href={`/outsources/${outsource.id}/edit`}>
                   <Edit className="h-4 w-4 mr-2" />
-                  Edit
+                  {t('outsources.actions.edit')}
                 </Link>
               </Button>
             )}
             {canDelete && (
               <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                {t('outsources.actions.delete')}
               </Button>
             )}
           </div>
@@ -204,37 +300,41 @@ export default function OutsourcesShow({ outsource, metrics, recentPerformances 
       <DetailSummaryGrid items={kpiSummary} />
 
       <div className="grid gap-6 lg:grid-cols-[1fr,20rem]">
-        <DetailSectionCard title="Recent Performance" description="Dispatch history snapshot - the five most recent assignments" icon={<BarChart3 className="h-5 w-5" />}>
+        <DetailSectionCard
+          title={t('outsources.show.recent.title')}
+          description={t('outsources.show.recent.description')}
+          icon={<BarChart3 className="h-5 w-5" />}
+        >
           {recentPerformances.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed p-10 text-center">
               <CircleDot className="mb-3 h-10 w-10 text-muted-foreground" />
-              <p className="text-base font-medium">No dispatches logged yet</p>
-              <p className="mt-1 text-sm text-muted-foreground">Once operations are recorded, they'll appear here for rapid assessment.</p>
+              <p className="text-base font-medium">{t('outsources.show.recent.emptyTitle')}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t('outsources.show.recent.emptyDescription')}</p>
             </div>
           ) : (
             <div className="overflow-hidden rounded-xl border">
               <Table>
                 <TableHeader>
                   <TableRow className="text-xs uppercase">
-                    <TableHead>Trip #</TableHead>
-                    <TableHead>Route</TableHead>
-                    <TableHead>Dispatch Date</TableHead>
-                    <TableHead className="text-right">Distance</TableHead>
-                    <TableHead className="text-right">Cargo</TableHead>
-                    <TableHead className="text-right">Cost</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
+                    <TableHead>{t('outsources.show.table.trip')}</TableHead>
+                    <TableHead>{t('outsources.show.table.route')}</TableHead>
+                    <TableHead>{t('outsources.show.table.dispatchDate')}</TableHead>
+                    <TableHead className="text-right">{t('outsources.show.table.distance')}</TableHead>
+                    <TableHead className="text-right">{t('outsources.show.table.cargo')}</TableHead>
+                    <TableHead className="text-right">{t('outsources.show.table.cost')}</TableHead>
+                    <TableHead className="text-right">{t('outsources.show.table.status')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {recentPerformances.map(performance => (
                     <TableRow key={performance.id}>
-                      <TableCell className="font-medium">{performance.trip_number ?? '—'}</TableCell>
+                      <TableCell className="font-medium">{performance.trip_number ?? notAvailableLabel}</TableCell>
                       <TableCell>
                         <div className="flex flex-col text-xs">
                           <span className="font-medium">
-                            {performance.from_place ?? '—'}
+                            {performance.from_place ?? notAvailableLabel}
                             <span className="mx-1 text-muted-foreground">→</span>
-                            {performance.to_place ?? '—'}
+                            {performance.to_place ?? notAvailableLabel}
                           </span>
                         </div>
                       </TableCell>
@@ -254,44 +354,52 @@ export default function OutsourcesShow({ outsource, metrics, recentPerformances 
         </DetailSectionCard>
 
         <div className="space-y-6">
-          <DetailSectionCard title="Contact Information" description="Coordination details for smooth dispatch communication" icon={<UserRound className="h-4 w-4" />}>
+          <DetailSectionCard
+            title={t('outsources.show.contact.title')}
+            description={t('outsources.show.contact.description')}
+            icon={<UserRound className="h-4 w-4" />}
+          >
             <div className="space-y-4 text-sm">
               <div className="rounded-lg border p-3">
-                <p className="text-xs uppercase text-muted-foreground">Primary Contact</p>
-                <p className="mt-2 text-base font-semibold">{outsource.contact_person ?? '—'}</p>
+                <p className="text-xs uppercase text-muted-foreground">{t('outsources.show.contact.primaryLabel')}</p>
+                <p className="mt-2 text-base font-semibold">{outsource.contact_person ?? notAvailableLabel}</p>
               </div>
               <div className="flex items-start gap-3 rounded-lg border p-3">
                 <Phone className="mt-0.5 h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Phone</p>
-                  <p className="text-sm">{outsource.phone ?? 'No phone on record'}</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">{t('outsources.show.contact.phoneLabel')}</p>
+                  <p className="text-sm">{outsource.phone ?? t('outsources.show.contact.phoneFallback')}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 rounded-lg border p-3">
                 <Mail className="mt-0.5 h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Email</p>
-                  <p className="break-all text-sm">{outsource.email ?? 'No email on record'}</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">{t('outsources.show.contact.emailLabel')}</p>
+                  <p className="break-all text-sm">{outsource.email ?? t('outsources.show.contact.emailFallback')}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 rounded-lg border p-3">
                 <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Dispatch Hub</p>
-                  <p className="text-sm">{outsource.address ?? 'No address provided'}</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">{t('outsources.show.contact.addressLabel')}</p>
+                  <p className="text-sm">{outsource.address ?? t('outsources.show.contact.addressFallback')}</p>
                 </div>
               </div>
             </div>
           </DetailSectionCard>
 
-          <DetailSectionCard title="Record Timeline" description="Audit checkpoints" icon={<Activity className="h-4 w-4" />}>
+          <DetailSectionCard
+            title={t('outsources.show.timeline.title')}
+            description={t('outsources.show.timeline.description')}
+            icon={<Activity className="h-4 w-4" />}
+          >
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Created</span>
+                <span className="text-muted-foreground">{t('outsources.show.timeline.created')}</span>
                 <span className="font-semibold">{formatDate(outsource.created_at)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Last Updated</span>
+                <span className="text-muted-foreground">{t('outsources.show.timeline.updated')}</span>
                 <span className="font-semibold">{formatDate(outsource.updated_at)}</span>
               </div>
             </div>
@@ -299,7 +407,14 @@ export default function OutsourcesShow({ outsource, metrics, recentPerformances 
         </div>
       </div>
 
-      <DeleteConfirmationDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} title="Delete vendor?" description="This will permanently remove the vendor profile. Linked dispatch history will remain for auditing purposes." onConfirm={handleDeleteConfirm} isLoading={isDeleting} />
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title={t('outsources.delete.title')}
+        description={t('outsources.delete.detailDescription')}
+        onConfirm={handleDeleteConfirm}
+        isLoading={isDeleting}
+      />
     </DetailPageLayout>
   );
 }

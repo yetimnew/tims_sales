@@ -15,11 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { InteractiveMap } from '@/components/InteractiveMap';
 import type { BreadcrumbItem } from '@/types';
-
-const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Distances', href: '/distances' },
-  { title: 'Create', href: '/distances/create' },
-];
+import { useTranslation } from 'react-i18next';
 
 interface Place {
   id: number;
@@ -42,6 +38,7 @@ interface DistancesCreateProps {
 type ValidatableField = 'from_place_id' | 'to_place_id' | 'distance_km' | 'estimated_time_hours';
 
 export default function DistancesCreate({ places }: DistancesCreateProps) {
+  const { t } = useTranslation();
   const placesWithCoordinates = useMemo(
     () => places.filter(place => place.latitude !== undefined && place.longitude !== undefined).length,
     [places],
@@ -83,24 +80,24 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
 
     switch (field) {
       case 'from_place_id':
-        if (!value) fieldErrors.from_place_id = 'From place is required';
+        if (!value) fieldErrors.from_place_id = t('distances.form.validation.fromRequired');
         break;
       case 'to_place_id':
-        if (!value) fieldErrors.to_place_id = 'To place is required';
+        if (!value) fieldErrors.to_place_id = t('distances.form.validation.toRequired');
         else if (value === data.from_place_id) {
-          fieldErrors.to_place_id = 'To place must be different from from place';
+          fieldErrors.to_place_id = t('distances.form.validation.toDifferent');
         }
         break;
       case 'distance_km':
-        if (!value) fieldErrors.distance_km = 'Distance is required';
+        if (!value) fieldErrors.distance_km = t('distances.form.validation.distanceRequired');
         else if (Number.isNaN(Number(value)) || Number(value) <= 0) {
-          fieldErrors.distance_km = 'Distance must be a positive number';
+          fieldErrors.distance_km = t('distances.form.validation.distancePositive');
         }
         break;
       case 'estimated_time_hours':
-        if (!value) fieldErrors.estimated_time_hours = 'Estimated time is required';
+        if (!value) fieldErrors.estimated_time_hours = t('distances.form.validation.timeRequired');
         else if (Number.isNaN(Number(value)) || Number(value) <= 0) {
-          fieldErrors.estimated_time_hours = 'Estimated time must be a positive number';
+          fieldErrors.estimated_time_hours = t('distances.form.validation.timePositive');
         }
         break;
       default:
@@ -200,8 +197,8 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
     if (Object.keys(submissionErrors).length > 0) {
       setFrontendErrors(prev => ({ ...prev, ...submissionErrors }));
       toast({
-        title: '⚠️ Validation Error',
-        description: 'Please resolve the highlighted fields before submitting.',
+        title: t('distances.form.validation.toastTitle'),
+        description: t('distances.form.validation.resolve'),
         variant: 'destructive',
       });
       return;
@@ -219,29 +216,38 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
         setCalculatedTime(0);
         setIsDirty(false);
         toast({
-          title: '✅ Distance Record Created',
-          description: 'The route distance has been registered successfully.',
+          title: t('distances.form.create.successTitle'),
+          description: t('distances.form.create.successDescription'),
         });
       },
     });
   };
 
   const distanceDisplay = data.distance_km
-    ? `${Number(data.distance_km).toLocaleString(undefined, { maximumFractionDigits: 2 })} km`
-    : 'Awaiting route';
+    ? t('distances.form.create.stats.currentDraftValue', {
+        value: Number(data.distance_km).toLocaleString(undefined, { maximumFractionDigits: 2 }),
+      })
+    : t('distances.form.create.stats.currentDraftFallback');
   const timeDisplay = data.estimated_time_hours
-    ? `${Number(data.estimated_time_hours).toFixed(1)} hrs estimated`
-    : 'Draw a route on the map';
+    ? t('distances.form.create.stats.currentDraftTime', { value: Number(data.estimated_time_hours).toFixed(1) })
+    : t('distances.form.create.stats.currentDraftTimeFallback');
   const fromPlaceError = getFieldError('from_place_id');
   const toPlaceError = getFieldError('to_place_id');
   const distanceError = getFieldError('distance_km');
   const estimatedTimeError = getFieldError('estimated_time_hours');
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('distances.title'), href: '/distances' },
+      { title: t('distances.form.create.breadcrumb'), href: '/distances/create' },
+    ],
+    [t],
+  );
 
   return (
     <FormPageLayout
-      title="Create Distance"
-      headTitle="Create Distance"
-      description="Capture mileage and travel time between key logistics locations."
+      title={t('distances.form.create.title')}
+      headTitle={t('distances.form.create.headTitle')}
+      description={t('distances.form.create.description')}
       breadcrumbs={breadcrumbs}
       icon={<MapPin className="h-5 w-5" />}
       headerAside={
@@ -249,13 +255,13 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
           <Button variant="ghost" size="sm" asChild>
             <Link href="/distances">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Distances
+              {t('distances.form.create.backToList')}
             </Link>
           </Button>
           {isDirty && <UnsavedChangesBadge />}
           <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
             <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-            Route Planning
+            {t('distances.form.create.badge')}
           </div>
         </>
       }
@@ -263,17 +269,27 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
       <div className="flex flex-1 flex-col gap-6 overflow-hidden p-6">
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-lg border border-emerald-200 bg-white/90 p-4 shadow-sm dark:border-emerald-900/40 dark:bg-emerald-950/20">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Places Available</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t('distances.form.create.stats.placesAvailable')}
+            </p>
             <p className="mt-1 text-lg font-semibold text-emerald-700 dark:text-emerald-300">{places.length}</p>
-            <p className="text-xs text-muted-foreground">{placesWithCoordinates} have map coordinates</p>
+            <p className="text-xs text-muted-foreground">
+              {t('distances.form.create.stats.withCoordinates', { count: placesWithCoordinates })}
+            </p>
           </div>
           <div className="rounded-lg border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Coverage</p>
-            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">{coordinateCoverage}% geocoded</p>
-            <p className="text-xs text-muted-foreground">Ready for route planning</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t('distances.form.create.stats.coverage')}
+            </p>
+            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+              {t('distances.form.create.stats.coverageValue', { value: coordinateCoverage })}
+            </p>
+            <p className="text-xs text-muted-foreground">{t('distances.form.create.stats.ready')}</p>
           </div>
           <div className="rounded-lg border border-blue-200 bg-white/90 p-4 shadow-sm dark:border-blue-900/40 dark:bg-blue-950/20">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Draft</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t('distances.form.create.stats.currentDraft')}
+            </p>
             <p className="mt-1 text-lg font-semibold text-blue-700 dark:text-blue-300">{distanceDisplay}</p>
             <p className="text-xs text-muted-foreground">{timeDisplay}</p>
           </div>
@@ -283,31 +299,31 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
           <TabsList className="grid w-full grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-800 sm:grid-cols-3">
             <TabsTrigger value="form" className="flex items-center justify-center gap-2">
               <Save className="h-4 w-4" />
-              Form
+              {t('distances.form.create.tabs.form')}
             </TabsTrigger>
             <TabsTrigger value="map" className="flex items-center justify-center gap-2">
               <Navigation className="h-4 w-4" />
-              Map
+              {t('distances.form.create.tabs.map')}
             </TabsTrigger>
             <TabsTrigger value="preview" className="flex items-center justify-center gap-2">
               <Route className="h-4 w-4" />
-              Preview
+              {t('distances.form.create.tabs.preview')}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="form" className="mt-4 flex flex-1 flex-col overflow-hidden">
             <Card className="flex flex-1 flex-col border-0 shadow-lg">
               <CardHeader>
-                <CardTitle>Distance Information</CardTitle>
-                <CardDescription>Select the endpoints and confirm the calculated metrics.</CardDescription>
+                <CardTitle>{t('distances.form.create.form.title')}</CardTitle>
+                <CardDescription>{t('distances.form.create.form.description')}</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
                 {hasErrors && (
                   <div className="px-6 pt-6">
-                    <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
-                    </Alert>
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{t('distances.form.validation.resolveForm')}</AlertDescription>
+                      </Alert>
                   </div>
                 )}
 
@@ -319,10 +335,10 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                 >
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="from_place_id">From Place *</Label>
+                      <Label htmlFor="from_place_id">{t('distances.form.fields.fromPlace.label')}</Label>
                       <Select value={data.from_place_id} onValueChange={handleFromPlaceChange}>
                         <SelectTrigger id="from_place_id" className={fromPlaceError ? 'border-red-500' : ''}>
-                          <SelectValue placeholder="Select from place" />
+                          <SelectValue placeholder={t('distances.form.fields.fromPlace.placeholder')} />
                         </SelectTrigger>
                         <SelectContent>
                           {places.map(place => (
@@ -336,10 +352,10 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="to_place_id">To Place *</Label>
+                      <Label htmlFor="to_place_id">{t('distances.form.fields.toPlace.label')}</Label>
                       <Select value={data.to_place_id} onValueChange={handleToPlaceChange}>
                         <SelectTrigger id="to_place_id" className={toPlaceError ? 'border-red-500' : ''}>
-                          <SelectValue placeholder="Select to place" />
+                          <SelectValue placeholder={t('distances.form.fields.toPlace.placeholder')} />
                         </SelectTrigger>
                         <SelectContent>
                           {places
@@ -355,7 +371,7 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="distance_km">Distance (KM) *</Label>
+                      <Label htmlFor="distance_km">{t('distances.form.fields.distance.label')}</Label>
                       <Input
                         id="distance_km"
                         type="number"
@@ -363,19 +379,19 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                         min="0"
                         value={data.distance_km}
                         onChange={e => handleManualDistanceChange(e.target.value)}
-                        placeholder="Auto-calculated from map"
+                        placeholder={t('distances.form.fields.distance.placeholder')}
                         readOnly={routePoints.length > 0}
                       />
                       {calculatedDistance > 0 ? (
-                        <p className="text-sm text-green-600">✓ Calculated from drawn route</p>
+                        <p className="text-sm text-green-600">{t('distances.form.fields.distance.calculated')}</p>
                       ) : (
-                        <p className="text-xs text-muted-foreground">Enter manually if you skipped drawing the route.</p>
+                        <p className="text-xs text-muted-foreground">{t('distances.form.fields.distance.manual')}</p>
                       )}
                       {distanceError && <p className="text-sm text-destructive">{distanceError}</p>}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="estimated_time_hours">Estimated Time (Hours) *</Label>
+                      <Label htmlFor="estimated_time_hours">{t('distances.form.fields.time.label')}</Label>
                       <Input
                         id="estimated_time_hours"
                         type="number"
@@ -383,33 +399,33 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                         min="0"
                         value={data.estimated_time_hours}
                         onChange={e => handleManualTimeChange(e.target.value)}
-                        placeholder="Auto-calculated from route"
+                        placeholder={t('distances.form.fields.time.placeholder')}
                         readOnly={routePoints.length > 0}
                       />
                       {calculatedTime > 0 ? (
-                        <p className="text-sm text-green-600">✓ Based on route speed assumptions</p>
+                        <p className="text-sm text-green-600">{t('distances.form.fields.time.calculated')}</p>
                       ) : (
-                        <p className="text-xs text-muted-foreground">Provide an estimate when no map route is available.</p>
+                        <p className="text-xs text-muted-foreground">{t('distances.form.fields.time.manual')}</p>
                       )}
                       {estimatedTimeError && <p className="text-sm text-destructive">{estimatedTimeError}</p>}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="route_type">Route Type</Label>
+                      <Label htmlFor="route_type">{t('distances.form.fields.routeType.label')}</Label>
                       <Select value={data.route_type} onValueChange={value => { setData('route_type', value); setIsDirty(true); }}>
                         <SelectTrigger id="route_type">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="primary">Primary Route (80 km/h)</SelectItem>
-                          <SelectItem value="secondary">Secondary Route (50 km/h)</SelectItem>
-                          <SelectItem value="alternative">Alternative Route (40 km/h)</SelectItem>
+                          <SelectItem value="primary">{t('distances.form.fields.routeType.primary')}</SelectItem>
+                          <SelectItem value="secondary">{t('distances.form.fields.routeType.secondary')}</SelectItem>
+                          <SelectItem value="alternative">{t('distances.form.fields.routeType.alternative')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="road_condition_factor">Road Condition Factor</Label>
+                      <Label htmlFor="road_condition_factor">{t('distances.form.fields.roadCondition.label')}</Label>
                       <Input
                         id="road_condition_factor"
                         type="number"
@@ -418,28 +434,28 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                         max="2.0"
                         value={data.road_condition_factor}
                         onChange={e => { setData('road_condition_factor', e.target.value); setIsDirty(true); }}
-                        placeholder="1.0 = normal, 1.5 = poor condition"
+                        placeholder={t('distances.form.fields.roadCondition.placeholder')}
                       />
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="route_description">Route Description</Label>
+                      <Label htmlFor="route_description">{t('distances.form.fields.routeDescription.label')}</Label>
                       <Textarea
                         id="route_description"
                         value={data.route_description}
                         onChange={e => { setData('route_description', e.target.value); setIsDirty(true); }}
-                        placeholder="Describe the route..."
+                        placeholder={t('distances.form.fields.routeDescription.placeholder')}
                         rows={3}
                       />
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="route_notes">Route Notes</Label>
+                      <Label htmlFor="route_notes">{t('distances.form.fields.routeNotes.label')}</Label>
                       <Textarea
                         id="route_notes"
                         value={data.route_notes}
                         onChange={e => { setData('route_notes', e.target.value); setIsDirty(true); }}
-                        placeholder="Additional notes about the route..."
+                        placeholder={t('distances.form.fields.routeNotes.placeholder')}
                         rows={3}
                       />
                     </div>
@@ -453,11 +469,11 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                           checked={data.toll_road}
                           onCheckedChange={checked => { setData('toll_road', Boolean(checked)); setIsDirty(true); }}
                         />
-                        <Label htmlFor="toll_road">Toll Road</Label>
+                        <Label htmlFor="toll_road">{t('distances.form.fields.tollRoad.label')}</Label>
                       </div>
                       {data.toll_road && (
                         <div className="space-y-2">
-                          <Label htmlFor="toll_cost">Toll Cost (ETB)</Label>
+                          <Label htmlFor="toll_cost">{t('distances.form.fields.tollRoad.costLabel')}</Label>
                           <Input
                             id="toll_cost"
                             type="number"
@@ -465,7 +481,7 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                             min="0"
                             value={data.toll_cost}
                             onChange={e => { setData('toll_cost', e.target.value); setIsDirty(true); }}
-                            placeholder="Enter toll cost"
+                            placeholder={t('distances.form.fields.tollRoad.costPlaceholder')}
                           />
                         </div>
                       )}
@@ -478,7 +494,9 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                           checked={data.restricted_for_heavy_vehicles}
                           onCheckedChange={checked => { setData('restricted_for_heavy_vehicles', Boolean(checked)); setIsDirty(true); }}
                         />
-                        <Label htmlFor="restricted_for_heavy_vehicles">Restricted for Heavy Vehicles</Label>
+                        <Label htmlFor="restricted_for_heavy_vehicles">
+                          {t('distances.form.fields.heavyVehicle.label')}
+                        </Label>
                       </div>
                     </div>
                   </div>
@@ -486,10 +504,10 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                   <div className="flex flex-wrap items-center gap-3">
                     <Button type="submit" disabled={processing}>
                       <Save className="mr-2 h-4 w-4" />
-                      {processing ? 'Creating...' : 'Create Distance'}
+                      {processing ? t('distances.form.actions.creating') : t('distances.form.actions.create')}
                     </Button>
                     <Button type="button" variant="outline" asChild>
-                      <Link href="/distances">Cancel</Link>
+                      <Link href="/distances">{t('distances.actions.cancel')}</Link>
                     </Button>
                   </div>
                 </form>
@@ -502,9 +520,9 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Navigation className="h-5 w-5 text-emerald-600" />
-                  Route Planning Map
+                  {t('distances.form.create.map.title')}
                 </CardTitle>
-                <CardDescription>Plot the path to automatically calculate distance and travel time.</CardDescription>
+                <CardDescription>{t('distances.form.create.map.description')}</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col space-y-4 overflow-y-auto p-6">
                 <InteractiveMap
@@ -519,7 +537,7 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                   showPlaceMarkers={true}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Click on two places or draw a custom route to capture accurate mileage. Clear the drawing to enter values manually.
+                  {t('distances.form.create.map.note')}
                 </p>
               </CardContent>
             </Card>
@@ -528,8 +546,8 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
           <TabsContent value="preview" className="mt-4 flex flex-1 flex-col overflow-hidden">
             <Card className="flex flex-1 flex-col border-0 shadow-lg">
               <CardHeader>
-                <CardTitle>Route Preview</CardTitle>
-                <CardDescription>Check the summary before saving.</CardDescription>
+                <CardTitle>{t('distances.form.create.preview.title')}</CardTitle>
+                <CardDescription>{t('distances.form.create.preview.description')}</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col overflow-y-auto p-6">
                 <div className="space-y-4">
@@ -538,48 +556,71 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div>
                           <h4 className="font-semibold text-slate-900 dark:text-slate-100">
-                            From: {selectedFromPlace?.name || 'Not selected'}
+                            {t('distances.form.create.preview.fromLabel')} {selectedFromPlace?.name || t('distances.form.create.preview.notSelected')}
                           </h4>
-                          <p className="text-sm text-muted-foreground">{selectedFromPlace?.woreda?.name || 'N/A'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedFromPlace?.woreda?.name || t('distances.form.create.preview.notAvailable')}
+                          </p>
                         </div>
                         <div>
                           <h4 className="font-semibold text-slate-900 dark:text-slate-100">
-                            To: {selectedToPlace?.name || 'Not selected'}
+                            {t('distances.form.create.preview.toLabel')} {selectedToPlace?.name || t('distances.form.create.preview.notSelected')}
                           </h4>
-                          <p className="text-sm text-muted-foreground">{selectedToPlace?.woreda?.name || 'N/A'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedToPlace?.woreda?.name || t('distances.form.create.preview.notAvailable')}
+                          </p>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <Card>
                           <CardContent className="p-4 text-center">
-                            <p className="text-sm text-muted-foreground">Route Points</p>
+                            <p className="text-sm text-muted-foreground">{t('distances.form.create.preview.routePoints')}</p>
                             <p className="text-2xl font-bold">{routePoints.length}</p>
                           </CardContent>
                         </Card>
                         <Card>
                           <CardContent className="p-4 text-center">
-                            <p className="text-sm text-muted-foreground">Total Distance</p>
+                            <p className="text-sm text-muted-foreground">{t('distances.form.create.preview.totalDistance')}</p>
                             <p className="text-2xl font-bold">{calculatedDistance.toFixed(2)} km</p>
                           </CardContent>
                         </Card>
                         <Card>
                           <CardContent className="p-4 text-center">
-                            <p className="text-sm text-muted-foreground">Estimated Time</p>
+                            <p className="text-sm text-muted-foreground">{t('distances.form.create.preview.estimatedTime')}</p>
                             <p className="text-2xl font-bold">{calculatedTime.toFixed(1)} hours</p>
                           </CardContent>
                         </Card>
                       </div>
 
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-slate-900 dark:text-slate-100">Route Details</h4>
+                        <h4 className="font-semibold text-slate-900 dark:text-slate-100">
+                          {t('distances.form.create.preview.detailsTitle')}
+                        </h4>
                         <div className="space-y-1 text-sm text-muted-foreground">
-                          <p><strong>Route Type:</strong> {data.route_type}</p>
-                          <p><strong>Road Condition Factor:</strong> {data.road_condition_factor}</p>
-                          <p><strong>Toll Road:</strong> {data.toll_road ? 'Yes' : 'No'}</p>
-                          {data.toll_road && data.toll_cost && <p><strong>Toll Cost:</strong> {data.toll_cost} ETB</p>}
-                          <p><strong>Heavy Vehicle Restricted:</strong> {data.restricted_for_heavy_vehicles ? 'Yes' : 'No'}</p>
-                          <p><strong>Route Points:</strong> {routePoints.length} saved</p>
+                          <p>
+                            <strong>{t('distances.form.create.preview.details.routeType')}:</strong> {data.route_type}
+                          </p>
+                          <p>
+                            <strong>{t('distances.form.create.preview.details.roadCondition')}:</strong> {data.road_condition_factor}
+                          </p>
+                          <p>
+                            <strong>{t('distances.form.create.preview.details.tollRoad')}:</strong>{' '}
+                            {data.toll_road ? t('distances.boolean.yes') : t('distances.boolean.no')}
+                          </p>
+                          {data.toll_road && data.toll_cost && (
+                            <p>
+                              <strong>{t('distances.form.create.preview.details.tollCost')}:</strong> {data.toll_cost} ETB
+                            </p>
+                          )}
+                          <p>
+                            <strong>{t('distances.form.create.preview.details.heavyVehicle')}:</strong>{' '}
+                            {data.restricted_for_heavy_vehicles ? t('distances.boolean.yes') : t('distances.boolean.no')}
+                          </p>
+                          <p>
+                            <strong>{t('distances.form.create.preview.details.routePoints')}:</strong>{' '}
+                            {t('distances.form.create.preview.details.routePointsSaved', { count: routePoints.length })}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -587,7 +628,7 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                     <div className="py-8 text-center">
                       <Route className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
                       <p className="text-muted-foreground">
-                        No route drawn yet. Use the Map tab to plot a route or enter metrics manually.
+                        {t('distances.form.create.preview.empty')}
                       </p>
                     </div>
                   )}

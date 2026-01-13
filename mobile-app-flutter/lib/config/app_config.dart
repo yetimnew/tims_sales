@@ -7,6 +7,9 @@ class AppConfig {
   // For iOS Simulator: http://localhost:8000/api
   // For Physical Device: http://YOUR_COMPUTER_IP:8000/api
   
+  // Note: apiBaseUrl is now managed by ApiConfigService
+  // This getter is kept for backward compatibility but should use ApiConfigService instead
+  @Deprecated('Use ApiConfigService().getApiBaseUrl() instead')
   static String get apiBaseUrl {
     // Override with environment variable if provided
     const envUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
@@ -30,6 +33,8 @@ class AppConfig {
   // API Endpoints
   static const String loginEndpoint = '/login';
   static const String logoutEndpoint = '/logout';
+  static const String forgotPasswordEndpoint = '/forgot-password';
+  static const String resetPasswordEndpoint = '/reset-password';
   static const String profileEndpoint = '/profile';
   static const String profileUpdateEndpoint = '/profile';
   static const String profilePictureEndpoint = '/profile/picture';
@@ -44,6 +49,7 @@ class AppConfig {
   static const String tripsEndpoint = '/driver/trips';
   static const String notificationsEndpoint = '/driver/notifications';
   static const String maintenanceEndpoint = '/driver/maintenance';
+  static const String fuelEndpoint = '/driver/fuel';
 
   // Location Tracking Configuration
   static const int locationUpdateInterval = 300; // 5 minutes in seconds

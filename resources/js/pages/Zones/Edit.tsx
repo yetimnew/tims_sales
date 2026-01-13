@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { validateZone, type ValidationErrors } from '@/lib/validation';
 import { toast } from '@/hooks/use-toast';
 import { AlertCircle, Building2, CheckCircle, Flag, Layers, MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface RegionOption {
   id: number;
@@ -62,10 +63,15 @@ interface ZonesEditProps {
 }
 
 export default function ZonesEdit({ zone, regions }: ZonesEditProps) {
-  const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Zones', href: '/zones' },
-    { title: 'Edit', href: `/zones/${zone.id}/edit` },
-  ];
+  const { t } = useTranslation();
+
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('zones.title'), href: '/zones' },
+      { title: t('zones.form.edit.breadcrumb'), href: `/zones/${zone.id}/edit` },
+    ],
+    [t, zone.id],
+  );
 
   const { data, setData, put, processing, errors } = useForm<ZoneFormData>({
     name: zone.name,
@@ -96,12 +102,12 @@ export default function ZonesEdit({ zone, regions }: ZonesEditProps) {
 
     if (errorMessages.length > 0) {
       toast({
-        title: '⚠️ Validation Error',
+        title: t('zones.form.validation.title'),
         description: errorMessages.join(', '),
         variant: 'destructive',
       });
     }
-  }, [errors]);
+  }, [errors, t]);
 
   const setFieldError = useCallback((field: keyof ZoneFormData, message: string) => {
     setFrontendErrors(prev => {
@@ -155,9 +161,9 @@ export default function ZonesEdit({ zone, regions }: ZonesEditProps) {
 
   return (
     <FormPageLayout
-      title="Update Zone"
-      headTitle={`Edit ${zone.name}`}
-      description="Keep sub-regional coverage details aligned with on-the-ground operations."
+      title={t('zones.form.edit.title')}
+      headTitle={t('zones.form.edit.headTitle', { name: zone.name })}
+      description={t('zones.form.edit.description')}
       breadcrumbs={breadcrumbs}
       icon={<Layers className="h-5 w-5" />}
       headerAside={isDirty && <UnsavedChangesBadge />}
@@ -166,20 +172,30 @@ export default function ZonesEdit({ zone, regions }: ZonesEditProps) {
         {hasErrors && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Review the highlighted fields and correct validation issues before saving the zone update.</AlertDescription>
+            <AlertDescription>{t('zones.form.validation.inlineEdit')}</AlertDescription>
           </Alert>
         )}
 
-        <FormSection title="Zone Identity" description="Confirm naming, ownership, and governance context for this zone." icon={<Building2 className="h-4 w-4" />}>
+        <FormSection
+          title={t('zones.form.sections.identity.title')}
+          description={t('zones.form.sections.identity.descriptionEdit')}
+          icon={<Building2 className="h-4 w-4" />}
+        >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Zone Name" required error={getFieldError('name')}>
-              <Input id="name" type="text" value={data.name} onChange={event => handleFieldChange('name', event.target.value)} placeholder="e.g., East Arsi" />
+            <FormField label={t('zones.form.fields.name.label')} required error={getFieldError('name')}>
+              <Input
+                id="name"
+                type="text"
+                value={data.name}
+                onChange={event => handleFieldChange('name', event.target.value)}
+                placeholder={t('zones.form.fields.name.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Region" required error={getFieldError('region_id')}>
+            <FormField label={t('zones.form.fields.region.label')} required error={getFieldError('region_id')}>
               <Select value={data.region_id} onValueChange={value => handleFieldChange('region_id', value)}>
                 <SelectTrigger className={getFieldError('region_id') ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select a region" />
+                  <SelectValue placeholder={t('zones.form.fields.region.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {regions.map(regionOption => (
@@ -191,65 +207,114 @@ export default function ZonesEdit({ zone, regions }: ZonesEditProps) {
               </Select>
             </FormField>
 
-            <FormField label="Status" required error={getFieldError('status')}>
+            <FormField label={t('zones.form.fields.status.label')} required error={getFieldError('status')}>
               <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
                 <SelectTrigger className={getFieldError('status') ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('zones.form.fields.status.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="active">{t('zones.status.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('zones.status.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </FormField>
 
-            <FormField label="Zone Code" error={getFieldError('code')}>
-              <Input id="code" type="text" value={data.code} onChange={event => handleFieldChange('code', event.target.value)} placeholder="e.g., EA-02" />
+            <FormField label={t('zones.form.fields.code.label')} error={getFieldError('code')}>
+              <Input
+                id="code"
+                type="text"
+                value={data.code}
+                onChange={event => handleFieldChange('code', event.target.value)}
+                placeholder={t('zones.form.fields.code.placeholder')}
+              />
             </FormField>
 
             <div className="md:col-span-2">
-              <FormField label="Administrative Center" error={getFieldError('administrative_center')}>
+              <FormField label={t('zones.form.fields.administrativeCenter.label')} error={getFieldError('administrative_center')}>
                 <Input
                   id="administrative_center"
                   type="text"
                   value={data.administrative_center}
                   onChange={event => handleFieldChange('administrative_center', event.target.value)}
-                  placeholder="Primary governance hub"
+                  placeholder={t('zones.form.fields.administrativeCenter.placeholder')}
                 />
               </FormField>
             </div>
           </div>
         </FormSection>
 
-        <FormSection title="Geographic Profile" description="Keep spatial footprint and demographic scale aligned with latest intel." icon={<MapPin className="h-4 w-4" />}>
+        <FormSection
+          title={t('zones.form.sections.geography.title')}
+          description={t('zones.form.sections.geography.descriptionEdit')}
+          icon={<MapPin className="h-4 w-4" />}
+        >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <FormField label="Area (km²)" error={getFieldError('area_km2')}>
-              <Input id="area_km2" type="number" step="0.01" value={data.area_km2} onChange={event => handleFieldChange('area_km2', event.target.value)} placeholder="e.g., 12450" />
+            <FormField label={t('zones.form.fields.area.label')} error={getFieldError('area_km2')}>
+              <Input
+                id="area_km2"
+                type="number"
+                step="0.01"
+                value={data.area_km2}
+                onChange={event => handleFieldChange('area_km2', event.target.value)}
+                placeholder={t('zones.form.fields.area.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Population" error={getFieldError('population')}>
-              <Input id="population" type="number" step="1" value={data.population} onChange={event => handleFieldChange('population', event.target.value)} placeholder="e.g., 820000" />
+            <FormField label={t('zones.form.fields.population.label')} error={getFieldError('population')}>
+              <Input
+                id="population"
+                type="number"
+                step="1"
+                value={data.population}
+                onChange={event => handleFieldChange('population', event.target.value)}
+                placeholder={t('zones.form.fields.population.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Elevation (m)" error={getFieldError('elevation_m')}>
-              <Input id="elevation_m" type="number" step="0.01" value={data.elevation_m} onChange={event => handleFieldChange('elevation_m', event.target.value)} placeholder="e.g., 1325" />
+            <FormField label={t('zones.form.fields.elevation.label')} error={getFieldError('elevation_m')}>
+              <Input
+                id="elevation_m"
+                type="number"
+                step="0.01"
+                value={data.elevation_m}
+                onChange={event => handleFieldChange('elevation_m', event.target.value)}
+                placeholder={t('zones.form.fields.elevation.placeholder')}
+              />
             </FormField>
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Latitude" error={getFieldError('latitude')}>
-              <Input id="latitude" type="number" step="0.000001" value={data.latitude} onChange={event => handleFieldChange('latitude', event.target.value)} placeholder="e.g., 7.123456" />
+            <FormField label={t('zones.form.fields.latitude.label')} error={getFieldError('latitude')}>
+              <Input
+                id="latitude"
+                type="number"
+                step="0.000001"
+                value={data.latitude}
+                onChange={event => handleFieldChange('latitude', event.target.value)}
+                placeholder={t('zones.form.fields.latitude.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Longitude" error={getFieldError('longitude')}>
-              <Input id="longitude" type="number" step="0.000001" value={data.longitude} onChange={event => handleFieldChange('longitude', event.target.value)} placeholder="e.g., 39.987654" />
+            <FormField label={t('zones.form.fields.longitude.label')} error={getFieldError('longitude')}>
+              <Input
+                id="longitude"
+                type="number"
+                step="0.000001"
+                value={data.longitude}
+                onChange={event => handleFieldChange('longitude', event.target.value)}
+                placeholder={t('zones.form.fields.longitude.placeholder')}
+              />
             </FormField>
           </div>
         </FormSection>
 
-        <FormSection title="Infrastructure & Climate" description="Document logistics readiness, infrastructure notes, and environmental context." icon={<Flag className="h-4 w-4" />}>
+        <FormSection
+          title={t('zones.form.sections.infrastructure.title')}
+          description={t('zones.form.sections.infrastructure.descriptionEdit')}
+          icon={<Flag className="h-4 w-4" />}
+        >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Accessibility Score" error={getFieldError('accessibility_score')}>
+            <FormField label={t('zones.form.fields.accessibility.label')} error={getFieldError('accessibility_score')}>
               <Input
                 id="accessibility_score"
                 type="number"
@@ -258,57 +323,57 @@ export default function ZonesEdit({ zone, regions }: ZonesEditProps) {
                 step="0.01"
                 value={data.accessibility_score}
                 onChange={event => handleFieldChange('accessibility_score', event.target.value)}
-                placeholder="0 - 100"
+                placeholder={t('zones.form.fields.accessibility.placeholder')}
               />
             </FormField>
 
-            <FormField label="Description">
+            <FormField label={t('zones.form.fields.description.label')}>
               <Textarea
                 id="description"
                 value={data.description}
                 onChange={event => handleFieldChange('description', event.target.value)}
-                placeholder="Brief narrative on economic focus or network role"
+                placeholder={t('zones.form.fields.description.placeholder')}
                 className="min-h-[100px]"
               />
             </FormField>
           </div>
 
-          <FormField label="Infrastructure Notes">
+          <FormField label={t('zones.form.fields.infrastructureNotes.label')}>
             <Textarea
               id="infrastructure_notes"
               value={data.infrastructure_notes}
               onChange={event => handleFieldChange('infrastructure_notes', event.target.value)}
-              placeholder="Connectivity, utilities, telecom coverage, or constraints"
+              placeholder={t('zones.form.fields.infrastructureNotes.placeholder')}
               className="min-h-[120px]"
             />
           </FormField>
 
-          <FormField label="Climate Profile">
+          <FormField label={t('zones.form.fields.climateProfile.label')}>
             <Textarea
               id="climate_profile"
               value={data.climate_profile}
               onChange={event => handleFieldChange('climate_profile', event.target.value)}
-              placeholder="Seasonal patterns, weather alerts, or climate risks"
+              placeholder={t('zones.form.fields.climateProfile.placeholder')}
               className="min-h-[120px]"
             />
           </FormField>
         </FormSection>
       </form>
 
-      <FormActionsBar>
+      <FormActionsBar dirtyLabel={t('zones.form.unsaved')}>
         <Button type="button" variant="outline" asChild>
-          <Link href="/zones">Cancel</Link>
+          <Link href="/zones">{t('zones.actions.cancel')}</Link>
         </Button>
         <Button type="submit" disabled={processing || Object.keys(frontendErrors).length > 0 || Boolean(Object.keys(errors).length > 0)} onClick={submit}>
           {processing ? (
             <>
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-              Updating...
+              {t('zones.form.edit.submitting')}
             </>
           ) : (
             <>
               <CheckCircle className="mr-2 h-4 w-4" />
-              Update Zone
+              {t('zones.form.edit.submit')}
             </>
           )}
         </Button>

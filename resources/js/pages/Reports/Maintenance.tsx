@@ -12,6 +12,7 @@ import { formatCurrency, formatInteger, formatPercentage } from '@/components/re
 import { AlertTriangle, CalendarDays, CheckCircle2, ClipboardList, DollarSign, ShieldAlert, Wrench } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
+import { useTranslation } from 'react-i18next';
 
 type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
 
@@ -141,14 +142,9 @@ interface MaintenanceProps {
     highlights: MaintenanceHighlights;
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Reports', href: '/reports/maintenance' },
-    { title: 'Maintenance', href: '/reports/maintenance' },
-];
-
-const formatOptionalCurrency = (value: number | null): string => {
+const formatOptionalCurrency = (value: number | null, fallback: string): string => {
     if (value === null || Number.isNaN(value)) {
-        return '—';
+        return fallback;
     }
 
     return formatCurrency(value);
@@ -174,8 +170,18 @@ export default function MaintenanceReport({
     per_page_options: perPageOptionsProp = [],
     highlights,
 }: MaintenanceProps) {
+    const { t } = useTranslation();
     const { hasPermission } = usePermissions();
     const canExport = hasPermission('reports.maintenance.export');
+    const notAvailable = t('maintenanceReport.fallbacks.notAvailable');
+
+    const breadcrumbs: BreadcrumbItem[] = useMemo(
+        () => [
+            { title: t('maintenanceReport.breadcrumbs.reports'), href: '/reports/maintenance' },
+            { title: t('maintenanceReport.breadcrumbs.maintenance'), href: '/reports/maintenance' },
+        ],
+        [t],
+    );
 
     const truckSelectionOptions = useMemo<ReportSelectionOption[]>(
         () =>
@@ -299,7 +305,7 @@ export default function MaintenanceReport({
                 const toTimestamp = Date.parse(nextTo);
 
                 if (!Number.isNaN(fromTimestamp) && !Number.isNaN(toTimestamp) && fromTimestamp > toTimestamp) {
-                    setDateError('Start date must be before or equal to the end date.');
+                    setDateError(t('maintenanceReport.filters.dateError'));
 
                     return false;
                 }
@@ -309,7 +315,7 @@ export default function MaintenanceReport({
 
             return true;
         },
-        [],
+        [t],
     );
 
     const buildAppliedParams = useCallback(
@@ -441,61 +447,69 @@ export default function MaintenanceReport({
 
     const filterBadges = useMemo(
         () => [
-            `From ${appliedFrom || '—'}`,
-            `To ${appliedTo || '—'}`,
-            appliedTruckCount > 0 ? `${appliedTruckCount} truck${appliedTruckCount > 1 ? 's' : ''}` : 'All trucks',
-            appliedTypeCount > 0 ? `${appliedTypeCount} type${appliedTypeCount > 1 ? 's' : ''}` : 'All maintenance types',
-            appliedStatusCount > 0 ? `${appliedStatusCount} status${appliedStatusCount > 1 ? 'es' : ''}` : 'All statuses',
-            appliedProviderCount > 0 ? `${appliedProviderCount} provider${appliedProviderCount > 1 ? 's' : ''}` : 'All providers',
+            t('maintenanceReport.badges.from', { value: appliedFrom || notAvailable }),
+            t('maintenanceReport.badges.to', { value: appliedTo || notAvailable }),
+            appliedTruckCount > 0
+                ? t(appliedTruckCount === 1 ? 'maintenanceReport.badges.truck' : 'maintenanceReport.badges.trucks', { count: appliedTruckCount })
+                : t('maintenanceReport.badges.allTrucks'),
+            appliedTypeCount > 0
+                ? t(appliedTypeCount === 1 ? 'maintenanceReport.badges.type' : 'maintenanceReport.badges.types', { count: appliedTypeCount })
+                : t('maintenanceReport.badges.allTypes'),
+            appliedStatusCount > 0
+                ? t(appliedStatusCount === 1 ? 'maintenanceReport.badges.status' : 'maintenanceReport.badges.statuses', { count: appliedStatusCount })
+                : t('maintenanceReport.badges.allStatuses'),
+            appliedProviderCount > 0
+                ? t(appliedProviderCount === 1 ? 'maintenanceReport.badges.provider' : 'maintenanceReport.badges.providers', { count: appliedProviderCount })
+                : t('maintenanceReport.badges.allProviders'),
         ],
-        [appliedFrom, appliedProviderCount, appliedStatusCount, appliedTo, appliedTruckCount, appliedTypeCount],
+        [appliedFrom, appliedProviderCount, appliedStatusCount, appliedTo, appliedTruckCount, appliedTypeCount, notAvailable, t],
     );
 
     const summaryItems = useMemo<ReportSummaryItem[]>(
         () => [
             {
-                label: 'Maintenance tasks',
+                label: t('maintenanceReport.summary.tasks'),
                 value: formatInteger(totals?.records ?? safeBreakdown.length ?? 0),
                 icon: ClipboardList,
                 tone: 'bg-sky-100 text-sky-600 dark:bg-sky-500/20 dark:text-sky-200',
             },
             {
-                label: 'Completion rate',
+                label: t('maintenanceReport.summary.completionRate'),
                 value: formatPercentage(summary?.completion_rate_pct ?? null),
                 icon: CheckCircle2,
                 tone: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200',
             },
             {
-                label: 'Overdue tasks',
+                label: t('maintenanceReport.summary.overdue'),
                 value: formatInteger(totals?.overdue ?? 0),
                 icon: AlertTriangle,
                 tone: 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-200',
             },
             {
-                label: 'Total spend',
+                label: t('maintenanceReport.summary.totalSpend'),
                 value: formatCurrency(totals?.total_cost ?? 0),
                 icon: DollarSign,
                 tone: 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-200',
             },
             {
-                label: 'Open cost',
+                label: t('maintenanceReport.summary.openCost'),
                 value: formatCurrency(totals?.open_cost ?? 0),
                 icon: ShieldAlert,
                 tone: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200',
             },
             {
-                label: 'Upcoming (7d)',
+                label: t('maintenanceReport.summary.upcoming'),
                 value: formatInteger(summary?.upcoming_within_seven_days ?? 0),
                 icon: CalendarDays,
                 tone: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-200',
             },
         ],
-        [safeBreakdown.length, summary?.completion_rate_pct, summary?.upcoming_within_seven_days, totals?.open_cost, totals?.overdue, totals?.records, totals?.total_cost],
+        [safeBreakdown.length, summary?.completion_rate_pct, summary?.upcoming_within_seven_days, t, totals?.open_cost, totals?.overdue, totals?.records, totals?.total_cost],
     );
 
     return (
         <ReportPageLayout
-            title="Maintenance Operations"
+            title={t('maintenanceReport.title')}
             breadcrumbs={breadcrumbs}
             icon={<Wrench className="h-6 w-6" />}
             filters={
@@ -523,34 +537,34 @@ export default function MaintenanceReport({
                     driverOptions={[]}
                     destinationOptions={[]}
                     operationFilterText={{
-                        label: 'Maintenance types',
-                        triggerLabelWhenAll: 'All types',
-                        summaryLabelWhenAll: 'All types included',
-                        heading: 'Maintenance types',
-                        searchPlaceholder: 'Search type...',
-                        emptyMessage: 'No maintenance types found.',
+                        label: t('maintenanceReport.filters.types.label'),
+                        triggerLabelWhenAll: t('maintenanceReport.filters.types.triggerAll'),
+                        summaryLabelWhenAll: t('maintenanceReport.filters.types.summaryAll'),
+                        heading: t('maintenanceReport.filters.types.heading'),
+                        searchPlaceholder: t('maintenanceReport.filters.types.searchPlaceholder'),
+                        emptyMessage: t('maintenanceReport.filters.types.empty'),
                         icon: Wrench,
                     }}
                     statusFilterText={{
-                        label: 'Statuses',
-                        triggerLabelWhenAll: 'All statuses',
-                        summaryLabelWhenAll: 'All statuses included',
-                        heading: 'Work order status',
-                        searchPlaceholder: 'Search status...',
-                        emptyMessage: 'No statuses found.',
+                        label: t('maintenanceReport.filters.statuses.label'),
+                        triggerLabelWhenAll: t('maintenanceReport.filters.statuses.triggerAll'),
+                        summaryLabelWhenAll: t('maintenanceReport.filters.statuses.summaryAll'),
+                        heading: t('maintenanceReport.filters.statuses.heading'),
+                        searchPlaceholder: t('maintenanceReport.filters.statuses.searchPlaceholder'),
+                        emptyMessage: t('maintenanceReport.filters.statuses.empty'),
                     }}
                     providerFilterText={{
-                        label: 'Service providers',
-                        triggerLabelWhenAll: 'All providers',
-                        summaryLabelWhenAll: 'All providers included',
-                        heading: 'Service providers',
-                        searchPlaceholder: 'Search provider...',
-                                        emptyMessage: 'No providers found.',
-                                    }}
-                                    showDriverFilter={false}
-                                    showDestinationFilter={false}
-                                    dateError={dateError}
-                                />
+                        label: t('maintenanceReport.filters.providers.label'),
+                        triggerLabelWhenAll: t('maintenanceReport.filters.providers.triggerAll'),
+                        summaryLabelWhenAll: t('maintenanceReport.filters.providers.summaryAll'),
+                        heading: t('maintenanceReport.filters.providers.heading'),
+                        searchPlaceholder: t('maintenanceReport.filters.providers.searchPlaceholder'),
+                        emptyMessage: t('maintenanceReport.filters.providers.empty'),
+                    }}
+                    showDriverFilter={false}
+                    showDestinationFilter={false}
+                    dateError={dateError}
+                />
             }
             summarySection={<ReportSummaryGrid items={summaryItems} />}
             onRefresh={handleReset}
@@ -576,14 +590,14 @@ export default function MaintenanceReport({
                     <section className="grid gap-6 xl:grid-cols-3">
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                             <CardHeader>
-                                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">Highlights</CardTitle>
-                                <CardDescription className="text-sm">Top insights from the current selection.</CardDescription>
+                                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">{t('maintenanceReport.highlights.title')}</CardTitle>
+                                <CardDescription className="text-sm">{t('maintenanceReport.highlights.description')}</CardDescription>
                             </CardHeader>
                             <CardContent className="grid gap-4 text-sm">
                                 <div className="space-y-2">
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Highest spend trucks</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('maintenanceReport.highlights.highestSpend')}</p>
                                     {highlightData.highest_cost_trucks.length === 0 && (
-                                        <p className="text-muted-foreground">No spend recorded in this range.</p>
+                                        <p className="text-muted-foreground">{t('maintenanceReport.highlights.noSpend')}</p>
                                     )}
                                     {highlightData.highest_cost_trucks.map((truck) => (
                                         <div key={truck.truck_id} className="flex items-center justify-between rounded-lg border border-slate-200/80 px-3 py-2 dark:border-slate-800/70">
@@ -596,19 +610,19 @@ export default function MaintenanceReport({
                                     ))}
                                 </div>
                                 <div className="space-y-2">
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Most overdue</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('maintenanceReport.highlights.mostOverdue')}</p>
                                     {highlightData.most_overdue_trucks.length === 0 && (
-                                        <p className="text-muted-foreground">No overdue maintenance detected.</p>
+                                        <p className="text-muted-foreground">{t('maintenanceReport.highlights.noOverdue')}</p>
                                     )}
                                     {highlightData.most_overdue_trucks.map((truck) => (
                                         <div key={truck.truck_id} className="flex items-center justify-between rounded-lg border border-slate-200/80 px-3 py-2 dark:border-slate-800/70">
                                             <div>
                                                 <p className="font-semibold text-slate-900 dark:text-slate-100">{truck.plate}</p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    {formatInteger(truck.overdue)} overdue •{' '}
+                                                    {t('maintenanceReport.highlights.overdueValue', { value: formatInteger(truck.overdue) })} •{' '}
                                                     {truck.max_overdue_days === null
-                                                        ? '—'
-                                                        : `${formatInteger(truck.max_overdue_days)} days`}
+                                                        ? notAvailable
+                                                        : t('maintenanceReport.highlights.daysValue', { value: formatInteger(truck.max_overdue_days) })}
                                                 </p>
                                             </div>
                                             <ShieldAlert className="h-4 w-4 text-rose-500" />
@@ -616,9 +630,9 @@ export default function MaintenanceReport({
                                     ))}
                                 </div>
                                 <div className="space-y-2">
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Costliest job types</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('maintenanceReport.highlights.costliestTypes')}</p>
                                     {highlightData.costliest_types.length === 0 && (
-                                        <p className="text-muted-foreground">No maintenance types found.</p>
+                                        <p className="text-muted-foreground">{t('maintenanceReport.highlights.noTypes')}</p>
                                     )}
                                     {highlightData.costliest_types.map((type) => (
                                         <div key={type.maintenance_type_id} className="flex items-center justify-between rounded-lg border border-slate-200/80 px-3 py-2 dark:border-slate-800/70">
@@ -635,30 +649,32 @@ export default function MaintenanceReport({
 
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                             <CardHeader>
-                                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">Upcoming work orders</CardTitle>
-                                <CardDescription className="text-sm">Scheduled tasks within the next 30 days.</CardDescription>
+                                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">{t('maintenanceReport.upcoming.title')}</CardTitle>
+                                <CardDescription className="text-sm">{t('maintenanceReport.upcoming.description')}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3 text-sm">
-                                {safeUpcoming.length === 0 && <p className="text-muted-foreground">No upcoming maintenance within the next 30 days.</p>}
+                                {safeUpcoming.length === 0 && <p className="text-muted-foreground">{t('maintenanceReport.upcoming.empty')}</p>}
                                 {safeUpcoming.map((item) => (
                                     <div key={item.id} className="flex flex-col gap-1 rounded-lg border border-slate-200/80 px-3 py-2 dark:border-slate-800/70">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{item.scheduled_date ?? 'TBD'}</span>
+                                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                                {item.scheduled_date ?? t('maintenanceReport.upcoming.tbd')}
+                                            </span>
                                             {item.days_until !== null && (
                                                 <Badge variant="outline" className="text-xs">
-                                                    {item.days_until} days
+                                                    {t('maintenanceReport.upcoming.days', { value: formatInteger(item.days_until) })}
                                                 </Badge>
                                             )}
                                         </div>
                                         <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                            {item.truck?.plate ?? 'Unassigned truck'}
+                                            {item.truck?.plate ?? t('maintenanceReport.upcoming.unassignedTruck')}
                                         </div>
                                         <div className="text-xs text-muted-foreground">
-                                            {item.maintenance_type?.name ?? 'General maintenance'}
+                                            {item.maintenance_type?.name ?? t('maintenanceReport.upcoming.generalMaintenance')}
                                             {item.service_provider ? ` • ${item.service_provider}` : ''}
                                         </div>
                                         <div className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                                            {formatOptionalCurrency(item.estimated_cost)}
+                                            {formatOptionalCurrency(item.estimated_cost, notAvailable)}
                                         </div>
                                     </div>
                                 ))}
@@ -667,29 +683,29 @@ export default function MaintenanceReport({
 
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                             <CardHeader>
-                                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">Monthly trend</CardTitle>
-                                <CardDescription className="text-sm">Maintenance volume and spend per month.</CardDescription>
+                                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">{t('maintenanceReport.trend.title')}</CardTitle>
+                                <CardDescription className="text-sm">{t('maintenanceReport.trend.description')}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3 text-sm">
-                                {safeTrend.length === 0 && <p className="text-muted-foreground">No trend data for the selected filters.</p>}
+                                {safeTrend.length === 0 && <p className="text-muted-foreground">{t('maintenanceReport.trend.empty')}</p>}
                                 {safeTrend.map((row) => (
                                     <div key={row.period} className="flex flex-col gap-1 rounded-lg border border-slate-200/80 px-3 py-2 dark:border-slate-800/70">
                                         <div className="flex items-center justify-between">
                                             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{row.period}</span>
                                             <Badge variant="outline" className="text-xs">
-                                                {formatInteger(row.records)} tasks
+                                                {t('maintenanceReport.trend.tasks', { value: formatInteger(row.records) })}
                                             </Badge>
                                         </div>
                                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                            <span>Completed</span>
+                                            <span>{t('maintenanceReport.trend.completed')}</span>
                                             <span className="font-semibold text-slate-900 dark:text-slate-100">{formatInteger(row.completed)}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                            <span>Cost</span>
+                                            <span>{t('maintenanceReport.trend.cost')}</span>
                                             <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(row.total_cost)}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                            <span>Avg cost / task</span>
+                                            <span>{t('maintenanceReport.trend.avgCost')}</span>
                                             <span className="font-semibold text-slate-900 dark:text-slate-100">{formatOptionalCurrency(row.average_cost_per_record)}</span>
                                         </div>
                                     </div>
@@ -701,42 +717,42 @@ export default function MaintenanceReport({
                     <section className="grid gap-6">
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                             <CardHeader>
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Maintenance type breakdown</CardTitle>
-                                <CardDescription className="text-sm">Frequency and spend per maintenance type.</CardDescription>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">{t('maintenanceReport.typeBreakdown.title')}</CardTitle>
+                                <CardDescription className="text-sm">{t('maintenanceReport.typeBreakdown.description')}</CardDescription>
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="max-h-[50vh] overflow-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="sticky top-0 z-10 bg-white/95 backdrop-blur dark:bg-slate-900/80">
-                                                <TableHead>Type</TableHead>
-                                                <TableHead>Category</TableHead>
-                                                <TableHead className="text-right">Tasks</TableHead>
-                                                <TableHead className="text-right">Completed</TableHead>
-                                                <TableHead className="text-right">Overdue</TableHead>
-                                                <TableHead className="text-right">Completion %</TableHead>
-                                                <TableHead className="text-right">Total cost</TableHead>
-                                                <TableHead className="text-right">Avg cost</TableHead>
+                                                <TableHead>{t('maintenanceReport.table.type')}</TableHead>
+                                                <TableHead>{t('maintenanceReport.table.category')}</TableHead>
+                                                <TableHead className="text-right">{t('maintenanceReport.table.tasks')}</TableHead>
+                                                <TableHead className="text-right">{t('maintenanceReport.table.completed')}</TableHead>
+                                                <TableHead className="text-right">{t('maintenanceReport.table.overdue')}</TableHead>
+                                                <TableHead className="text-right">{t('maintenanceReport.table.completion')}</TableHead>
+                                                <TableHead className="text-right">{t('maintenanceReport.table.totalCost')}</TableHead>
+                                                <TableHead className="text-right">{t('maintenanceReport.table.avgCost')}</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {safeTypeBreakdown.length === 0 && (
                                                 <TableRow>
                                                     <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
-                                                        No maintenance types found for the selected filters.
+                                                        {t('maintenanceReport.typeBreakdown.empty')}
                                                     </TableCell>
                                                 </TableRow>
                                             )}
                                             {safeTypeBreakdown.map((type) => (
                                                 <TableRow key={type.maintenance_type_id}>
                                                     <TableCell className="font-semibold text-slate-900 dark:text-slate-100">{type.name}</TableCell>
-                                                    <TableCell className="capitalize text-muted-foreground">{type.category ?? '—'}</TableCell>
+                                                    <TableCell className="capitalize text-muted-foreground">{type.category ?? notAvailable}</TableCell>
                                                     <TableCell className="text-right font-medium">{formatInteger(type.records)}</TableCell>
                                                     <TableCell className="text-right">{formatInteger(type.completed)}</TableCell>
                                                     <TableCell className="text-right">{formatInteger(type.overdue)}</TableCell>
                                                     <TableCell className="text-right">{formatPercentage(type.completion_rate_pct ?? null)}</TableCell>
                                                     <TableCell className="text-right">{formatCurrency(type.total_cost)}</TableCell>
-                                                    <TableCell className="text-right">{formatOptionalCurrency(type.average_cost)}</TableCell>
+                                                    <TableCell className="text-right">{formatOptionalCurrency(type.average_cost, notAvailable)}</TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -749,6 +765,5 @@ export default function MaintenanceReport({
         </ReportPageLayout>
     );
 }
-
 
 

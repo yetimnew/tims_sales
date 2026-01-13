@@ -11,6 +11,7 @@ import { Transition } from '@headlessui/react';
 import { Form, Head, usePage } from '@inertiajs/react';
 import * as React from 'react';
 import { edit } from '@/routes/notification-preferences';
+import { useTranslation } from 'react-i18next';
 
 type Preference = {
     type_id: number;
@@ -45,13 +46,6 @@ type FlashProps = {
     };
 };
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Notification preferences',
-        href: edit().url,
-    },
-];
-
 const toRow = (preference: Preference): PreferenceRow => ({
     typeId: preference.type_id,
     key: preference.key,
@@ -63,13 +57,13 @@ const toRow = (preference: Preference): PreferenceRow => ({
     updatedAt: preference.updated_at ?? undefined,
 });
 
-const formatTimestamp = (timestamp?: string | null): string | null => {
+const formatTimestamp = (timestamp: string | null | undefined, locale: string): string | null => {
     if (!timestamp) {
         return null;
     }
 
     try {
-        return new Intl.DateTimeFormat(undefined, {
+        return new Intl.DateTimeFormat(locale, {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -82,8 +76,19 @@ const formatTimestamp = (timestamp?: string | null): string | null => {
 };
 
 export default function NotificationSettings({ preferences }: NotificationSettingsProps) {
+    const { t, i18n } = useTranslation();
+    const locale = i18n.language || 'en-US';
     const { flash } = usePage<FlashProps>().props;
     const [rows, setRows] = React.useState<PreferenceRow[]>(() => preferences.map(toRow));
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('notificationPreferences.title'),
+                href: edit().url,
+            },
+        ],
+        [t],
+    );
 
     React.useEffect(() => {
         setRows(preferences.map(toRow));
@@ -132,16 +137,15 @@ export default function NotificationSettings({ preferences }: NotificationSettin
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Notification preferences" />
+            <Head title={t('notificationPreferences.title')} />
 
             <SettingsLayout>
                 <div className="space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Manage notifications</CardTitle>
+                            <CardTitle>{t('notificationPreferences.header.title')}</CardTitle>
                             <CardDescription>
-                                Choose how you want to be notified. Contact your administrator if you need
-                                access to additional notification types.
+                                {t('notificationPreferences.header.description')}
                             </CardDescription>
                         </CardHeader>
                     </Card>
@@ -149,10 +153,9 @@ export default function NotificationSettings({ preferences }: NotificationSettin
                     {rows.length === 0 ? (
                         <Card className="border-dashed">
                             <CardHeader>
-                                <CardTitle className="text-base">No notifications assigned yet</CardTitle>
+                                <CardTitle className="text-base">{t('notificationPreferences.empty.title')}</CardTitle>
                                 <CardDescription>
-                                    Your administrator has not enabled any notifications for your account. You will
-                                    see options here once a notification type is assigned to you.
+                                    {t('notificationPreferences.empty.description')}
                                 </CardDescription>
                             </CardHeader>
                         </Card>
@@ -166,15 +169,14 @@ export default function NotificationSettings({ preferences }: NotificationSettin
                                 <>
                                     <div className="flex flex-col gap-4 rounded-lg border border-border bg-muted/40 p-4 md:flex-row md:items-center md:justify-between">
                                         <div className="space-y-1">
-                                            <h3 className="text-sm font-semibold">Notification coverage</h3>
+                                            <h3 className="text-sm font-semibold">{t('notificationPreferences.coverage.title')}</h3>
                                             <p className="text-sm text-muted-foreground">
-                                                {fullyEnabledCount} of {rows.length} notifications are fully enabled
-                                                (in-app & email).
+                                                {t('notificationPreferences.coverage.description', { enabled: fullyEnabledCount, total: rows.length })}
                                             </p>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2">
                                             <Button type="button" variant="secondary" onClick={enableAll}>
-                                                Enable all
+                                                {t('notificationPreferences.coverage.enableAll')}
                                             </Button>
                                             <Button
                                                 type="button"
@@ -182,13 +184,13 @@ export default function NotificationSettings({ preferences }: NotificationSettin
                                                 onClick={disableAll}
                                                 className="border-border"
                                             >
-                                                Disable all
+                                                {t('notificationPreferences.coverage.disableAll')}
                                             </Button>
                                         </div>
                                     </div>
 
                                     {rows.map((row, index) => {
-                                        const updatedAt = formatTimestamp(row.updatedAt);
+                                        const updatedAt = formatTimestamp(row.updatedAt, locale);
 
                                         return (
                                             <Card key={row.typeId} className="border border-muted">
@@ -199,18 +201,18 @@ export default function NotificationSettings({ preferences }: NotificationSettin
                                                                 {row.name}
                                                             </CardTitle>
                                                             <CardDescription>
-                                                                {row.description ?? 'No additional description provided.'}
+                                                                {row.description ?? t('notificationPreferences.rows.noDescription')}
                                                             </CardDescription>
                                                         </div>
                                                         <div className="flex flex-col items-end gap-2 text-right">
                                                             {row.assignedBy && (
                                                                 <Badge variant="outline">
-                                                                    Enabled by {row.assignedBy.name}
+                                                                    {t('notificationPreferences.rows.enabledBy', { name: row.assignedBy.name })}
                                                                 </Badge>
                                                             )}
                                                             {updatedAt && (
                                                                 <span className="text-xs text-muted-foreground">
-                                                                    Updated {updatedAt}
+                                                                    {t('notificationPreferences.rows.updatedAt', { date: updatedAt })}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -248,10 +250,10 @@ export default function NotificationSettings({ preferences }: NotificationSettin
                                                             />
                                                             <div>
                                                                 <Label htmlFor={`pref-${row.typeId}-in-app`}>
-                                                                    In-app alerts
+                                                                    {t('notificationPreferences.channels.inApp.title')}
                                                                 </Label>
                                                                 <p className="text-sm text-muted-foreground">
-                                                                    Receive notifications inside the application.
+                                                                    {t('notificationPreferences.channels.inApp.description')}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -270,10 +272,10 @@ export default function NotificationSettings({ preferences }: NotificationSettin
                                                             />
                                                             <div>
                                                                 <Label htmlFor={`pref-${row.typeId}-email`}>
-                                                                    Email alerts
+                                                                    {t('notificationPreferences.channels.email.title')}
                                                                 </Label>
                                                                 <p className="text-sm text-muted-foreground">
-                                                                    We will send emails when this event occurs.
+                                                                    {t('notificationPreferences.channels.email.description')}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -285,7 +287,7 @@ export default function NotificationSettings({ preferences }: NotificationSettin
 
                                     <div className="flex items-center gap-4">
                                         <Button type="submit" disabled={processing}>
-                                            {processing ? 'Saving…' : 'Save preferences'}
+                                            {processing ? t('notificationPreferences.actions.saving') : t('notificationPreferences.actions.save')}
                                         </Button>
 
                                         <Transition
@@ -297,7 +299,7 @@ export default function NotificationSettings({ preferences }: NotificationSettin
                                             leaveFrom="opacity-100"
                                             leaveTo="opacity-0"
                                         >
-                                            <p className="text-sm text-muted-foreground">Saved</p>
+                                            <p className="text-sm text-muted-foreground">{t('notificationPreferences.actions.saved')}</p>
                                         </Transition>
                                     </div>
                                 </>

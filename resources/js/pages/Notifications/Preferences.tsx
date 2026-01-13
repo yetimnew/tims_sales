@@ -19,6 +19,7 @@ import * as React from 'react';
 import { AlertCircle, Check, CheckCircle2, ChevronDown, Filter, Trash2, Undo2 } from 'lucide-react';
 import { index as indexRoute } from '@/routes/notifications/preferences';
 import { index as usersIndexRoute } from '@/routes/users';
+import { useTranslation } from 'react-i18next';
 
 interface NotificationTypeResource {
     id: number;
@@ -88,17 +89,6 @@ type FlashProps = {
     };
 };
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'User management',
-        href: usersIndexRoute().url,
-    },
-    {
-        title: 'Notification assignments',
-        href: indexRoute().url,
-    },
-];
-
 const toPreferenceRow = (preference: UserPreferenceResource): PreferenceRow => {
     const categorySlug = preference.category_slug ?? 'general';
     const categoryName = preference.category ?? 'General';
@@ -134,13 +124,13 @@ const toPreferenceRowFromType = (type: NotificationTypeResource): PreferenceRow 
     categorySlug: type.category_slug ?? 'general',
 });
 
-const formatTimestamp = (timestamp?: string | null): string | null => {
+const formatTimestamp = (timestamp: string | null | undefined, locale: string): string | null => {
     if (!timestamp) {
         return null;
     }
 
     try {
-        return new Intl.DateTimeFormat(undefined, {
+        return new Intl.DateTimeFormat(locale, {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -153,10 +143,25 @@ const formatTimestamp = (timestamp?: string | null): string | null => {
 };
 
 export default function NotificationPreferences({ filters, types, users }: NotificationPreferencesProps) {
+    const { t, i18n } = useTranslation();
+    const locale = i18n.language || 'en-US';
     const { flash } = usePage<FlashProps>().props;
     const { hasPermission } = usePermissions();
     const canManageAssignments = hasPermission('users.update');
     const [searchTerm, setSearchTerm] = React.useState<string>(filters.search ?? '');
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('notificationAssignments.breadcrumbs.management'),
+                href: usersIndexRoute().url,
+            },
+            {
+                title: t('notificationAssignments.title'),
+                href: indexRoute().url,
+            },
+        ],
+        [t],
+    );
 
     const selectedFromFilter = React.useMemo(() => {
         const raw = filters.selected_user;
@@ -258,11 +263,11 @@ export default function NotificationPreferences({ filters, types, users }: Notif
 
     const selectedCategoryLabel = React.useMemo(() => {
         if (categorySelection === 'all') {
-            return 'All categories';
+            return t('notificationAssignments.filters.categories.all');
         }
 
         return categories.find(category => category.slug === categorySelection)?.label ?? categorySelection;
-    }, [categorySelection, categories]);
+    }, [categorySelection, categories, t]);
 
     const categoryFilteredAvailableTypes = React.useMemo(() => {
         if (categorySelection === 'all') {
@@ -360,27 +365,27 @@ export default function NotificationPreferences({ filters, types, users }: Notif
 
     const typePickerLabel = React.useMemo(() => {
         if (!canManageAssignments) {
-            return 'Insufficient permissions';
+            return t('notificationAssignments.typePicker.disabled');
         }
 
         if (categorySelection === 'all') {
-            return 'Select a category first';
+            return t('notificationAssignments.typePicker.selectCategory');
         }
 
         if (categoryFilteredAvailableTypes.length === 0) {
-            return 'All types assigned';
+            return t('notificationAssignments.typePicker.allAssigned');
         }
 
         if (selectedTypeIds.length === 0) {
-            return 'Select notification types';
+            return t('notificationAssignments.typePicker.selectTypes');
         }
 
         if (selectedTypeIds.length === categoryFilteredAvailableTypes.length) {
-            return `Selected all (${selectedTypeIds.length})`;
+            return t('notificationAssignments.typePicker.selectedAll', { count: selectedTypeIds.length });
         }
 
-        return `${selectedTypeIds.length} selected`;
-    }, [canManageAssignments, categorySelection, categoryFilteredAvailableTypes, selectedTypeIds]);
+        return t('notificationAssignments.typePicker.selected', { count: selectedTypeIds.length });
+    }, [canManageAssignments, categorySelection, categoryFilteredAvailableTypes, selectedTypeIds, t]);
 
     const availableCount = categorySelection === 'all' ? availableTypes.length : categoryFilteredAvailableTypes.length;
 
@@ -576,14 +581,13 @@ export default function NotificationPreferences({ filters, types, users }: Notif
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Notification assignments" />
+            <Head title={t('notificationAssignments.title')} />
 
             <div className="flex flex-col gap-6 px-4 py-6">
                 <div className="flex flex-col gap-2">
-                    <h1 className="text-2xl font-semibold">Notification assignments</h1>
+                    <h1 className="text-2xl font-semibold">{t('notificationAssignments.title')}</h1>
                     <p className="max-w-3xl text-sm text-muted-foreground">
-                        Grant notification types to team members and configure their default delivery methods. Users
-                        can fine-tune the channels you enable for them via their personal settings.
+                        {t('notificationAssignments.subtitle')}
                     </p>
                 </div>
 
@@ -591,14 +595,14 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                     <Input
                         value={searchTerm}
                         onChange={event => setSearchTerm(event.target.value)}
-                        placeholder="Search people by name or email"
+                        placeholder={t('notificationAssignments.search.placeholder')}
                         className="w-full md:max-w-sm"
                         type="search"
                         name="search"
                     />
                     <div className="flex gap-2">
                         <Button type="submit" variant="secondary">
-                            Search
+                            {t('notificationAssignments.search.submit')}
                         </Button>
                         <Button
                             type="button"
@@ -619,7 +623,7 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                             }}
                             disabled={searchTerm.length === 0}
                         >
-                            Clear
+                            {t('notificationAssignments.search.clear')}
                         </Button>
                     </div>
                 </form>
@@ -627,12 +631,12 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                 <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
                     <Card className="h-fit">
                         <CardHeader>
-                            <CardTitle className="text-base">People</CardTitle>
-                            <CardDescription>Select a person to manage their notification access.</CardDescription>
+                            <CardTitle className="text-base">{t('notificationAssignments.people.title')}</CardTitle>
+                            <CardDescription>{t('notificationAssignments.people.description')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-2">
                             {users.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No users match your search criteria.</p>
+                                <p className="text-sm text-muted-foreground">{t('notificationAssignments.people.empty')}</p>
                             ) : (
                                 <div className="flex flex-col">
                                     {users.map(user => {
@@ -670,23 +674,22 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                     <Card className="min-h-[420px]">
                         <CardHeader className="flex flex-col gap-4">
                             <div>
-                                <CardTitle className="text-base">Notification types</CardTitle>
+                                <CardTitle className="text-base">{t('notificationAssignments.types.title')}</CardTitle>
                                 <CardDescription>
-                                    Enable notification channels for the selected person. Removing a notification stops all
-                                    deliveries until it is added again.
+                                    {t('notificationAssignments.types.description')}
                                 </CardDescription>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-3">
                                 <Select value={categorySelection} onValueChange={value => setCategorySelection(value)}>
                                     <SelectTrigger className="w-full md:w-60">
-                                        <SelectValue placeholder="Select category" />
+                                        <SelectValue placeholder={t('notificationAssignments.filters.categories.placeholder')} />
                                     </SelectTrigger>
                                     <SelectContent className="max-h-64">
-                                        <SelectItem value="all">All categories</SelectItem>
+                                        <SelectItem value="all">{t('notificationAssignments.filters.categories.all')}</SelectItem>
                                         {categories.length === 0 ? (
                                             <div className="px-3 py-2 text-sm text-muted-foreground">
-                                                No notification categories available yet.
+                                                {t('notificationAssignments.filters.categories.empty')}
                                             </div>
                                         ) : (
                                             categories.map(category => (
@@ -722,12 +725,12 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                     </PopoverTrigger>
                                     <PopoverContent className="w-80 p-0" align="start">
                                         <Command>
-                                            <CommandInput placeholder="Search notification types" />
+                                            <CommandInput placeholder={t('notificationAssignments.typePicker.searchPlaceholder')} />
                                             <CommandList>
                                                 <CommandEmpty>
                                                     {categoryFilteredAvailableTypes.length === 0
-                                                        ? 'All notification types in this category are already assigned.'
-                                                        : 'No notification types match your search.'}
+                                                        ? t('notificationAssignments.typePicker.emptyAllAssigned')
+                                                        : t('notificationAssignments.typePicker.emptyNoMatch')}
                                                 </CommandEmpty>
                                                 <CommandGroup>
                                                     {categoryFilteredAvailableTypes.map(type => {
@@ -770,7 +773,7 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                                     selectedTypeIds.length === categoryFilteredAvailableTypes.length
                                                 }
                                             >
-                                                Select all
+                                                {t('notificationAssignments.typePicker.selectAll')}
                                             </Button>
                                             <div className="flex items-center gap-2">
                                                 <Button
@@ -780,7 +783,7 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                                     onClick={handleClearSelection}
                                                     disabled={!canManageAssignments || selectedTypeIds.length === 0}
                                                 >
-                                                    Clear
+                                                    {t('notificationAssignments.typePicker.clear')}
                                                 </Button>
                                                 <Button
                                                     type="button"
@@ -788,7 +791,7 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                                     onClick={handleAddSelected}
                                                     disabled={!canManageAssignments || selectedTypeIds.length === 0}
                                                 >
-                                                    Add selected
+                                                    {t('notificationAssignments.typePicker.addSelected')}
                                                 </Button>
                                             </div>
                                         </div>
@@ -797,7 +800,10 @@ export default function NotificationPreferences({ filters, types, users }: Notif
 
                                 {selectedTypeIds.length > 0 && (
                                     <Badge variant="outline">
-                                        {selectedTypeIds.length} type{selectedTypeIds.length === 1 ? '' : 's'} selected
+                                        {t('notificationAssignments.typePicker.selectedBadge', {
+                                            count: selectedTypeIds.length,
+                                            suffix: selectedTypeIds.length === 1 ? '' : 's',
+                                        })}
                                     </Badge>
                                 )}
                             </div>
@@ -806,12 +812,11 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                         <CardContent className="space-y-5">
                             {selectedUser === null ? (
                                 <p className="text-sm text-muted-foreground">
-                                    Select a person on the left to view their notification access.
+                                    {t('notificationAssignments.empty.noUser')}
                                 </p>
                             ) : rows.length === 0 ? (
                                 <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
-                                    {selectedUser.name} does not have any notification types assigned yet. Use the selector above to
-                                    grant access.
+                                    {t('notificationAssignments.empty.noTypes', { name: selectedUser.name })}
                                 </div>
                             ) : (
                                 <div className="space-y-5">
@@ -825,26 +830,26 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                             )}
                                             <Badge variant="secondary" className="flex items-center gap-1">
                                                 <CheckCircle2 className="h-3.5 w-3.5" />
-                                                {fullyEnabledCount} fully enabled
+                                                {t('notificationAssignments.summary.fullyEnabled', { count: fullyEnabledCount })}
                                             </Badge>
 
                                             <Badge variant="secondary" className="flex items-center gap-1">
                                                 <AlertCircle className="h-3.5 w-3.5" />
-                                                {pendingRemovalCount} pending removal
+                                                {t('notificationAssignments.summary.pendingRemoval', { count: pendingRemovalCount })}
                                             </Badge>
 
-                                            <Badge variant="outline">{inAppEnabledCount} in-app</Badge>
-                                            <Badge variant="outline">{emailEnabledCount} email</Badge>
-                                            <Badge variant="outline">{availableCount} available</Badge>
-                                            {hasChanges && <Badge variant="destructive">Unsaved changes</Badge>}
+                                            <Badge variant="outline">{t('notificationAssignments.summary.inApp', { count: inAppEnabledCount })}</Badge>
+                                            <Badge variant="outline">{t('notificationAssignments.summary.email', { count: emailEnabledCount })}</Badge>
+                                            <Badge variant="outline">{t('notificationAssignments.summary.available', { count: availableCount })}</Badge>
+                                            {hasChanges && <Badge variant="destructive">{t('notificationAssignments.summary.unsaved')}</Badge>}
                                         </div>
                                         <Tabs value={rowFilter} onValueChange={value => setRowFilter(value as 'all' | 'active' | 'pending')}>
                                             <TabsList>
                                                 <TabsTrigger value="all" className="flex items-center gap-1">
-                                                    <Filter className="h-3.5 w-3.5" /> All
+                                                    <Filter className="h-3.5 w-3.5" /> {t('notificationAssignments.filters.rows.all')}
                                                 </TabsTrigger>
-                                                <TabsTrigger value="active">Active</TabsTrigger>
-                                                <TabsTrigger value="pending">Pending removal</TabsTrigger>
+                                                <TabsTrigger value="active">{t('notificationAssignments.filters.rows.active')}</TabsTrigger>
+                                                <TabsTrigger value="pending">{t('notificationAssignments.filters.rows.pending')}</TabsTrigger>
                                             </TabsList>
                                         </Tabs>
                                     </div>
@@ -854,11 +859,11 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                             <div className="space-y-4">
                                                 {filteredRows.length === 0 ? (
                                                     <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
-                                                        No notification types match the selected filter. Adjust the filter to view assignments.
+                                                        {t('notificationAssignments.empty.noMatch')}
                                                     </div>
                                                 ) : (
                                                     filteredRows.map(row => {
-                                                        const updatedAt = formatTimestamp(row.updatedAt);
+                                                        const updatedAt = formatTimestamp(row.updatedAt, locale);
                                                         const isDisabled = !row.inAppEnabled && !row.emailEnabled;
                                                         const isChanged = changedTypeIds.has(row.typeId);
 
@@ -872,44 +877,44 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                                                 )}
                                                             >
                                                                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                                                                    <div>
-                                                                        <h3 className="text-sm font-semibold text-foreground">{row.name}</h3>
-                                                                        <p className="max-w-2xl text-sm text-muted-foreground">
-                                                                            {row.description ?? 'No description available.'}
-                                                                        </p>
-                                                                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                                                            <Badge variant="outline">{row.category}</Badge>
-                                                                            {row.assignedBy && <Badge variant="outline">Grant by {row.assignedBy.name}</Badge>}
-                                                                            {row.isNew && !row.remove && <Badge variant="outline">New assignment</Badge>}
-                                                                            {row.remove && <Badge variant="destructive">Will be removed</Badge>}
-                                                                            {isDisabled && !row.remove && <Badge variant="secondary">Delivery disabled</Badge>}
-                                                                            {updatedAt && <span>Updated {updatedAt}</span>}
-                                                                        </div>
+                                                                <div>
+                                                                    <h3 className="text-sm font-semibold text-foreground">{row.name}</h3>
+                                                                    <p className="max-w-2xl text-sm text-muted-foreground">
+                                                                        {row.description ?? t('notificationAssignments.rows.noDescription')}
+                                                                    </p>
+                                                                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                                                        <Badge variant="outline">{row.category}</Badge>
+                                                                        {row.assignedBy && <Badge variant="outline">{t('notificationAssignments.rows.assignedBy', { name: row.assignedBy.name })}</Badge>}
+                                                                        {row.isNew && !row.remove && <Badge variant="outline">{t('notificationAssignments.rows.newAssignment')}</Badge>}
+                                                                        {row.remove && <Badge variant="destructive">{t('notificationAssignments.rows.willRemove')}</Badge>}
+                                                                        {isDisabled && !row.remove && <Badge variant="secondary">{t('notificationAssignments.rows.deliveryDisabled')}</Badge>}
+                                                                        {updatedAt && <span>{t('notificationAssignments.rows.updatedAt', { date: updatedAt })}</span>}
                                                                     </div>
-                                                                    {canManageAssignments && (
-                                                                        <div className="flex gap-2">
-                                                                            {row.remove ? (
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant="secondary"
-                                                                                    size="sm"
-                                                                                    onClick={() => handleRestore(row.typeId)}
-                                                                                >
-                                                                                    <Undo2 className="mr-1 h-4 w-4" /> Restore
-                                                                                </Button>
-                                                                            ) : (
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant="ghost"
-                                                                                    size="sm"
-                                                                                    onClick={() => handleRemove(row.typeId)}
-                                                                                >
-                                                                                    <Trash2 className="mr-1 h-4 w-4" /> Remove
-                                                                                </Button>
-                                                                            )}
-                                                                        </div>
-                                                                    )}
                                                                 </div>
+                                                                {canManageAssignments && (
+                                                                    <div className="flex gap-2">
+                                                                        {row.remove ? (
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="secondary"
+                                                                                size="sm"
+                                                                                onClick={() => handleRestore(row.typeId)}
+                                                                            >
+                                                                                <Undo2 className="mr-1 h-4 w-4" /> {t('notificationAssignments.rows.restore')}
+                                                                            </Button>
+                                                                        ) : (
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                onClick={() => handleRemove(row.typeId)}
+                                                                            >
+                                                                                <Trash2 className="mr-1 h-4 w-4" /> {t('notificationAssignments.rows.remove')}
+                                                                            </Button>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
 
                                                                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                                                                     <div className="flex items-start gap-3 rounded-md border border-border bg-background/70 p-4">
@@ -927,10 +932,10 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                                                         />
                                                                         <div>
                                                                             <Label htmlFor={`admin-pref-${row.typeId}-in-app`}>
-                                                                                In-app alerts
+                                                                                {t('notificationAssignments.channels.inApp.title')}
                                                                             </Label>
                                                                             <p className="text-sm text-muted-foreground">
-                                                                                Deliver real-time notifications within the dashboard.
+                                                                                {t('notificationAssignments.channels.inApp.description')}
                                                                             </p>
                                                                         </div>
                                                                     </div>
@@ -949,10 +954,10 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                                                         />
                                                                         <div>
                                                                             <Label htmlFor={`admin-pref-${row.typeId}-email`}>
-                                                                                Email alerts
+                                                                                {t('notificationAssignments.channels.email.title')}
                                                                             </Label>
                                                                             <p className="text-sm text-muted-foreground">
-                                                                                Send transactional emails when this event occurs.
+                                                                                {t('notificationAssignments.channels.email.description')}
                                                                             </p>
                                                                         </div>
                                                                     </div>
@@ -966,9 +971,9 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                             <aside className="flex h-fit flex-col gap-3 rounded-lg border border-border bg-background/60 p-4">
                                                 <div className="flex items-center justify-between gap-3">
                                                     <div>
-                                                        <h3 className="text-sm font-semibold text-foreground">Not yet assigned</h3>
+                                                        <h3 className="text-sm font-semibold text-foreground">{t('notificationAssignments.sidebar.title')}</h3>
                                                         <p className="text-xs text-muted-foreground">
-                                                            Notifications in {selectedCategoryLabel} that are still available to grant.
+                                                            {t('notificationAssignments.sidebar.description', { category: selectedCategoryLabel })}
                                                         </p>
                                                     </div>
                                                     <Button
@@ -981,13 +986,13 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                                             categoryFilteredAvailableTypes.length === 0
                                                         }
                                                     >
-                                                        Assign all
+                                                        {t('notificationAssignments.sidebar.assignAll')}
                                                     </Button>
                                                 </div>
 
                                                 {categoryFilteredAvailableTypes.length === 0 ? (
                                                     <div className="rounded-md border border-dashed border-border p-4 text-xs text-muted-foreground">
-                                                        Every notification in this category is already assigned.
+                                                        {t('notificationAssignments.sidebar.empty')}
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-col gap-3">
@@ -1013,7 +1018,7 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                                                         onClick={() => handleAddType(type.id)}
                                                                         disabled={!canManageAssignments}
                                                                     >
-                                                                        Add
+                                                                        {t('notificationAssignments.sidebar.add')}
                                                                     </Button>
                                                                 </div>
                                                             </div>
@@ -1024,12 +1029,12 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                         </div>
                                     ) : filteredRows.length === 0 ? (
                                         <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
-                                            No notification types match the selected filter. Adjust the filter to view assignments.
+                                            {t('notificationAssignments.empty.noMatch')}
                                         </div>
                                     ) : (
                                         <div className="space-y-4">
                                             {filteredRows.map(row => {
-                                                const updatedAt = formatTimestamp(row.updatedAt);
+                                                const updatedAt = formatTimestamp(row.updatedAt, locale);
                                                 const isDisabled = !row.inAppEnabled && !row.emailEnabled;
                                                 const isChanged = changedTypeIds.has(row.typeId);
 
@@ -1046,15 +1051,15 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                                             <div>
                                                                 <h3 className="text-sm font-semibold text-foreground">{row.name}</h3>
                                                                 <p className="max-w-2xl text-sm text-muted-foreground">
-                                                                    {row.description ?? 'No description available.'}
+                                                                    {row.description ?? t('notificationAssignments.rows.noDescription')}
                                                                 </p>
                                                                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                                                                     <Badge variant="outline">{row.category}</Badge>
-                                                                    {row.assignedBy && <Badge variant="outline">Grant by {row.assignedBy.name}</Badge>}
-                                                                    {row.isNew && !row.remove && <Badge variant="outline">New assignment</Badge>}
-                                                                    {row.remove && <Badge variant="destructive">Will be removed</Badge>}
-                                                                    {isDisabled && !row.remove && <Badge variant="secondary">Delivery disabled</Badge>}
-                                                                    {updatedAt && <span>Updated {updatedAt}</span>}
+                                                                    {row.assignedBy && <Badge variant="outline">{t('notificationAssignments.rows.assignedBy', { name: row.assignedBy.name })}</Badge>}
+                                                                    {row.isNew && !row.remove && <Badge variant="outline">{t('notificationAssignments.rows.newAssignment')}</Badge>}
+                                                                    {row.remove && <Badge variant="destructive">{t('notificationAssignments.rows.willRemove')}</Badge>}
+                                                                    {isDisabled && !row.remove && <Badge variant="secondary">{t('notificationAssignments.rows.deliveryDisabled')}</Badge>}
+                                                                    {updatedAt && <span>{t('notificationAssignments.rows.updatedAt', { date: updatedAt })}</span>}
                                                                 </div>
                                                             </div>
                                                             {canManageAssignments && (
@@ -1066,7 +1071,7 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                                                             size="sm"
                                                                             onClick={() => handleRestore(row.typeId)}
                                                                         >
-                                                                            <Undo2 className="mr-1 h-4 w-4" /> Restore
+                                                                            <Undo2 className="mr-1 h-4 w-4" /> {t('notificationAssignments.rows.restore')}
                                                                         </Button>
                                                                     ) : (
                                                                         <Button
@@ -1075,7 +1080,7 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                                                             size="sm"
                                                                             onClick={() => handleRemove(row.typeId)}
                                                                         >
-                                                                            <Trash2 className="mr-1 h-4 w-4" /> Remove
+                                                                            <Trash2 className="mr-1 h-4 w-4" /> {t('notificationAssignments.rows.remove')}
                                                                         </Button>
                                                                     )}
                                                                 </div>
@@ -1098,10 +1103,10 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                                                 />
                                                                 <div>
                                                                     <Label htmlFor={`admin-pref-${row.typeId}-in-app`}>
-                                                                        In-app alerts
+                                                                        {t('notificationAssignments.channels.inApp.title')}
                                                                     </Label>
                                                                     <p className="text-sm text-muted-foreground">
-                                                                        Deliver real-time notifications within the dashboard.
+                                                                        {t('notificationAssignments.channels.inApp.description')}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -1120,10 +1125,10 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                                                 />
                                                                 <div>
                                                                     <Label htmlFor={`admin-pref-${row.typeId}-email`}>
-                                                                        Email alerts
+                                                                        {t('notificationAssignments.channels.email.title')}
                                                                     </Label>
                                                                     <p className="text-sm text-muted-foreground">
-                                                                        Send transactional emails when this event occurs.
+                                                                        {t('notificationAssignments.channels.email.description')}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -1155,7 +1160,7 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                 onClick={handleSave}
                                 disabled={saveDisabled}
                             >
-                                {isSaving ? 'Saving…' : 'Save changes'}
+                                {isSaving ? t('notificationAssignments.actions.saving') : t('notificationAssignments.actions.save')}
                             </Button>
                             <Button
                                 type="button"
@@ -1163,7 +1168,7 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                 onClick={resetChanges}
                                 disabled={!hasChanges || isSaving}
                             >
-                                Reset
+                                {t('notificationAssignments.actions.reset')}
                             </Button>
                         </div>
                     </Card>

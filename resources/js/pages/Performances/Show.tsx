@@ -7,6 +7,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { type BreadcrumbItem } from '@/types';
 import { Activity, DollarSign, Edit2, Trash2, ArrowLeft, CheckCircle, Clock, User, Building2, Route, Package, Calendar, FileText, AlertCircle, BarChart3, Target, PieChart as PieIcon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { ActivityLogTable } from '@/components/activity-log-table';
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
@@ -111,9 +112,23 @@ interface TripEconomics {
 }
 
 export default function PerformancesShow({ performance, activityLogs, operationInsights }: ShowProps) {
+  const { t, i18n } = useTranslation();
   const { hasPermission } = usePermissions();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const locale = i18n.language || 'en-US';
+  const notAvailableLabel = t('performances.show.notAvailable');
+  const pendingLabel = t('performances.show.pending');
+  const currencyLabel = t('performances.show.currency.birr');
+  const unitKm = t('performances.show.units.km');
+  const unitMt = t('performances.show.units.mt');
+  const unitLiter = t('performances.show.units.liter');
+  const unitKmPerLiter = t('performances.show.units.kmPerLiter');
+  const unitTonKm = t('performances.show.units.tonKm');
+  const unitKmLabel = t('performances.show.units.kmLabel');
+  const unitTonKmLabel = t('performances.show.units.tonKmLabel');
+  const hourShort = t('performances.show.units.hourShort');
+  const minuteShort = t('performances.show.units.minuteShort');
 
   const handleDelete = () => {
     setIsDeleting(true);
@@ -122,48 +137,54 @@ export default function PerformancesShow({ performance, activityLogs, operationI
       onSuccess: () => {
         setDeleteDialogOpen(false);
         setIsDeleting(false);
-        toast({ title: '✅ Performance Deleted', description: `${performance.FOnumber} has been removed successfully.` });
+        toast({
+          title: t('performances.delete.successTitle'),
+          description: t('performances.delete.successDescription', { foNumber: performance.FOnumber }),
+        });
       },
       onError: errors => {
         setIsDeleting(false);
-        const errorMessage = errors && typeof errors === 'object' && 'message' in errors ? String(errors.message) : 'An unexpected error occurred while deleting the performance.';
-        toast({ title: '❌ Delete Failed', description: errorMessage, variant: 'destructive' });
+        const errorMessage =
+          errors && typeof errors === 'object' && 'message' in errors
+            ? String(errors.message)
+            : t('performances.show.deleteUnexpectedError');
+        toast({ title: t('performances.delete.failedTitle'), description: errorMessage, variant: 'destructive' });
       },
     });
   };
 
   const formatDisplayDate = (value?: string | null) => {
-    if (!value) return 'N/A';
+    if (!value) return notAvailableLabel;
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'N/A';
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (Number.isNaN(date.getTime())) return notAvailableLabel;
+    return date.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const formatNumberDisplay = (value?: number | null, fractionDigits = 2) => {
-    if (value === null || value === undefined) return 'N/A';
+    if (value === null || value === undefined) return notAvailableLabel;
     const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) return 'N/A';
-    return numericValue.toLocaleString('en-US', { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits });
+    if (!Number.isFinite(numericValue)) return notAvailableLabel;
+    return numericValue.toLocaleString(locale, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits });
   };
 
   const formatCurrencyDisplay = (value?: number | null) => {
-    if (value === null || value === undefined) return 'N/A';
+    if (value === null || value === undefined) return notAvailableLabel;
     const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) return 'N/A';
-    return `${numericValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Birr`;
+    if (!Number.isFinite(numericValue)) return notAvailableLabel;
+    return `${numericValue.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currencyLabel}`;
   };
 
   const formatPercentDisplay = (value?: number | null) => {
-    if (value === null || value === undefined) return 'N/A';
+    if (value === null || value === undefined) return notAvailableLabel;
     return `${Number(value).toFixed(1)}%`;
   };
 
   const formatCurrencyPerUnit = (value?: number | null, unit?: string) => {
-    if (value === null || value === undefined) return 'N/A';
+    if (value === null || value === undefined) return notAvailableLabel;
     const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) return 'N/A';
-    const formatted = numericValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return `${formatted} Birr${unit ? ` / ${unit}` : ''}`;
+    if (!Number.isFinite(numericValue)) return notAvailableLabel;
+    const formatted = numericValue.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `${formatted} ${currencyLabel}${unit ? ` / ${unit}` : ''}`;
   };
 
   const dwc = parseFloat(performance.DistanceWCargo as any) || 0;
@@ -183,11 +204,11 @@ export default function PerformancesShow({ performance, activityLogs, operationI
   const driverAssignment = performance.driverTruck ?? performance.driver_truck ?? null;
   const driver = driverAssignment?.driver ?? null;
   const truck = driverAssignment?.truck ?? null;
-  const foNumber = performance.FOnumber || 'N/A';
+  const foNumber = performance.FOnumber || notAvailableLabel;
   const dispatchDateLabel = formatDisplayDate(performance.DateDispach);
-  const returnedDateLabel = performance.is_returned ? formatDisplayDate(performance.returned_date) : 'Pending';
-  const originName = performance.origin?.name || 'N/A';
-  const destinationName = performance.destination?.name || 'N/A';
+  const returnedDateLabel = performance.is_returned ? formatDisplayDate(performance.returned_date) : pendingLabel;
+  const originName = performance.origin?.name || notAvailableLabel;
+  const destinationName = performance.destination?.name || notAvailableLabel;
 
   const operationEconomics = operationInsights?.economics ?? null;
   const tripEconomics = operationInsights?.tripEconomics ?? null;
@@ -206,38 +227,38 @@ export default function PerformancesShow({ performance, activityLogs, operationI
   const timelineData = operationTrends?.recentTrips ?? [];
   const timelineChartData = timelineData.map((item, index) => ({
     ...item,
-    tripLabel: `Trip ${index + 1}`,
-    dateLabel: item.date ?? 'N/A',
+    tripLabel: t('performances.show.trends.tripLabel', { number: index + 1 }),
+    dateLabel: item.date ?? notAvailableLabel,
   }));
   const hasTimelineData = timelineData.length > 0;
   const piePalette = ['#6366f1', '#22c55e', '#f97316'];
 
-  const tariffLabel = tariff !== null ? formatCurrencyPerUnit(tariff, 'ton-km') : 'N/A';
+  const tariffLabel = tariff !== null ? formatCurrencyPerUnit(tariff, unitTonKmLabel) : notAvailableLabel;
   const grossMarginPercentLabel = formatPercentDisplay(grossMarginPercentRaw);
   const actualRevenueLabel = formatCurrencyDisplay(actualRevenueRaw);
   const grossMarginValueLabel = formatCurrencyDisplay(grossMarginValueRaw);
-  const costPerTonKmLabel = formatCurrencyPerUnit(costPerTonKmRaw, 'ton-km');
+  const costPerTonKmLabel = formatCurrencyPerUnit(costPerTonKmRaw, unitTonKmLabel);
   const averageDurationMinutes = timingInsights?.averageDurationMinutes ?? null;
   const actualDurationMinutes = timingInsights?.actualDurationMinutes ?? null;
   const delayMinutes = timingInsights?.delayMinutes ?? null;
 
   const formatDuration = (minutes?: number | null) => {
-    if (minutes === null || minutes === undefined) return 'N/A';
-    if (!Number.isFinite(Number(minutes))) return 'N/A';
+    if (minutes === null || minutes === undefined) return notAvailableLabel;
+    if (!Number.isFinite(Number(minutes))) return notAvailableLabel;
     const totalMinutes = Math.max(0, Math.round(minutes));
     const hours = Math.floor(totalMinutes / 60);
     const mins = totalMinutes % 60;
     if (hours === 0) {
-      return `${mins} min`;
+      return `${mins}${minuteShort}`;
     }
-    return `${hours}h ${mins}m`;
+    return `${hours}${hourShort} ${mins}${minuteShort}`;
   };
 
   const resolveDelayLabel = (minutes?: number | null) => {
-    if (minutes === null || minutes === undefined) return 'N/A';
-    if (minutes === 0) return 'On time';
-    if (minutes > 0) return `Late by ${formatDuration(minutes)}`;
-    return `Early by ${formatDuration(Math.abs(minutes))}`;
+    if (minutes === null || minutes === undefined) return notAvailableLabel;
+    if (minutes === 0) return t('performances.show.timing.onTime');
+    if (minutes > 0) return t('performances.show.timing.lateBy', { duration: formatDuration(minutes) });
+    return t('performances.show.timing.earlyBy', { duration: formatDuration(Math.abs(minutes)) });
   };
 
   const getStatusColor = (status: string) => {
@@ -266,46 +287,62 @@ export default function PerformancesShow({ performance, activityLogs, operationI
   };
 
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Performances', href: '/performances' },
+    { title: t('performances.breadcrumb'), href: '/performances' },
     { title: foNumber, href: `/performances/${performance.id}` },
   ];
 
+  const loadPhaseLabelMap: Record<string, string> = {
+    main: t('performances.form.fields.loadPhase.main'),
+    return: t('performances.form.fields.loadPhase.return'),
+  };
+
+  const loadCompletionLabelMap: Record<string, string> = {
+    full: t('performances.form.fields.loadCompletion.full'),
+    partial: t('performances.form.fields.loadCompletion.partial'),
+  };
+
   const kpiSummary: DetailSummaryItem[] = [
     {
-      label: 'Distance',
-      value: `${formatNumberDisplay(totalDistance, 0)} km`,
-      helper: `Load Factor: ${formatPercentDisplay(tripEconomics?.loadFactor ?? (totalDistance > 0 ? (dwc / totalDistance) * 100 : null))}`
+      label: t('performances.show.kpi.distanceLabel'),
+      value: `${formatNumberDisplay(totalDistance, 0)} ${unitKm}`,
+      helper: t('performances.show.kpi.distanceHelper', {
+        value: formatPercentDisplay(tripEconomics?.loadFactor ?? (totalDistance > 0 ? (dwc / totalDistance) * 100 : null)),
+      }),
     },
     {
-      label: 'Cargo Volume',
-      value: `${formatNumberDisplay(cvm, 2)} MT`,
-      helper: `Ton-km: ${formatNumberDisplay(tonKm, 2)}`
+      label: t('performances.show.kpi.cargoLabel'),
+      value: `${formatNumberDisplay(cvm, 2)} ${unitMt}`,
+      helper: t('performances.show.kpi.cargoHelper', { value: formatNumberDisplay(tonKm, 2) }),
     },
     {
-      label: 'Total Cost',
+      label: t('performances.show.kpi.totalCostLabel'),
       value: formatCurrencyDisplay(totalCost),
-      helper: `${formatCurrencyPerUnit(costPerTonKmRaw, 'ton-km')}`
+      helper: formatCurrencyPerUnit(costPerTonKmRaw, unitTonKmLabel),
     },
     {
-      label: 'Revenue',
+      label: t('performances.show.kpi.revenueLabel'),
       value: actualRevenueLabel,
-      helper: `Margin: ${grossMarginPercentLabel} ${(grossMarginValueRaw ?? 0) >= 0 ? '✓' : '✗'}`
+      helper: t('performances.show.kpi.revenueHelper', {
+        value: grossMarginPercentLabel,
+        indicator:
+          (grossMarginValueRaw ?? 0) >= 0 ? t('performances.show.kpi.positive') : t('performances.show.kpi.negative'),
+      }),
     },
   ];
 
   return (
     <DetailPageLayout
-      title={`FO ${foNumber}`}
+      title={t('performances.show.title', { foNumber })}
       subtitle={`${originName} → ${destinationName}`}
       breadcrumbs={breadcrumbs}
-      headTitle={`FO ${foNumber}`}
+      headTitle={t('performances.show.title', { foNumber })}
       icon={<BarChart3 className="h-6 w-6 text-blue-700 dark:text-blue-300" />}
       iconWrapperClassName="bg-blue-100 dark:bg-blue-900/30"
       leading={
         <Button variant="outline" size="sm" asChild>
           <Link href="/performances">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {t('performances.show.actions.back')}
           </Link>
         </Button>
       }
@@ -321,14 +358,14 @@ export default function PerformancesShow({ performance, activityLogs, operationI
               <Button variant="outline" asChild>
                 <Link href={`/performances/${performance.id}/edit`}>
                   <Edit2 className="h-4 w-4 mr-2" />
-                  Edit
+                  {t('performances.show.actions.edit')}
                 </Link>
               </Button>
             )}
             {hasPermission('performances.destroy') && (
               <Button variant="outline" onClick={() => setDeleteDialogOpen(true)} className="border-red-200 text-red-600 hover:bg-red-50">
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                {t('performances.show.actions.delete')}
               </Button>
             )}
           </div>
@@ -341,121 +378,169 @@ export default function PerformancesShow({ performance, activityLogs, operationI
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">
             <BarChart3 className="h-4 w-4 mr-2" />
-            Overview
+            {t('performances.show.tabs.overview')}
           </TabsTrigger>
           <TabsTrigger value="economics">
             <DollarSign className="h-4 w-4 mr-2" />
-            Economics
+            {t('performances.show.tabs.economics')}
           </TabsTrigger>
           <TabsTrigger value="operation">
             <Target className="h-4 w-4 mr-2" />
-            Operation
+            {t('performances.show.tabs.operation')}
           </TabsTrigger>
           <TabsTrigger value="activity">
             <Activity className="h-4 w-4 mr-2" />
-            Activity
+            {t('performances.show.tabs.activity')}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-[1fr,20rem]">
             <div className="space-y-6">
-              <DetailSectionCard title="Trip Details" icon={<Route className="h-5 w-5" />}>
+              <DetailSectionCard title={t('performances.show.sections.tripDetails')} icon={<Route className="h-5 w-5" />}>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Origin</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.origin')}</p>
                     <p className="mt-2 font-semibold">{originName}</p>
                   </div>
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Destination</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.destination')}</p>
                     <p className="mt-2 font-semibold">{destinationName}</p>
                   </div>
                   {performance.load_phase && (
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Load Phase</p>
-                      <p className="mt-2 font-semibold capitalize">{performance.load_phase}</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.loadPhase')}</p>
+                      <p className="mt-2 font-semibold capitalize">
+                        {loadPhaseLabelMap[performance.load_phase] ?? performance.load_phase}
+                      </p>
                     </div>
                   )}
                   {performance.load_completion && (
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Load Completion</p>
-                      <p className="mt-2 font-semibold capitalize">{performance.load_completion}</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">
+                        {t('performances.show.fields.loadCompletion')}
+                      </p>
+                      <p className="mt-2 font-semibold capitalize">
+                        {loadCompletionLabelMap[performance.load_completion] ?? performance.load_completion}
+                      </p>
                     </div>
                   )}
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Duration (Route)</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">
+                      {t('performances.show.fields.avgDurationRoute')}
+                    </p>
                     <p className="mt-2 font-semibold">{formatDuration(averageDurationMinutes)}</p>
                   </div>
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Actual Duration</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">
+                      {t('performances.show.fields.actualDuration')}
+                    </p>
                     <p className="mt-2 font-semibold">{formatDuration(actualDurationMinutes)}</p>
                   </div>
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Delay vs Average</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">
+                      {t('performances.show.fields.delayVsAverage')}
+                    </p>
                     <p className="mt-2 font-semibold">{resolveDelayLabel(delayMinutes)}</p>
                   </div>
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Distance W/Cargo</p>
-                    <p className="mt-2 font-semibold">{formatNumberDisplay(dwc, 0)} km</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">
+                      {t('performances.show.fields.distanceWithCargo')}
+                    </p>
+                    <p className="mt-2 font-semibold">
+                      {formatNumberDisplay(dwc, 0)} {unitKm}
+                    </p>
                   </div>
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Distance W/O Cargo</p>
-                    <p className="mt-2 font-semibold">{formatNumberDisplay(dwo, 0)} km</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">
+                      {t('performances.show.fields.distanceWithoutCargo')}
+                    </p>
+                    <p className="mt-2 font-semibold">
+                      {formatNumberDisplay(dwo, 0)} {unitKm}
+                    </p>
                   </div>
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Total Distance</p>
-                    <p className="mt-2 text-lg font-bold">{formatNumberDisplay(totalDistance, 0)} km</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">
+                      {t('performances.show.fields.totalDistance')}
+                    </p>
+                    <p className="mt-2 text-lg font-bold">
+                      {formatNumberDisplay(totalDistance, 0)} {unitKm}
+                    </p>
                   </div>
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Load Factor</p>
-                    <p className="mt-2 text-lg font-bold">{formatPercentDisplay(tripEconomics?.loadFactor ?? (totalDistance > 0 ? (dwc / totalDistance) * 100 : null))}</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">
+                      {t('performances.show.fields.loadFactor')}
+                    </p>
+                    <p className="mt-2 text-lg font-bold">
+                      {formatPercentDisplay(tripEconomics?.loadFactor ?? (totalDistance > 0 ? (dwc / totalDistance) * 100 : null))}
+                    </p>
                   </div>
                 </div>
               </DetailSectionCard>
 
-              <DetailSectionCard title="Cargo & Fuel" icon={<Package className="h-5 w-5" />}>
+              <DetailSectionCard title={t('performances.show.sections.cargoFuel')} icon={<Package className="h-5 w-5" />}>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Cargo Volume</p>
-                    <p className="mt-2 font-semibold">{formatNumberDisplay(cvm, 2)} MT</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">
+                      {t('performances.show.fields.cargoVolume')}
+                    </p>
+                    <p className="mt-2 font-semibold">
+                      {formatNumberDisplay(cvm, 2)} {unitMt}
+                    </p>
                   </div>
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel (Liters)</p>
-                    <p className="mt-2 font-semibold">{formatNumberDisplay(fil, 2)} L</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">
+                      {t('performances.show.fields.fuelLiters')}
+                    </p>
+                    <p className="mt-2 font-semibold">
+                      {formatNumberDisplay(fil, 2)} {unitLiter}
+                    </p>
                   </div>
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Efficiency</p>
-                    <p className="mt-2 font-semibold">{formatNumberDisplay(fuelEfficiency, 2)} km/L</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">
+                      {t('performances.show.fields.fuelEfficiency')}
+                    </p>
+                    <p className="mt-2 font-semibold">
+                      {formatNumberDisplay(fuelEfficiency, 2)} {unitKmPerLiter}
+                    </p>
                   </div>
                 </div>
               </DetailSectionCard>
 
               {driver && (
-                <DetailSectionCard title="Driver & Truck" icon={<User className="h-5 w-5" />}>
+                <DetailSectionCard title={t('performances.show.sections.driverTruck')} icon={<User className="h-5 w-5" />}>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Driver</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.driver')}</p>
                       <Link href={`/drivers/${driver.id}`} className="mt-2 block text-lg font-bold text-blue-600 hover:underline">
                         {driver.name}
                       </Link>
                       {driver.license && (
-                        <p className="mt-1 text-xs text-muted-foreground">License: {driver.license}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {t('performances.show.fields.license')}: {driver.license}
+                        </p>
                       )}
                       {driver.phone && (
-                        <p className="mt-1 text-xs text-muted-foreground">Phone: {driver.phone}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {t('performances.show.fields.phone')}: {driver.phone}
+                        </p>
                       )}
                     </div>
                     {truck && (
                       <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
-                        <p className="text-xs font-semibold uppercase text-muted-foreground">Truck</p>
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.truck')}</p>
                         <Link href={`/trucks/${truck.id}`} className="mt-2 block text-lg font-bold text-orange-600 hover:underline">
                           {truck.plate}
                         </Link>
                         {truck.model && (
-                          <p className="mt-1 text-xs text-muted-foreground">Model: {truck.model}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {t('performances.show.fields.model')}: {truck.model}
+                          </p>
                         )}
                         {truck.capacity && (
-                          <p className="mt-1 text-xs text-muted-foreground">Capacity: {formatNumberDisplay(truck.capacity, 0)} MT</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {t('performances.show.fields.capacity')}: {formatNumberDisplay(truck.capacity, 0)} {unitMt}
+                          </p>
                         )}
                       </div>
                     )}
@@ -464,7 +549,7 @@ export default function PerformancesShow({ performance, activityLogs, operationI
               )}
 
               {performance.comment && (
-                <DetailSectionCard title="Comments" icon={<FileText className="h-5 w-5" />}>
+                <DetailSectionCard title={t('performances.show.sections.comments')} icon={<FileText className="h-5 w-5" />}>
                   <p className="text-sm">{performance.comment}</p>
                 </DetailSectionCard>
               )}
@@ -472,57 +557,57 @@ export default function PerformancesShow({ performance, activityLogs, operationI
 
             <div className="space-y-4">
               {operationRef && (
-                <DetailSectionCard title="Operation" icon={<Building2 className="h-5 w-5" />}>
+                <DetailSectionCard title={t('performances.show.sections.operation')} icon={<Building2 className="h-5 w-5" />}>
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Operation ID</span>
+                      <span className="text-muted-foreground">{t('performances.show.fields.operationId')}</span>
                       <Link href={`/operations/${operationRef.id}`} className="font-semibold text-blue-600 hover:underline">
                         {operationRef.operationid}
                       </Link>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Customer</span>
+                      <span className="text-muted-foreground">{t('performances.show.fields.customer')}</span>
                       <span className="font-semibold">{operationRef.customer.name}</span>
                     </div>
                     {operationRef.tariff && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Tariff</span>
-                        <span className="font-semibold">{formatCurrencyPerUnit(operationRef.tariff, 'ton-km')}</span>
+                        <span className="text-muted-foreground">{t('performances.show.fields.tariff')}</span>
+                        <span className="font-semibold">{formatCurrencyPerUnit(operationRef.tariff, unitTonKmLabel)}</span>
                       </div>
                     )}
                   </div>
                 </DetailSectionCard>
               )}
 
-              <DetailSectionCard title="Dates" icon={<Calendar className="h-5 w-5" />}>
+              <DetailSectionCard title={t('performances.show.sections.dates')} icon={<Calendar className="h-5 w-5" />}>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Dispatch</span>
+                    <span className="text-muted-foreground">{t('performances.show.fields.dispatch')}</span>
                     <span className="font-semibold">{dispatchDateLabel}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Returned</span>
+                    <span className="text-muted-foreground">{t('performances.show.fields.returned')}</span>
                     <span className="font-semibold">{returnedDateLabel}</span>
                   </div>
                 </div>
               </DetailSectionCard>
 
-              <DetailSectionCard title="Cost Breakdown" icon={<DollarSign className="h-5 w-5" />}>
+              <DetailSectionCard title={t('performances.show.sections.costBreakdown')} icon={<DollarSign className="h-5 w-5" />}>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Fuel</span>
+                    <span className="text-muted-foreground">{t('performances.show.fields.fuel')}</span>
                     <span className="font-semibold">{formatCurrencyDisplay(fib)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Per Diem</span>
+                    <span className="text-muted-foreground">{t('performances.show.fields.perDiem')}</span>
                     <span className="font-semibold">{formatCurrencyDisplay(per)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Other</span>
+                    <span className="text-muted-foreground">{t('performances.show.fields.other')}</span>
                     <span className="font-semibold">{formatCurrencyDisplay(oth)}</span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
-                    <span className="font-semibold">Total</span>
+                    <span className="font-semibold">{t('performances.show.fields.total')}</span>
                     <span className="font-bold">{formatCurrencyDisplay(totalCost)}</span>
                   </div>
                 </div>
@@ -532,119 +617,146 @@ export default function PerformancesShow({ performance, activityLogs, operationI
         </TabsContent>
 
         <TabsContent value="economics" className="space-y-6">
-          <DetailSectionCard title="Revenue & Profitability" icon={<DollarSign className="h-5 w-5" />}>
+          <DetailSectionCard title={t('performances.show.sections.revenueProfitability')} icon={<DollarSign className="h-5 w-5" />}>
             <div className="grid gap-4 md:grid-cols-4">
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Tariff</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.tariff')}</p>
                 <p className="mt-2 font-semibold">{tariffLabel}</p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Ton-Km</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.tonKm')}</p>
                 <p className="mt-2 font-semibold">{formatNumberDisplay(tonKm, 2)}</p>
               </div>
               <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Revenue</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.revenue')}</p>
                 <p className="mt-2 text-lg font-bold text-green-700">{actualRevenueLabel}</p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Total Cost</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.totalCost')}</p>
                 <p className="mt-2 text-lg font-bold">{formatCurrencyDisplay(totalCost)}</p>
               </div>
               <div className={`rounded-lg border p-3 ${(grossMarginValueRaw ?? 0) >= 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Gross Margin</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.grossMargin')}</p>
                 <p className={`mt-2 text-lg font-bold ${(grossMarginValueRaw ?? 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                   {grossMarginValueLabel}
                 </p>
               </div>
               <div className={`rounded-lg border p-3 ${(grossMarginPercentRaw ?? 0) >= 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Margin %</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.marginPercent')}</p>
                 <p className={`mt-2 text-lg font-bold ${(grossMarginPercentRaw ?? 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                   {grossMarginPercentLabel}
                 </p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Cost/Ton-km</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.costPerTonKm')}</p>
                 <p className="mt-2 font-semibold">{costPerTonKmLabel}</p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Cost/km</p>
-                <p className="mt-2 font-semibold">{formatCurrencyPerUnit(totalDistance > 0 ? totalCost / totalDistance : null, 'km')}</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.costPerKm')}</p>
+                <p className="mt-2 font-semibold">
+                  {formatCurrencyPerUnit(totalDistance > 0 ? totalCost / totalDistance : null, unitKmLabel)}
+                </p>
               </div>
             </div>
           </DetailSectionCard>
 
-          <DetailSectionCard title="Yield Metrics" icon={<Target className="h-5 w-5" />}>
+          <DetailSectionCard title={t('performances.show.sections.yieldMetrics')} icon={<Target className="h-5 w-5" />}>
             <div className="grid gap-4 md:grid-cols-4">
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Yield per Ton</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.yieldPerTon')}</p>
                 <p className="mt-2 font-semibold">{formatCurrencyDisplay(tripEconomics?.yieldPerTon ?? null)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">Revenue / Tonnage</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('performances.show.fields.revenuePerTonnage')}</p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Yield per Km</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.yieldPerKm')}</p>
                 <p className="mt-2 font-semibold">{formatCurrencyDisplay(tripEconomics?.yieldPerKm ?? null)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">Revenue / Distance</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('performances.show.fields.revenuePerDistance')}</p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Cost per Ton</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.costPerTon')}</p>
                 <p className="mt-2 font-semibold">{formatCurrencyDisplay(cvm > 0 ? totalCost / cvm : null)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">Cost / Tonnage</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('performances.show.fields.costPerTonnage')}</p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Cost Share</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.fuelCostShare')}</p>
                 <p className="mt-2 font-semibold">{formatPercentDisplay(totalCost > 0 ? (fib / totalCost) * 100 : null)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatCurrencyDisplay(fib)} of total</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('performances.show.fields.fuelCostOfTotal', { value: formatCurrencyDisplay(fib) })}
+                </p>
               </div>
             </div>
           </DetailSectionCard>
 
-          <DetailSectionCard title="Efficiency Metrics" icon={<BarChart3 className="h-5 w-5" />}>
+          <DetailSectionCard title={t('performances.show.sections.efficiencyMetrics')} icon={<BarChart3 className="h-5 w-5" />}>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Load Factor</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.loadFactor')}</p>
                 <p className="mt-2 text-xl font-bold">{formatPercentDisplay(tripEconomics?.loadFactor ?? null)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(dwc, 0)} / {formatNumberDisplay(totalDistance, 0)} km</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('performances.show.fields.loadFactorHelper', {
+                    loaded: formatNumberDisplay(dwc, 0),
+                    total: formatNumberDisplay(totalDistance, 0),
+                    unit: unitKm,
+                  })}
+                </p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Empty Backhaul</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.emptyBackhaul')}</p>
                 <p className="mt-2 text-xl font-bold">{formatPercentDisplay(tripEconomics?.emptyBackhaulShare ?? null)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(dwo, 0)} km empty</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('performances.show.fields.emptyDistanceLabel', { value: formatNumberDisplay(dwo, 0), unit: unitKm })}
+                </p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Efficiency</p>
-                <p className="mt-2 text-xl font-bold">{formatNumberDisplay(fuelEfficiency, 2)} km/L</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(fil, 0)} L consumed</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.fuelEfficiency')}</p>
+                <p className="mt-2 text-xl font-bold">
+                  {formatNumberDisplay(fuelEfficiency, 2)} {unitKmPerLiter}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('performances.show.fields.fuelConsumedLabel', { value: formatNumberDisplay(fil, 0), unit: unitLiter })}
+                </p>
               </div>
             </div>
           </DetailSectionCard>
 
           {performanceShare && (
-            <DetailSectionCard title="Contribution to Operation" icon={<PieIcon className="h-5 w-5" />}>
+            <DetailSectionCard title={t('performances.show.sections.contribution')} icon={<PieIcon className="h-5 w-5" />}>
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Tonnage Share</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.tonnageShare')}</p>
                   <p className="mt-2 text-2xl font-bold text-blue-700">{formatPercentDisplay(performanceShare.tonnageShare)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(performanceShare.tonnage, 2)} MT</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {formatNumberDisplay(performanceShare.tonnage, 2)} {unitMt}
+                  </p>
                 </div>
                 <div className="rounded-lg border border-purple-200 bg-purple-50 p-3">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Distance Share</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.distanceShare')}</p>
                   <p className="mt-2 text-2xl font-bold text-purple-700">{formatPercentDisplay(performanceShare.distanceShare)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(performanceShare.distance, 0)} km</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {formatNumberDisplay(performanceShare.distance, 0)} {unitKm}
+                  </p>
                 </div>
                 <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Cost Share</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.costShare')}</p>
                   <p className="mt-2 text-2xl font-bold text-orange-700">{formatPercentDisplay(performanceShare.costShare)}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{formatCurrencyDisplay(performanceShare.cost)}</p>
                 </div>
                 <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Planned Contribution</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
+                    {t('performances.show.fields.plannedContribution')}
+                  </p>
                   <p className="mt-2 text-2xl font-bold text-green-700">{formatPercentDisplay(performanceShare.plannedContribution)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(performanceShare.tonKm, 2)} ton-km</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {formatNumberDisplay(performanceShare.tonKm, 2)} {unitTonKm}
+                  </p>
                 </div>
               </div>
               <div className="mt-4 rounded-lg bg-slate-50 dark:bg-slate-900 p-3">
                 <p className="text-xs text-muted-foreground">
-                  This trip contributed <strong>{formatPercentDisplay(performanceShare.tonnageShare)}</strong> of the operation's total tonnage and <strong>{formatPercentDisplay(performanceShare.plannedContribution)}</strong> towards the planned target.
+                  {t('performances.show.contribution.summary', {
+                    tonnage: formatPercentDisplay(performanceShare.tonnageShare),
+                    planned: formatPercentDisplay(performanceShare.plannedContribution),
+                  })}
                 </p>
               </div>
             </DetailSectionCard>
@@ -653,35 +765,47 @@ export default function PerformancesShow({ performance, activityLogs, operationI
 
         <TabsContent value="operation" className="space-y-6">
           {operationRef && (
-            <DetailSectionCard title={`Operation ${operationRef.operationid}`} icon={<Target className="h-5 w-5" />}
+            <DetailSectionCard
+              title={t('performances.show.operation.title', { id: operationRef.operationid })}
+              icon={<Target className="h-5 w-5" />}
               actions={
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/operations/${operationRef.id}`}>
                     <Building2 className="h-4 w-4 mr-2" />
-                    View Full Operation
+                    {t('performances.show.operation.viewFull')}
                   </Link>
                 </Button>
               }
             >
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="rounded-lg border p-3">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Customer</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
+                    {t('performances.show.fields.customer')}
+                  </p>
                   <p className="mt-2 font-semibold">{operationRef.customer.name}</p>
                   {operationRef.customer.email && (
                     <p className="mt-1 text-xs text-muted-foreground">{operationRef.customer.email}</p>
                   )}
                 </div>
                 <div className="rounded-lg border p-3">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Tariff</p>
-                  <p className="mt-2 font-semibold">{formatCurrencyPerUnit(operationRef.tariff, 'ton-km')}</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">{t('performances.show.fields.tariff')}</p>
+                  <p className="mt-2 font-semibold">{formatCurrencyPerUnit(operationRef.tariff, unitTonKmLabel)}</p>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Planned Volume</p>
-                  <p className="mt-2 font-semibold">{formatNumberDisplay(operationRef.volume, 2)} MT</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
+                    {t('performances.show.fields.plannedVolume')}
+                  </p>
+                  <p className="mt-2 font-semibold">
+                    {formatNumberDisplay(operationRef.volume, 2)} {unitMt}
+                  </p>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Planned Distance</p>
-                  <p className="mt-2 font-semibold">{formatNumberDisplay(operationRef.km, 0)} km</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
+                    {t('performances.show.fields.plannedDistance')}
+                  </p>
+                  <p className="mt-2 font-semibold">
+                    {formatNumberDisplay(operationRef.km, 0)} {unitKm}
+                  </p>
                 </div>
               </div>
             </DetailSectionCard>
@@ -691,22 +815,41 @@ export default function PerformancesShow({ performance, activityLogs, operationI
             <>
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Volume Completion</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
+                    {t('performances.show.fields.volumeCompletion')}
+                  </p>
                   <p className="mt-2 text-3xl font-bold text-blue-700">{formatPercentDisplay(operationInsights.overview.completionRate)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(operationInsights.overview.totalTonnage, 2)} / {formatNumberDisplay(operationInsights.overview.plannedVolume, 2)} MT</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t('performances.show.fields.volumeCompletionHelper', {
+                      total: formatNumberDisplay(operationInsights.overview.totalTonnage, 2),
+                      planned: formatNumberDisplay(operationInsights.overview.plannedVolume, 2),
+                      unit: unitMt,
+                    })}
+                  </p>
                 </div>
                 <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 text-center">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Ton-Km Completion</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
+                    {t('performances.show.fields.tonKmCompletion')}
+                  </p>
                   <p className="mt-2 text-3xl font-bold text-purple-700">{formatPercentDisplay(operationEconomics?.tonKmCompletionRate)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(operationEconomics?.totalTonKm, 0)} / {formatNumberDisplay(operationEconomics?.plannedTonKm, 0)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t('performances.show.fields.tonKmCompletionHelper', {
+                      total: formatNumberDisplay(operationEconomics?.totalTonKm, 0),
+                      planned: formatNumberDisplay(operationEconomics?.plannedTonKm, 0),
+                    })}
+                  </p>
                 </div>
                 <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Operation Revenue</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
+                    {t('performances.show.fields.operationRevenue')}
+                  </p>
                   <p className="mt-2 text-3xl font-bold text-green-700">{formatCurrencyDisplay(operationEconomics?.actualRevenue ?? null)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Total earned</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t('performances.show.fields.totalEarned')}</p>
                 </div>
                 <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 text-center">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Operation Margin</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
+                    {t('performances.show.fields.operationMargin')}
+                  </p>
                   <p className={`mt-2 text-3xl font-bold ${(operationEconomics?.grossMarginPercent ?? 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                     {formatPercentDisplay(operationEconomics?.grossMarginPercent)}
                   </p>
@@ -715,19 +858,19 @@ export default function PerformancesShow({ performance, activityLogs, operationI
               </div>
 
               <div className="grid gap-6 xl:grid-cols-2">
-                <DetailSectionCard title="Operation Progress" icon={<Target className="h-5 w-5" />}>
+                <DetailSectionCard title={t('performances.show.sections.operationProgress')} icon={<Target className="h-5 w-5" />}>
                   <div className="space-y-4">
                     <div className="grid gap-3 text-sm md:grid-cols-3">
                       <div className="text-center">
-                        <p className="text-muted-foreground">Total Trips</p>
+                        <p className="text-muted-foreground">{t('performances.show.fields.totalTrips')}</p>
                         <p className="text-2xl font-bold">{operationInsights.overview.totalTrips}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-muted-foreground">Completed</p>
+                        <p className="text-muted-foreground">{t('performances.show.fields.completedTrips')}</p>
                         <p className="text-2xl font-bold text-green-600">{operationInsights.overview.completedTrips}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-muted-foreground">Ongoing</p>
+                        <p className="text-muted-foreground">{t('performances.show.fields.ongoingTrips')}</p>
                         <p className="text-2xl font-bold text-blue-600">{operationInsights.overview.ongoingTrips}</p>
                       </div>
                     </div>
@@ -749,7 +892,7 @@ export default function PerformancesShow({ performance, activityLogs, operationI
                 </DetailSectionCard>
 
                 {hasTimelineData && (
-                  <DetailSectionCard title="Recent Trips Trend" icon={<BarChart3 className="h-5 w-5" />}>
+                  <DetailSectionCard title={t('performances.show.sections.recentTrips')} icon={<BarChart3 className="h-5 w-5" />}>
                     <div className="h-48">
                       <ResponsiveContainer>
                         <AreaChart data={timelineChartData}>
@@ -781,17 +924,25 @@ export default function PerformancesShow({ performance, activityLogs, operationI
         </TabsContent>
 
         <TabsContent value="activity" className="space-y-6">
-          <DetailSectionCard title="Activity History" icon={<Activity className="h-5 w-5" />}>
+          <DetailSectionCard title={t('performances.show.sections.activityHistory')} icon={<Activity className="h-5 w-5" />}>
             {activityLogs && activityLogs.length > 0 ? (
               <ActivityLogTable logs={activityLogs} />
             ) : (
-              <p className="py-8 text-center text-muted-foreground">No activity history available.</p>
+              <p className="py-8 text-center text-muted-foreground">{t('performances.show.activity.empty')}</p>
             )}
           </DetailSectionCard>
         </TabsContent>
       </Tabs>
 
-      <DeleteConfirmationDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} title="Delete Performance" description="Are you sure you want to delete this performance record? This action cannot be undone." itemName={foNumber} onConfirm={handleDelete} isLoading={isDeleting} />
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title={t('performances.delete.title')}
+        description={t('performances.show.deleteDescription')}
+        itemName={foNumber}
+        onConfirm={handleDelete}
+        isLoading={isDeleting}
+      />
     </DetailPageLayout>
   );
 }

@@ -98,5 +98,63 @@ class AuthService {
       return null;
     }
   }
+
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    try {
+      final response = await _apiService.post(
+        AppConfig.forgotPasswordEndpoint,
+        data: {
+          'email': email.trim().toLowerCase(),
+        },
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Password reset link sent successfully',
+        };
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to send reset link');
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String token,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    try {
+      final response = await _apiService.post(
+        AppConfig.resetPasswordEndpoint,
+        data: {
+          'email': email.trim().toLowerCase(),
+          'token': token,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        },
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Password reset successfully',
+        };
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to reset password');
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
 }
 

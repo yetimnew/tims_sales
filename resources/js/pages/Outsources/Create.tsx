@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { validateOutsource, type ValidationErrors } from '@/lib/validation';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCircle, Building2, CheckCircle, MapPin, Phone, UserCircle2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 type Option = {
   label: string;
@@ -37,23 +38,26 @@ type OutsourcesCreateProps = {
   serviceTypeOptions?: Option[];
 };
 
-const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Outsourcing', href: '/outsources' },
-  { title: 'Create', href: '/outsources/create' },
-];
-
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: OutsourcesCreateProps) {
+  const { t } = useTranslation();
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('outsources.title'), href: '/outsources' },
+      { title: t('outsources.form.create.breadcrumb'), href: '/outsources/create' },
+    ],
+    [t],
+  );
   const resolvedStatusOptions = useMemo<Option[]>(
     () =>
       statusOptions?.length
         ? statusOptions
         : [
-            { label: 'Active', value: 'active' },
-            { label: 'Inactive', value: 'inactive' },
+            { label: t('outsources.status.active'), value: 'active' },
+            { label: t('outsources.status.inactive'), value: 'inactive' },
           ],
-    [statusOptions],
+    [statusOptions, t],
   );
 
   const resolvedServiceTypes = useMemo<Option[]>(() => (serviceTypeOptions?.length ? serviceTypeOptions : []), [serviceTypeOptions]);
@@ -87,11 +91,11 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
     if (backendMessages.length > 0) {
       toast({
         variant: 'destructive',
-        title: 'Validation error',
+        title: t('outsources.form.validation.backendTitle'),
         description: backendMessages.join('\n'),
       });
     }
-  }, [errors, toast]);
+  }, [errors, t, toast]);
 
   const setFieldError = useCallback((field: keyof OutsourceFormData | 'email' | 'status', message: string) => {
     setFrontendErrors(previous => {
@@ -112,24 +116,24 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
       const fieldErrors = validateOutsource(nextValues);
 
       if (field === 'email' && value && !emailRegex.test(value)) {
-        fieldErrors.email = 'Please enter a valid email address.';
+        fieldErrors.email = t('outsources.form.errors.email');
       }
 
       if (field === 'status' && !value) {
-        fieldErrors.status = 'Status is required.';
+        fieldErrors.status = t('outsources.form.errors.status');
       }
 
       if (field === 'service_type' && value.length > 255) {
-        fieldErrors.service_type = 'Service type cannot exceed 255 characters.';
+        fieldErrors.service_type = t('outsources.form.errors.serviceTypeMax');
       }
 
       if (field === 'address' && value.length > 500) {
-        fieldErrors.address = 'Address cannot exceed 500 characters.';
+        fieldErrors.address = t('outsources.form.errors.addressMax');
       }
 
       setFieldError(field, fieldErrors[field] ?? '');
     },
-    [data, setFieldError],
+    [data, setFieldError, t],
   );
 
   const handleFieldChange = useCallback(
@@ -158,27 +162,27 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
     const validationResults: ValidationErrors = validateOutsource(trimmedData);
 
     if (trimmedData.email && !emailRegex.test(trimmedData.email)) {
-      validationResults.email = 'Please enter a valid email address.';
+      validationResults.email = t('outsources.form.errors.email');
     }
 
     if (!trimmedData.status) {
-      validationResults.status = 'Status is required.';
+      validationResults.status = t('outsources.form.errors.status');
     }
 
     if (trimmedData.service_type && trimmedData.service_type.length > 255) {
-      validationResults.service_type = 'Service type cannot exceed 255 characters.';
+      validationResults.service_type = t('outsources.form.errors.serviceTypeMax');
     }
 
     if (trimmedData.address && trimmedData.address.length > 500) {
-      validationResults.address = 'Address cannot exceed 500 characters.';
+      validationResults.address = t('outsources.form.errors.addressMax');
     }
 
     if (Object.keys(validationResults).length > 0) {
       setFrontendErrors(validationResults);
       toast({
         variant: 'destructive',
-        title: 'Please review the form',
-        description: 'Some fields need your attention before submission.',
+        title: t('outsources.form.validation.reviewCreate.title'),
+        description: t('outsources.form.validation.reviewCreate.description'),
       });
       return;
     }
@@ -193,8 +197,8 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
         reset();
         transform(data => data);
         toast({
-          title: '✅ Outsource Created',
-          description: 'The vendor has been registered successfully.',
+          title: t('outsources.form.create.successTitle'),
+          description: t('outsources.form.create.successDescription'),
         });
       },
       onError: () => {
@@ -217,9 +221,9 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
 
   return (
     <FormPageLayout
-      title="Register Outsource Partner"
-      headTitle="Register Outsource"
-      description="Capture vendor contacts, service specialisations, and onboarding status in one streamlined intake."
+      title={t('outsources.form.create.title')}
+      headTitle={t('outsources.form.create.headTitle')}
+      description={t('outsources.form.create.description')}
       breadcrumbs={breadcrumbs}
       icon={<Building2 className="h-5 w-5" />}
       headerAside={isDirty && <UnsavedChangesBadge />}
@@ -233,26 +237,26 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
         )}
 
         <FormSection
-          title="Vendor Identity"
-          description="Define how this partner will appear across analytics and dispatch tools."
+          title={t('outsources.form.sections.identity.title')}
+          description={t('outsources.form.sections.identity.descriptionCreate')}
           icon={<UserCircle2 className="h-4 w-4" />}
         >
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <FormField label="Vendor Name" required error={getFieldError('name')}>
+              <FormField label={t('outsources.form.fields.name.label')} required error={getFieldError('name')}>
                 <Input
                   id="name"
                   type="text"
                   value={data.name}
                   onChange={event => handleFieldChange('name', event.target.value)}
-                  placeholder="e.g., Horizon Freight PLC"
+                  placeholder={t('outsources.form.fields.name.placeholder')}
                 />
               </FormField>
 
-              <FormField label="Status" required error={getFieldError('status')}>
+              <FormField label={t('outsources.form.fields.status.label')} required error={getFieldError('status')}>
                 <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
                   <SelectTrigger className={getFieldError('status') ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder={t('outsources.form.fields.status.placeholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {resolvedStatusOptions.map(option => (
@@ -266,13 +270,13 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
             </div>
 
             <div className="space-y-2">
-              <FormField label="Service Type" error={getFieldError('service_type')}>
+              <FormField label={t('outsources.form.fields.serviceType.label')} error={getFieldError('service_type')}>
                 <Input
                   id="service_type"
                   type="text"
                   value={data.service_type}
                   onChange={event => handleFieldChange('service_type', event.target.value)}
-                  placeholder="e.g., Long-haul transport"
+                  placeholder={t('outsources.form.fields.serviceType.placeholder')}
                 />
               </FormField>
               {resolvedServiceTypes.length > 0 && (
@@ -294,50 +298,50 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
         </FormSection>
 
         <FormSection
-          title="Contact Details"
-          description="Provide direct contacts so dispatch and finance teams can coordinate quickly."
+          title={t('outsources.form.sections.contact.title')}
+          description={t('outsources.form.sections.contact.descriptionCreate')}
           icon={<Phone className="h-4 w-4" />}
         >
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <FormField label="Primary Contact" required error={getFieldError('contact_person')}>
+              <FormField label={t('outsources.form.fields.contact.label')} required error={getFieldError('contact_person')}>
                 <Input
                   id="contact_person"
                   type="text"
                   value={data.contact_person}
                   onChange={event => handleFieldChange('contact_person', event.target.value)}
-                  placeholder="e.g., Meron Bekele"
+                  placeholder={t('outsources.form.fields.contact.placeholder')}
                 />
               </FormField>
 
-              <FormField label="Phone Number" error={getFieldError('phone')}>
+              <FormField label={t('outsources.form.fields.phone.label')} error={getFieldError('phone')}>
                 <Input
                   id="phone"
                   type="tel"
                   value={data.phone}
                   onChange={event => handleFieldChange('phone', event.target.value)}
-                  placeholder="e.g., +251 911 123 456"
+                  placeholder={t('outsources.form.fields.phone.placeholder')}
                 />
               </FormField>
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <FormField label="Email" error={getFieldError('email')}>
+              <FormField label={t('outsources.form.fields.email.label')} error={getFieldError('email')}>
                 <Input
                   id="email"
                   type="email"
                   value={data.email}
                   onChange={event => handleFieldChange('email', event.target.value)}
-                  placeholder="e.g., ops@horizonfreight.com"
+                  placeholder={t('outsources.form.fields.email.placeholder')}
                 />
               </FormField>
 
-              <FormField label="Head Office / Dispatch Address">
+              <FormField label={t('outsources.form.fields.address.label')}>
                 <Textarea
                   id="address"
                   value={data.address}
                   onChange={event => handleFieldChange('address', event.target.value)}
-                  placeholder="Include key directions or branch details for field teams"
+                  placeholder={t('outsources.form.fields.address.placeholder')}
                   className="min-h-[96px]"
                 />
               </FormField>
@@ -346,20 +350,20 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
         </FormSection>
 
         <FormSection
-          title="Quick Hints"
-          description="Select a suggested service type or keep the field blank to define a custom specialization."
+          title={t('outsources.form.sections.hints.title')}
+          description={t('outsources.form.sections.hints.descriptionCreate')}
           icon={<MapPin className="h-4 w-4" />}
         >
           {resolvedServiceTypes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">We will surface existing service type suggestions here once vendors are registered.</p>
+            <p className="text-sm text-muted-foreground">{t('outsources.form.hints.empty')}</p>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Click a chip in the section above to auto-fill common service categories such as{' '}
-              {resolvedServiceTypes
-                .slice(0, 3)
-                .map(option => option.label)
-                .join(', ')}
-              .
+              {t('outsources.form.hints.suggestions', {
+                suggestions: resolvedServiceTypes
+                  .slice(0, 3)
+                  .map(option => option.label)
+                  .join(', '),
+              })}
             </p>
           )}
         </FormSection>
@@ -367,7 +371,7 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
 
       <FormActionsBar>
         <Button type="button" variant="outline" asChild>
-          <Link href="/outsources">Cancel</Link>
+          <Link href="/outsources">{t('outsources.actions.cancel')}</Link>
         </Button>
         <Button
           type="submit"
@@ -377,12 +381,12 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
           {processing ? (
             <>
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-              Saving...
+              {t('outsources.actions.createProcessing')}
             </>
           ) : (
             <>
               <CheckCircle className="mr-2 h-4 w-4" />
-              Create Vendor
+              {t('outsources.actions.create')}
             </>
           )}
         </Button>

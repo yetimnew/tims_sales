@@ -51,5 +51,7 @@
 	<string>This app needs location access to track your position in the background and send location updates to the system.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs location access to track your position and send location updates to the system.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>This app uses Face ID to provide secure and convenient authentication.</string>
 </dict>
 </plist>

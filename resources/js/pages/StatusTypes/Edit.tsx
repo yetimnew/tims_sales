@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { validateStatusType } from '@/lib/validation';
 import { AlertCircle, CheckCircle, FileText } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
+import { useTranslation } from 'react-i18next';
 
 interface StatusType {
   id: number;
@@ -26,9 +27,10 @@ interface StatusTypeEditProps {
 }
 
 export default function StatusTypesEdit({ statusType }: StatusTypeEditProps) {
+  const { t } = useTranslation();
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Status Types', href: route('status-types.index') },
-    { title: 'Edit', href: route('status-types.edit', statusType.id) },
+    { title: t('statusTypes.title'), href: route('status-types.index') },
+    { title: t('statusTypes.edit.breadcrumb'), href: route('status-types.edit', statusType.id) },
   ];
 
   const { toast } = useToast();
@@ -42,9 +44,13 @@ export default function StatusTypesEdit({ statusType }: StatusTypeEditProps) {
 
   useEffect(() => {
     if (Object.keys(errors).length > 0) {
-      toast({ title: 'Validation Error', description: 'Please fix the errors', variant: 'destructive' });
+      toast({
+        title: t('statusTypes.validation.title'),
+        description: t('statusTypes.validation.description'),
+        variant: 'destructive',
+      });
     }
-  }, [errors]);
+  }, [errors, t, toast]);
 
   const handleFieldChange = (field: string, value: string) => {
     setData(field as keyof StatusType, value);
@@ -69,7 +75,11 @@ export default function StatusTypesEdit({ statusType }: StatusTypeEditProps) {
     const validationErrors = validateStatusType(data);
     if (Object.keys(validationErrors).length > 0) {
       setFrontendErrors(validationErrors);
-      toast({ title: 'Validation Error', description: 'Please fix all errors', variant: 'destructive' });
+      toast({
+        title: t('statusTypes.validation.title'),
+        description: t('statusTypes.validation.allDescription'),
+        variant: 'destructive',
+      });
       return;
     }
     put(route('status-types.update', statusType.id), {
@@ -85,9 +95,9 @@ export default function StatusTypesEdit({ statusType }: StatusTypeEditProps) {
 
   return (
     <FormPageLayout
-      title="Edit Status Type"
-      headTitle="Edit Status Type"
-      description="Update status type details"
+      title={t('statusTypes.edit.title')}
+      headTitle={t('statusTypes.edit.headTitle')}
+      description={t('statusTypes.edit.description')}
       breadcrumbs={breadcrumbs}
       icon={<FileText className="h-5 w-5" />}
       headerAside={isDirty && <UnsavedChangesBadge />}
@@ -96,35 +106,47 @@ export default function StatusTypesEdit({ statusType }: StatusTypeEditProps) {
         {hasErrors && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Please fix all errors in the form below</AlertDescription>
+            <AlertDescription>{t('statusTypes.validation.formDescription')}</AlertDescription>
           </Alert>
         )}
 
-        <FormSection title="Status Type Details" description="Update the status type information" icon={<FileText className="h-4 w-4" />}>
-          <FormField label="Name" required error={frontendErrors.name || errors.name}>
-            <Input id="name" type="text" value={data.name} onChange={e => handleFieldChange('name', e.target.value)} placeholder="Enter status type name" />
+        <FormSection title={t('statusTypes.form.sections.details.title')} description={t('statusTypes.form.sections.details.editDescription')} icon={<FileText className="h-4 w-4" />}>
+          <FormField label={t('statusTypes.form.fields.name.label')} required error={frontendErrors.name || errors.name}>
+            <Input
+              id="name"
+              type="text"
+              value={data.name}
+              onChange={e => handleFieldChange('name', e.target.value)}
+              placeholder={t('statusTypes.form.fields.name.placeholder')}
+            />
           </FormField>
 
-          <FormField label="Description" error={frontendErrors.description || errors.description}>
-            <Textarea id="description" value={data.description} onChange={e => handleFieldChange('description', e.target.value)} placeholder="Enter status type description" rows={4} />
+          <FormField label={t('statusTypes.form.fields.description.label')} error={frontendErrors.description || errors.description}>
+            <Textarea
+              id="description"
+              value={data.description}
+              onChange={e => handleFieldChange('description', e.target.value)}
+              placeholder={t('statusTypes.form.fields.description.placeholder')}
+              rows={4}
+            />
           </FormField>
         </FormSection>
       </form>
 
       <FormActionsBar>
         <Button type="button" variant="outline" asChild>
-          <Link href={route('status-types.index')}>Cancel</Link>
+          <Link href={route('status-types.index')}>{t('statusTypes.actions.cancel')}</Link>
         </Button>
         <Button type="submit" disabled={processing || hasErrors} onClick={handleSubmit}>
           {processing ? (
             <>
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-              Updating...
+              {t('statusTypes.edit.submitting')}
             </>
           ) : (
             <>
               <CheckCircle className="mr-2 h-4 w-4" />
-              Update Status Type
+              {t('statusTypes.edit.submit')}
             </>
           )}
         </Button>

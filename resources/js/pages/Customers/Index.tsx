@@ -77,6 +77,16 @@ const SKELETON_FLAG_KEY = 'customers.index.shouldShowSkeleton';
 
 
 export default function CustomersIndex({ customers, metrics, filters, statusOptions, perPageOptions }: CustomersIndexProps) {
+    const { t, i18n } = useTranslation();
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('customers.breadcrumb'),
+                href: '/customers',
+            },
+        ],
+        [t],
+    );
     const { hasPermission } = usePermissions();
     const canViewCustomer = hasPermission('customers.show');
     const canCreateCustomer = hasPermission('customers.create');
@@ -104,6 +114,88 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedCustomer, setSelectedCustomer] = React.useState<CustomerData | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
+    const notAvailableLabel = t('customers.fallbacks.notAvailable');
+    const unknownLabel = t('customers.fallbacks.unknown');
+
+    const columnDefinitions = React.useMemo(
+        () => [
+            { id: 'name', label: t('customers.columns.name'), sortKey: 'name' },
+            { id: 'contact_person', label: t('customers.columns.contactPerson') },
+            { id: 'phone', label: t('customers.columns.phone') },
+            { id: 'email', label: t('customers.columns.email') },
+            { id: 'operations_count', label: t('customers.columns.operations'), sortKey: 'operations_count', align: 'center' as const },
+            { id: 'status', label: t('customers.columns.status'), sortKey: 'status', align: 'center' as const },
+            { id: 'created_at', label: t('customers.columns.created'), sortKey: 'created_at' },
+        ],
+        [t],
+    );
+
+    const formatDateValue = React.useCallback(
+        (value?: string | null): string => {
+            if (!value) {
+                return notAvailableLabel;
+            }
+
+            const parsed = new Date(value);
+            if (Number.isNaN(parsed.getTime())) {
+                return notAvailableLabel;
+            }
+
+            return parsed.toLocaleDateString(i18n.language, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            });
+        },
+        [i18n.language, notAvailableLabel],
+    );
+
+    const formatCount = React.useCallback(
+        (value?: number | null): string => {
+            if (typeof value !== 'number' || Number.isNaN(value)) {
+                return '0';
+            }
+
+            return value.toLocaleString(i18n.language);
+        },
+        [i18n.language],
+    );
+
+    const getStatusBadge = React.useCallback(
+        (status?: string | null): React.ReactNode => {
+            if (!status) {
+                return (
+                    <Badge variant="outline" className="bg-muted text-muted-foreground">
+                        {unknownLabel}
+                    </Badge>
+                );
+            }
+
+            const normalized = status.toLowerCase();
+            if (normalized === 'active') {
+                return (
+                    <Badge className="flex items-center gap-1 border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:border-emerald-900/50 dark:bg-emerald-900/30 dark:text-emerald-200">
+                        <CheckCircle className="h-3 w-3" /> {t('customers.status.active')}
+                    </Badge>
+                );
+            }
+
+            if (normalized === 'inactive') {
+                return (
+                    <Badge className="flex items-center gap-1 border-rose-200 bg-rose-100 text-rose-700 hover:bg-rose-200 dark:border-rose-900/50 dark:bg-rose-900/30 dark:text-rose-200">
+                        <XCircle className="h-3 w-3" /> {t('customers.status.inactive')}
+                    </Badge>
+                );
+            }
+
+            return (
+                <Badge variant="outline" className="capitalize">
+                    {status}
+                </Badge>
+            );
+        },
+        [t, unknownLabel],
+    );
 
     const isDataReady = Array.isArray(customers?.data);
     const { isLoading: isTableLoading } = useListingLoading({
@@ -224,15 +316,15 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
                 toast({
-                    title: '✅ Customer Deleted',
+                    title: t('customers.delete.successTitle'),
                     description: selectedCustomer.name
-                        ? `The customer "${selectedCustomer.name}" was removed successfully.`
-                        : 'The customer was removed successfully.',
+                        ? t('customers.delete.successDescriptionWithName', { name: selectedCustomer.name })
+                        : t('customers.delete.successDescription'),
                 });
             },
             onError: (errors) => {
                 setIsDeleting(false);
-                const fallback = 'Failed to delete customer. Please try again.';
+                const fallback = t('customers.delete.failedDescription');
                 const errorMessages = errors && typeof errors === 'object'
                     ? Object.values(errors)
                           .flatMap((value) => (Array.isArray(value) ? value : [value]))
@@ -241,7 +333,7 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                     : fallback;
 
                 toast({
-                    title: '❌ Delete Failed',
+                    title: t('customers.delete.failedTitle'),
                     description: errorMessages || fallback,
                     variant: 'destructive',
                 });
@@ -252,69 +344,69 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
     const statsDefinitions = [
         {
             id: 'total-customers',
-            label: 'Total Customers',
+            label: t('customers.stats.total.label'),
             icon: <Users className="h-3.5 w-3.5 text-blue-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
-                totalRecords.toLocaleString()
+                formatCount(totalRecords)
             ),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                'Full portfolio'
+                t('customers.stats.total.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
         {
             id: 'active-customers',
-            label: 'Active Accounts',
+            label: t('customers.stats.active.label'),
             icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
-                activeCount.toLocaleString()
+                formatCount(activeCount)
             ),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Currently active'
+                t('customers.stats.active.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-emerald-600',
         },
         {
             id: 'inactive-customers',
-            label: 'Inactive',
+            label: t('customers.stats.inactive.label'),
             icon: <XCircle className="h-3.5 w-3.5 text-rose-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
-                inactiveCount.toLocaleString()
+                formatCount(inactiveCount)
             ),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Off duty'
+                t('customers.stats.inactive.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-rose-600',
         },
         {
             id: 'with-operations',
-            label: 'With Operations',
+            label: t('customers.stats.withOperations.label'),
             icon: <Briefcase className="h-3.5 w-3.5 text-indigo-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
-                withOperationsCount.toLocaleString()
+                formatCount(withOperationsCount)
             ),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                'Has operations'
+                t('customers.stats.withOperations.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-indigo-600',
         },
@@ -322,17 +414,17 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
 
     const tableColumns = React.useMemo(
         () => [
-            { id: 'index', label: '#', align: 'center' as const },
-            ...COLUMN_DEFINITIONS.map((col) => ({
+            { id: 'index', label: t('customers.table.index'), align: 'center' as const },
+            ...columnDefinitions.map((col) => ({
                 id: col.id,
                 label: col.label,
                 sortable: Boolean(col.sortKey),
                 sortKey: col.sortKey,
                 align: col.align,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
+            { id: 'actions', label: t('customers.table.actions'), align: 'center' as const },
         ],
-        [],
+        [columnDefinitions, t],
     );
 
     const tableRows = isTableLoading
@@ -378,13 +470,13 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                           <div className="flex flex-col">
                               <span className="text-base font-semibold text-foreground">{customer.name}</span>
                               <span className="text-sm text-muted-foreground">
-                                  {customer.address ? customer.address : 'Address not provided'}
+                                  {customer.address ? customer.address : t('customers.fallbacks.address')}
                               </span>
                           </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{customer.contact_person || '—'}</TableCell>
-                      <TableCell className="text-muted-foreground">{customer.phone || '—'}</TableCell>
-                      <TableCell className="text-muted-foreground">{customer.email || '—'}</TableCell>
+                      <TableCell className="text-muted-foreground">{customer.contact_person || notAvailableLabel}</TableCell>
+                      <TableCell className="text-muted-foreground">{customer.phone || notAvailableLabel}</TableCell>
+                      <TableCell className="text-muted-foreground">{customer.email || notAvailableLabel}</TableCell>
                       <TableCell className="text-center font-medium">{formatCount(customer.operations_count)}</TableCell>
                       <TableCell className="text-center">{getStatusBadge(customer.status)}</TableCell>
                       <TableCell className="text-muted-foreground">{formatDateValue(customer.created_at)}</TableCell>
@@ -392,17 +484,17 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                           <ListingRowActionsMenu
                               actions={[
                                   canViewCustomer && {
-                                      label: 'View',
+                                      label: t('customers.actions.view'),
                                       icon: <Eye className="h-4 w-4" />,
                                       href: `/customers/${customer.id}`,
                                   },
                                   canEditCustomer && {
-                                      label: 'Edit',
+                                      label: t('customers.actions.edit'),
                                       icon: <Edit className="h-4 w-4" />,
                                       href: `/customers/${customer.id}/edit`,
                                   },
                                   canDeleteCustomer && {
-                                      label: 'Delete',
+                                      label: t('customers.actions.delete'),
                                       icon: <Trash2 className="h-4 w-4" />,
                                       danger: true,
                                       disabled: isDeleting && selectedCustomer?.id === customer.id,
@@ -416,10 +508,10 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
             : (
                 <TableRow>
                     <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No customers found.
+                        {t('customers.empty.title')}
                         {canCreateCustomer && (
                             <Link href="/customers/create" className="ml-1 text-primary underline">
-                                Create one
+                                {t('customers.empty.createAction')}
                             </Link>
                         )}
                     </TableCell>
@@ -432,8 +524,8 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
     })), [customerData, rowOffset]);
 
     const perPageSelectOptions = React.useMemo(
-        () => availablePerPageOptions.map(option => ({ label: String(option), value: String(option) })),
-        [availablePerPageOptions],
+        () => availablePerPageOptions.map(option => ({ label: t('customers.filters.perPageOption', { value: option }), value: String(option) })),
+        [availablePerPageOptions, t],
     );
 
     const statsSection = (
@@ -489,38 +581,40 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
             getKey={(item) => item.record.id}
             renderTitle={(item) => (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {t('customers.mobile.position', { value: item.position })}
+                    </span>
                     <span className="text-base font-semibold text-foreground">{item.record.name}</span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
-            renderSubtitle={(item) => item.record.contact_person || 'Contact not specified'}
+            renderSubtitle={(item) => item.record.contact_person || t('customers.fallbacks.contactPerson')}
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Email</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('customers.mobile.email')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.email || 'Not provided'}
+                            {item.record.email || t('customers.fallbacks.notProvided')}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Phone</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('customers.mobile.phone')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.phone || 'Not provided'}
+                            {item.record.phone || t('customers.fallbacks.notProvided')}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Operations</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('customers.mobile.operations')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {formatCount(item.record.operations_count)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">{item.record.status}</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('customers.mobile.status')}</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">{getStatusBadge(item.record.status)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Joined</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('customers.mobile.joined')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {formatDateValue(item.record.created_at)}
                         </span>
@@ -533,7 +627,7 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                         <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                             <Link href={`/customers/${item.record.id}`}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t('customers.actions.view')}
                             </Link>
                         </Button>
                     )}
@@ -541,7 +635,7 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/customers/${item.record.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('customers.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -554,17 +648,17 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                             disabled={isDeleting && selectedCustomer?.id === item.record.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('customers.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No customers found.
+                    {t('customers.empty.title')}
                     {canCreateCustomer && (
                         <Link href="/customers/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('customers.empty.createAction')}
                         </Link>
                     )}
                 </div>
@@ -586,33 +680,33 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
             (statusOptions?.length
                 ? statusOptions
                 : [
-                      { label: 'Active', value: 'active' },
-                      { label: 'Inactive', value: 'inactive' },
+                      { label: t('customers.status.active'), value: 'active' },
+                      { label: t('customers.status.inactive'), value: 'inactive' },
                   ]) || [],
-        [statusOptions],
+        [statusOptions, t],
     );
 
     const tableHeaderExtras = (
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search customers...',
+                placeholder: t('customers.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('customers.filters.rowsLabel'),
                 onChange: handlePerPageChange,
                 options: perPageSelectOptions,
             }}
         >
             <Select value={selectedStatus} onValueChange={handleStatusChange}>
                 <SelectTrigger className="w-full min-w-[160px] sm:w-auto">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t('customers.filters.statusPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="all">{t('customers.filters.allStatuses')}</SelectItem>
                     {statusFilterOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -629,7 +723,7 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                 <Button asChild>
                     <Link href="/customers/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Customer
+                        {t('customers.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -639,14 +733,14 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
     return (
         <>
             <ListPageLayout
-                headTitle="Customers"
-                title="Customers"
-                description={`Manage ${formatCount(totalRecords)} customer${totalRecords === 1 ? '' : 's'} and monitor relationship health.`}
+                headTitle={t('customers.title')}
+                title={t('customers.title')}
+                description={t('customers.description', { count: formatCount(totalRecords), plural: totalRecords === 1 ? '' : 's' })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
-                tableTitle="Customer Portfolio"
-                tableDescription="Track commercial accounts, their status, and operational engagement."
+                tableTitle={t('customers.table.title')}
+                tableDescription={t('customers.table.description')}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     !isTableLoading && customers?.links ? (
@@ -676,8 +770,8 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                         setIsDeleting(false);
                     }
                 }}
-                title="Delete Customer"
-                description="Are you sure you want to delete this customer? This action cannot be undone."
+                title={t('customers.delete.title')}
+                description={t('customers.delete.description')}
                 itemName={selectedCustomer ? selectedCustomer.name : undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}

@@ -16,14 +16,8 @@ import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Activity, CheckCircle, Edit, Eye, Plus, Search, Trash2, XCircle, ChevronRight, BarChart3 } from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Performances',
-        href: '/performances',
-    },
-];
 
 type ColumnKey =
     | 'foNumber'
@@ -90,84 +84,6 @@ interface PerformancesIndexProps {
 
 const SKELETON_FLAG_KEY = 'performances.index.shouldShowSkeleton';
 
-const COLUMN_DEFINITIONS: Array<{
-    id: ColumnKey;
-    label: string;
-    sortKey?: string;
-    align?: 'center' | 'right';
-}> = [
-    { id: 'foNumber', label: 'FO Number', sortKey: 'FOnumber' },
-    { id: 'dispatchDate', label: 'Dispatch Date', sortKey: 'DateDispach' },
-    { id: 'truckDriver', label: 'Truck / Driver' },
-    { id: 'origin', label: 'Origin' },
-    { id: 'destination', label: 'Destination' },
-    { id: 'distance', label: 'Distance (KM)', sortKey: 'DistanceWCargo', align: 'right' },
-];
-
-const formatNumberValue = (value?: number | null, fractionDigits = 2): string => {
-    if (value === null || value === undefined || Number.isNaN(Number(value))) {
-        return '—';
-    }
-
-    return Number(value).toLocaleString('en-US', {
-        minimumFractionDigits: fractionDigits,
-        maximumFractionDigits: fractionDigits,
-    });
-};
-
-const formatDateValue = (value?: string | null): string => {
-    if (!value) {
-        return '—';
-    }
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-        return '—';
-    }
-
-    const formattedDate = parsed.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-    });
-
-    const now = new Date();
-    const parsedDay = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const diffDays = Math.round((parsedDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-    let relativeLabel: string;
-
-    if (diffDays === 0) {
-        relativeLabel = 'Today';
-    } else if (diffDays === -1) {
-        relativeLabel = 'Yesterday';
-    } else if (diffDays === 1) {
-        relativeLabel = 'Tomorrow';
-    } else if (diffDays < 0) {
-        relativeLabel = `${Math.abs(diffDays)} days ago`;
-    } else {
-        relativeLabel = `In ${diffDays} days`;
-    }
-
-    return `${formattedDate} (${relativeLabel})`;
-};
-
-const formatCount = (value?: number | null): string => {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
-        return '0';
-    }
-
-    return value.toLocaleString();
-};
-
-const formatTruckDriver = (plate?: string | null, driver?: string | null): string => {
-    if (plate && driver) {
-        return `${plate} • ${driver}`;
-    }
-
-    return plate ?? driver ?? '—';
-};
 
 const resolveDistanceValue = (performance: PerformanceData): number | null => {
     if (typeof performance.totalDistance === 'number') {
@@ -190,11 +106,111 @@ export default function PerformancesIndex({
     perPageOptions,
     totalCount,
 }: PerformancesIndexProps) {
+    const { t, i18n } = useTranslation();
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('performances.breadcrumb'),
+                href: '/performances',
+            },
+        ],
+        [t],
+    );
     const { hasPermission } = usePermissions();
     const canViewPerformance = hasPermission('performances.show');
     const canCreatePerformance = hasPermission('performances.create');
     const canEditPerformance = hasPermission('performances.edit');
     const canDeletePerformance = hasPermission('performances.destroy');
+    const notAvailableLabel = t('performances.fallbacks.notAvailable');
+
+    const columnDefinitions = React.useMemo(
+        () => [
+            { id: 'foNumber', label: t('performances.columns.foNumber'), sortKey: 'FOnumber' },
+            { id: 'dispatchDate', label: t('performances.columns.dispatchDate'), sortKey: 'DateDispach' },
+            { id: 'truckDriver', label: t('performances.columns.truckDriver') },
+            { id: 'origin', label: t('performances.columns.origin') },
+            { id: 'destination', label: t('performances.columns.destination') },
+            { id: 'distance', label: t('performances.columns.distance'), sortKey: 'DistanceWCargo', align: 'right' as const },
+        ],
+        [t],
+    );
+
+    const formatNumberValue = React.useCallback(
+        (value?: number | null, fractionDigits = 2): string => {
+            if (value === null || value === undefined || Number.isNaN(Number(value))) {
+                return notAvailableLabel;
+            }
+
+            return Number(value).toLocaleString(i18n.language, {
+                minimumFractionDigits: fractionDigits,
+                maximumFractionDigits: fractionDigits,
+            });
+        },
+        [i18n.language, notAvailableLabel],
+    );
+
+    const formatDateValue = React.useCallback(
+        (value?: string | null): string => {
+            if (!value) {
+                return notAvailableLabel;
+            }
+
+            const parsed = new Date(value);
+            if (Number.isNaN(parsed.getTime())) {
+                return notAvailableLabel;
+            }
+
+            const formattedDate = parsed.toLocaleDateString(i18n.language, {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+            });
+
+            const now = new Date();
+            const parsedDay = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const diffDays = Math.round((parsedDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+            let relativeLabel: string;
+
+            if (diffDays === 0) {
+                relativeLabel = t('performances.dateLabels.today');
+            } else if (diffDays === -1) {
+                relativeLabel = t('performances.dateLabels.yesterday');
+            } else if (diffDays === 1) {
+                relativeLabel = t('performances.dateLabels.tomorrow');
+            } else if (diffDays < 0) {
+                relativeLabel = t('performances.dateLabels.daysAgo', { count: Math.abs(diffDays) });
+            } else {
+                relativeLabel = t('performances.dateLabels.inDays', { count: diffDays });
+            }
+
+            return t('performances.dateLabels.withRelative', { date: formattedDate, label: relativeLabel });
+        },
+        [i18n.language, notAvailableLabel, t],
+    );
+
+    const formatCount = React.useCallback(
+        (value?: number | null): string => {
+            if (typeof value !== 'number' || Number.isNaN(value)) {
+                return '0';
+            }
+
+            return value.toLocaleString(i18n.language);
+        },
+        [i18n.language],
+    );
+
+    const formatTruckDriver = React.useCallback(
+        (plate?: string | null, driver?: string | null): string => {
+            if (plate && driver) {
+                return t('performances.fallbacks.truckDriver', { plate, driver });
+            }
+
+            return plate ?? driver ?? notAvailableLabel;
+        },
+        [notAvailableLabel, t],
+    );
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
@@ -241,7 +257,7 @@ export default function PerformancesIndex({
             ? Number(perPageCountRaw)
             : performanceData.length || 1;
     const rowOffset = (currentPage - 1) * perPageCount;
-    const metricsWindowLabel = 'Last 30 days';
+    const metricsWindowLabel = t('performances.stats.windowLabel');
     const metricsCounts = React.useMemo(
         () => ({
             total: metrics?.total ?? 0,
@@ -321,13 +337,13 @@ export default function PerformancesIndex({
     const statsDefinitions = [
         {
             id: 'total-performances',
-            label: 'Total Performances',
+            label: t('performances.stats.total.label'),
             icon: <BarChart3 className="h-3.5 w-3.5 text-blue-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
-                metricsCounts.total.toLocaleString()
+                formatCount(metricsCounts.total)
             ),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
@@ -338,52 +354,52 @@ export default function PerformancesIndex({
         },
         {
             id: 'active-performances',
-            label: 'Active',
+            label: t('performances.stats.active.label'),
             icon: <Activity className="h-3.5 w-3.5 text-emerald-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
-                metricsCounts.active.toLocaleString()
+                formatCount(metricsCounts.active)
             ),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Active in last 30 days'
+                t('performances.stats.active.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-emerald-600',
         },
         {
             id: 'completed-performances',
-            label: 'Completed',
+            label: t('performances.stats.completed.label'),
             icon: <CheckCircle className="h-3.5 w-3.5 text-blue-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
-                metricsCounts.completed.toLocaleString()
+                formatCount(metricsCounts.completed)
             ),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Completed in last 30 days'
+                t('performances.stats.completed.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
         {
             id: 'failed-performances',
-            label: 'Failed',
+            label: t('performances.stats.failed.label'),
             icon: <XCircle className="h-3.5 w-3.5 text-rose-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
-                metricsCounts.failed.toLocaleString()
+                formatCount(metricsCounts.failed)
             ),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Failed in last 30 days'
+                t('performances.stats.failed.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-rose-600',
         },
@@ -426,13 +442,13 @@ export default function PerformancesIndex({
                 setSelectedPerformance(null);
                 setIsDeleting(false);
                 toast({
-                    title: '✅ Performance Deleted',
-                    description: `${selectedPerformance.foNumber} has been removed successfully.`,
+                    title: t('performances.delete.successTitle'),
+                    description: t('performances.delete.successDescription', { foNumber: selectedPerformance.foNumber }),
                 });
             },
             onError: (errors) => {
                 setIsDeleting(false);
-                const fallback = 'Failed to delete performance. Please try again.';
+                const fallback = t('performances.delete.failedDescription');
                 const errorMessages = errors && typeof errors === 'object'
                     ? Object.values(errors)
                           .flatMap((value) => (Array.isArray(value) ? value : [value]))
@@ -441,13 +457,13 @@ export default function PerformancesIndex({
                     : fallback;
 
                 toast({
-                    title: '❌ Delete Failed',
+                    title: t('performances.delete.failedTitle'),
                     description: errorMessages || fallback,
                     variant: 'destructive',
                 });
             },
         });
-    }, [selectedPerformance, canDeletePerformance, handleNavigate]);
+    }, [selectedPerformance, canDeletePerformance, handleNavigate, t]);
 
     const handleSort = React.useCallback(
         (column: string) => {
@@ -461,22 +477,22 @@ export default function PerformancesIndex({
 
     const tableColumns = React.useMemo(
         () => [
-            { id: 'index', label: '#', align: 'center' as const },
-            ...COLUMN_DEFINITIONS.map((column) => ({
+            { id: 'index', label: t('performances.table.index'), align: 'center' as const },
+            ...columnDefinitions.map((column) => ({
                 id: column.id,
                 label: column.label,
                 sortable: Boolean(column.sortKey),
                 sortKey: column.sortKey,
                 align: column.align,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
+            { id: 'actions', label: t('performances.table.actions'), align: 'center' as const },
         ],
-        [],
+        [columnDefinitions, t],
     );
 
     const perPageSelectOptions = React.useMemo(
-        () => availablePerPageOptions.map(option => ({ label: String(option), value: String(option) })),
-        [availablePerPageOptions],
+        () => availablePerPageOptions.map(option => ({ label: t('performances.filters.perPageOption', { value: option }), value: String(option) })),
+        [availablePerPageOptions, t],
     );
 
     const statsSection = (
@@ -535,26 +551,28 @@ export default function PerformancesIndex({
                                   </span>
                               </div>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">{performance.originName ?? '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{performance.destinationName ?? '—'}</TableCell>
+                          <TableCell className="text-muted-foreground">{performance.originName ?? notAvailableLabel}</TableCell>
+                          <TableCell className="text-muted-foreground">{performance.destinationName ?? notAvailableLabel}</TableCell>
                           <TableCell className="text-right">
-                              {distanceValue !== null ? `${formatNumberValue(distanceValue, 0)} km` : '—'}
+                              {distanceValue !== null
+                                  ? t('performances.fallbacks.distanceValue', { value: formatNumberValue(distanceValue, 0) })
+                                  : notAvailableLabel}
                           </TableCell>
                           <TableCell className="text-center">
                               <ListingRowActionsMenu
                                   actions={[
                                       canViewPerformance && {
-                                          label: 'View',
+                                          label: t('performances.actions.view'),
                                           icon: <Eye className="h-4 w-4" />,
                                           href: `/performances/${performance.id}`,
                                       },
                                       canEditPerformance && {
-                                          label: 'Edit',
+                                          label: t('performances.actions.edit'),
                                           icon: <Edit className="h-4 w-4" />,
                                           href: `/performances/${performance.id}/edit`,
                                       },
                                       canDeletePerformance && {
-                                          label: 'Delete',
+                                          label: t('performances.actions.delete'),
                                           icon: <Trash2 className="h-4 w-4" />,
                                           danger: true,
                                           onSelect: () => handleDeleteClick(performance),
@@ -568,10 +586,10 @@ export default function PerformancesIndex({
             : (
                 <TableRow>
                     <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No performances found.
+                        {t('performances.empty.title')}
                         {canCreatePerformance && (
                             <Link href="/performances/create" className="ml-1 text-primary underline">
-                                Create one
+                                {t('performances.empty.createAction')}
                             </Link>
                         )}
                     </TableCell>
@@ -645,8 +663,10 @@ export default function PerformancesIndex({
             getKey={(item) => item.record.id}
             renderTitle={(item) => (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
-                    <span className="text-base">{item.record.foNumber || 'Unknown'}</span>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {t('performances.mobile.position', { value: item.position })}
+                    </span>
+                    <span className="text-base">{item.record.foNumber || t('performances.fallbacks.unknown')}</span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
@@ -657,35 +677,35 @@ export default function PerformancesIndex({
                 return (
                     <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Driver</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('performances.mobile.driver')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.driverName ?? '—'}
+                            {item.record.driverName ?? notAvailableLabel}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Truck</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('performances.mobile.truck')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.truckPlate ?? '—'}
+                            {item.record.truckPlate ?? notAvailableLabel}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Origin</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('performances.mobile.origin')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.originName ?? '—'}
+                            {item.record.originName ?? notAvailableLabel}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Destination</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('performances.mobile.destination')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.destinationName ?? '—'}
+                            {item.record.destinationName ?? notAvailableLabel}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Distance</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('performances.mobile.distance')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {mobileDistance !== null
-                                ? `${formatNumberValue(mobileDistance, 0)} km`
-                                : '—'}
+                                ? t('performances.fallbacks.distanceValue', { value: formatNumberValue(mobileDistance, 0) })
+                                : notAvailableLabel}
                         </span>
                     </div>
                     </div>
@@ -697,7 +717,7 @@ export default function PerformancesIndex({
                         <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                             <Link href={`/performances/${item.record.id}`}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t('performances.actions.view')}
                             </Link>
                         </Button>
                     )}
@@ -705,7 +725,7 @@ export default function PerformancesIndex({
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/performances/${item.record.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('performances.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -718,17 +738,17 @@ export default function PerformancesIndex({
                             disabled={isDeleting && selectedPerformance?.id === item.record.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('performances.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No performances found.
+                    {t('performances.empty.title')}
                     {canCreatePerformance && (
                         <Link href="/performances/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('performances.empty.createAction')}
                         </Link>
                     )}
                 </div>
@@ -740,23 +760,23 @@ export default function PerformancesIndex({
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search performances...',
+                placeholder: t('performances.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('performances.filters.rowsLabel'),
                 onChange: handlePerPageChange,
                 options: perPageSelectOptions,
             }}
         >
             <Select value={selectedStatus} onValueChange={handleStatusChange}>
                 <SelectTrigger className="w-full min-w-[160px] sm:w-auto">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t('performances.filters.statusPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="all">{t('performances.filters.allStatuses')}</SelectItem>
                     {statusOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -766,10 +786,10 @@ export default function PerformancesIndex({
             </Select>
             <Select value={selectedLoadPhase} onValueChange={handleLoadPhaseChange}>
                 <SelectTrigger className="w-full min-w-[180px] sm:w-auto">
-                    <SelectValue placeholder="Load phase" />
+                    <SelectValue placeholder={t('performances.filters.loadPhasePlaceholder')} />
                 </SelectTrigger>
                 <SelectContent className="max-h-72">
-                    <SelectItem value="all">All phases</SelectItem>
+                    <SelectItem value="all">{t('performances.filters.allLoadPhases')}</SelectItem>
                     {loadPhaseOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -786,7 +806,7 @@ export default function PerformancesIndex({
                 <Button asChild>
                     <Link href="/performances/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Performance
+                        {t('performances.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -796,14 +816,14 @@ export default function PerformancesIndex({
     return (
         <>
             <ListPageLayout
-                headTitle="Performances"
-                title="Performances"
-                description={`Manage your fleet performance (${formatCount(metricsCounts.total)} in last 30 days)`}
+                headTitle={t('performances.title')}
+                title={t('performances.title')}
+                description={t('performances.description', { count: formatCount(metricsCounts.total) })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
-                tableTitle="Performance Records"
-                tableDescription="Track every performance entry"
+                tableTitle={t('performances.table.title')}
+                tableDescription={t('performances.table.description')}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     !isTableLoading && performances?.links ? (
@@ -833,8 +853,8 @@ export default function PerformancesIndex({
                         setIsDeleting(false);
                     }
                 }}
-                title="Delete Performance"
-                description="Are you sure you want to delete this performance? This action cannot be undone."
+                title={t('performances.delete.title')}
+                description={t('performances.delete.description')}
                 itemName={selectedPerformance ? selectedPerformance.foNumber : undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}

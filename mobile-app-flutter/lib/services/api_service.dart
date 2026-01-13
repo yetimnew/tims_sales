@@ -2,14 +2,21 @@ import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
+import 'api_config_service.dart';
 
 class ApiService {
   late Dio _dio;
+  final ApiConfigService _apiConfigService = ApiConfigService();
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal() {
+    _initializeDio();
+  }
+
+  Future<void> _initializeDio() async {
+    final baseUrl = await _apiConfigService.getApiBaseUrl();
     _dio = Dio(BaseOptions(
-      baseUrl: AppConfig.apiBaseUrl,
+      baseUrl: baseUrl,
       connectTimeout: AppConfig.apiTimeout,
       receiveTimeout: AppConfig.apiTimeout,
       headers: {
@@ -50,7 +57,7 @@ class ApiService {
       final response = await _dio.get(endpoint, queryParameters: queryParameters);
       return response;
     } on DioException catch (e) {
-      throw _handleError(e);
+      throw await _handleError(e);
     }
   }
 
@@ -59,7 +66,7 @@ class ApiService {
       final response = await _dio.post(endpoint, data: data);
       return response;
     } on DioException catch (e) {
-      throw _handleError(e);
+      throw await _handleError(e);
     }
   }
 
@@ -68,7 +75,7 @@ class ApiService {
       final response = await _dio.put(endpoint, data: data);
       return response;
     } on DioException catch (e) {
-      throw _handleError(e);
+      throw await _handleError(e);
     }
   }
 
@@ -77,7 +84,7 @@ class ApiService {
       final response = await _dio.patch(endpoint, data: data);
       return response;
     } on DioException catch (e) {
-      throw _handleError(e);
+      throw await _handleError(e);
     }
   }
 
@@ -86,11 +93,16 @@ class ApiService {
       final response = await _dio.delete(endpoint);
       return response;
     } on DioException catch (e) {
-      throw _handleError(e);
+      throw await _handleError(e);
     }
   }
 
-  Future<Response> uploadFile(String endpoint, XFile file, String fieldName) async {
+  Future<Response> uploadFile(
+    String endpoint,
+    XFile file,
+    String fieldName, {
+    Map<String, dynamic>? additionalData,
+  }) async {
     try {
       // Read file as bytes (works on both web and mobile)
       final bytes = await file.readAsBytes();
@@ -111,12 +123,19 @@ class ApiService {
         fileName = '$fileName.jpg';
       }
 
-      final formData = FormData.fromMap({
+      final formDataMap = <String, dynamic>{
         fieldName: MultipartFile.fromBytes(
           bytes,
           filename: fileName,
         ),
-      });
+      };
+
+      // Add additional form fields if provided
+      if (additionalData != null) {
+        formDataMap.addAll(additionalData);
+      }
+
+      final formData = FormData.fromMap(formDataMap);
 
       final response = await _dio.post(
         endpoint,
@@ -129,11 +148,16 @@ class ApiService {
       );
       return response;
     } on DioException catch (e) {
-      throw _handleError(e);
+      throw await _handleError(e);
     }
   }
 
-  Exception _handleError(DioException error) {
+  /// Reinitialize Dio with new base URL (call after changing API URL in settings)
+  Future<void> reinitialize() async {
+    await _initializeDio();
+  }
+
+  Future<Exception> _handleError(DioException error) async {
     if (error.response != null) {
       final data = error.response?.data;
       final message = data is Map && data.containsKey('message')
@@ -142,14 +166,15 @@ class ApiService {
       return Exception(message);
     } else if (error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.receiveTimeout) {
-      return Exception('Connection timeout. Please check your internet connection.');
+      final baseUrl = await _apiConfigService.getApiBaseUrl();
+      return Exception('Connection timeout. Please check your internet connection.\n\nCurrent API URL: $baseUrl\n\nFor physical devices, ensure:\n1. Phone and computer are on same Wi-Fi\n2. API URL is set correctly in Settings\n3. Laravel server is running: php artisan serve --host=0.0.0.0');
     } else if (error.type == DioExceptionType.connectionError) {
-      // More detailed connection error message
-      final baseUrl = AppConfig.apiBaseUrl;
-      return Exception('Cannot connect to server at $baseUrl. Please ensure the Laravel server is running (php artisan serve) and the URL is correct.');
+      // More detailed connection error message with instructions
+      final baseUrl = await _apiConfigService.getApiBaseUrl();
+      return Exception('Cannot connect to server at $baseUrl.\n\nFor physical devices:\n1. Find your computer\'s IP (ipconfig on Windows)\n2. Go to Settings → API Configuration\n3. Set URL: http://YOUR_IP:8000/api\n4. Ensure server is running: php artisan serve --host=0.0.0.0');
     } else {
       // More detailed error message
-      final baseUrl = AppConfig.apiBaseUrl;
+      final baseUrl = await _apiConfigService.getApiBaseUrl();
       return Exception('Network error: ${error.message ?? "Unknown error"}. Server: $baseUrl');
     }
   }

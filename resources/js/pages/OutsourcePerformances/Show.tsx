@@ -12,6 +12,7 @@ import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContaine
 import { DetailPageLayout } from '@/components/detail/detail-page-layout';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { DetailSummaryGrid, type DetailSummaryItem } from '@/components/detail/detail-summary-grid';
+import { useTranslation } from 'react-i18next';
 
 interface SimpleReference {
   id: number;
@@ -108,65 +109,6 @@ interface OutsourcePerformancesShowProps {
   insights?: VendorInsights | null;
 }
 
-const formatNumber = (value: number | null | undefined, suffix = '', fractionDigits = 2): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
-  return `${Number(value).toLocaleString('en-US', {
-    minimumFractionDigits: fractionDigits,
-    maximumFractionDigits: fractionDigits,
-  })}${suffix}`;
-};
-
-const formatCurrency = (value: number | null | undefined): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'ETB',
-    maximumFractionDigits: 2,
-  }).format(Number(value));
-};
-
-const formatPercent = (value: number | null | undefined): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
-  return `${Number(value).toFixed(1)}%`;
-};
-
-const formatDate = (value: string | null | undefined): string => {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-};
-
-const formatShortDate = (value: string | null | undefined): string => {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-};
-
-const formatStatus = (status: string | null | undefined): string => {
-  if (!status) return 'Unknown';
-  return status
-    .replace(/_/g, ' ')
-    .toLowerCase()
-    .split(' ')
-    .map(chunk => chunk.charAt(0).toUpperCase() + chunk.slice(1))
-    .join(' ');
-};
-
 const statusToneClasses = (status: string | null | undefined): string => {
   switch (status) {
     case 'completed':
@@ -184,25 +126,87 @@ const statusToneClasses = (status: string | null | undefined): string => {
 const chartPalette = ['#6366f1', '#22c55e', '#f97316'];
 
 export default function OutsourcePerformancesShow({ performance, metrics, recentTrips, insights }: OutsourcePerformancesShowProps) {
+  const { t, i18n } = useTranslation();
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const locale = i18n.language || 'en-US';
+  const notAvailableLabel = t('outsourcePerformances.fallbacks.notAvailable');
 
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Outsource Performances', href: '/outsource-performances' },
-    { title: `Trip ${performance.trip_number}`, href: `/outsource-performances/${performance.id}` },
+    { title: t('outsourcePerformances.title'), href: '/outsource-performances' },
+    { title: t('outsourcePerformances.show.breadcrumbTrip', { trip: performance.trip_number }), href: `/outsource-performances/${performance.id}` },
   ];
+
+  const formatNumber = (value: number | null | undefined, suffix = '', fractionDigits = 2): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return notAvailableLabel;
+    return `${Number(value).toLocaleString(locale, {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    })}${suffix}`;
+  };
+
+  const formatCurrency = (value: number | null | undefined): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return notAvailableLabel;
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: 'ETB',
+      maximumFractionDigits: 2,
+    }).format(Number(value));
+  };
+
+  const formatPercent = (value: number | null | undefined): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return notAvailableLabel;
+    return `${Number(value).toFixed(1)}%`;
+  };
+
+  const formatDate = (value: string | null | undefined): string => {
+    if (!value) return notAvailableLabel;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return notAvailableLabel;
+    return date.toLocaleDateString(locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  };
+
+  const formatShortDate = (value: string | null | undefined): string => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleDateString(locale, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  };
+
+  const formatStatus = (status: string | null | undefined): string => {
+    if (!status) return t('outsourcePerformances.status.unknown');
+    return status
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .split(' ')
+      .map(chunk => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+      .join(' ');
+  };
 
   const statusLabel = formatStatus(performance.status);
   const statusClasses = statusToneClasses(performance.status);
-  const routeLabel = [performance.from_place?.name, performance.to_place?.name].filter(Boolean).join(' → ') || 'Route not specified';
+  const routeLabel = [performance.from_place?.name, performance.to_place?.name].filter(Boolean).join(' → ') || t('outsourcePerformances.show.routeFallback');
 
   const kpiSummary: DetailSummaryItem[] = [
-    { label: 'Distance', value: formatNumber(performance.distance_km, ' km'), helper: 'Kilometres travelled' },
-    { label: 'Cargo Volume', value: formatNumber(performance.cargo_volume_mt, ' MT'), helper: 'Freight moved' },
-    { label: 'Ton-Kilometres', value: formatNumber(performance.tonkm, ' ton-km'), helper: 'Productive output' },
-    { label: 'Trip Cost', value: formatCurrency(performance.cost), helper: 'Total spend' },
+    { label: t('outsourcePerformances.show.kpi.distance.label'), value: formatNumber(performance.distance_km, ' km'), helper: t('outsourcePerformances.show.kpi.distance.helper') },
+    { label: t('outsourcePerformances.show.kpi.cargo.label'), value: formatNumber(performance.cargo_volume_mt, ' MT'), helper: t('outsourcePerformances.show.kpi.cargo.helper') },
+    { label: t('outsourcePerformances.show.kpi.tonkm.label'), value: formatNumber(performance.tonkm, ' ton-km'), helper: t('outsourcePerformances.show.kpi.tonkm.helper') },
+    { label: t('outsourcePerformances.show.kpi.cost.label'), value: formatCurrency(performance.cost), helper: t('outsourcePerformances.show.kpi.cost.helper') },
   ];
 
   const timelineData = useMemo(() => {
@@ -227,23 +231,23 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
         setDeleteDialogOpen(false);
         setIsDeleting(false);
         toast({
-          title: '✅ Trip Deleted',
-          description: `Trip ${performance.trip_number} has been removed successfully.`,
+          title: t('outsourcePerformances.delete.successTitle'),
+          description: t('outsourcePerformances.delete.successDescription', { trip: performance.trip_number }),
         });
       },
       onError: errors => {
         setIsDeleting(false);
-        const fallback = 'An unexpected error occurred while deleting the trip.';
+        const fallback = t('outsourcePerformances.delete.failedDescription');
         if (errors && typeof errors === 'object') {
           const message = Object.values(errors).flat().join('\n');
           toast({
-            title: '❌ Delete Failed',
+            title: t('outsourcePerformances.delete.failedTitle'),
             description: message || fallback,
             variant: 'destructive',
           });
         } else {
           toast({
-            title: '❌ Delete Failed',
+            title: t('outsourcePerformances.delete.failedTitle'),
             description: fallback,
             variant: 'destructive',
           });
@@ -254,17 +258,17 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
 
   return (
     <DetailPageLayout
-      title={`Trip ${performance.trip_number}`}
-      subtitle={`${performance.outsource?.name ?? 'Vendor not linked'} • ${performance.operation?.label ?? 'Operation not linked'}`}
+      title={t('outsourcePerformances.show.title', { trip: performance.trip_number })}
+      subtitle={`${performance.outsource?.name ?? t('outsourcePerformances.show.vendorFallback')} • ${performance.operation?.label ?? t('outsourcePerformances.show.operationFallback')}`}
       breadcrumbs={breadcrumbs}
-      headTitle={`Outsource Trip ${performance.trip_number}`}
+      headTitle={t('outsourcePerformances.show.headTitle', { trip: performance.trip_number })}
       icon={<Activity className="h-6 w-6 text-indigo-700 dark:text-indigo-300" />}
       iconWrapperClassName="bg-indigo-100 dark:bg-indigo-900/30"
       leading={
         <Button variant="ghost" size="sm" asChild>
           <Link href="/outsource-performances">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {t('outsourcePerformances.show.actions.back')}
           </Link>
         </Button>
       }
@@ -280,14 +284,14 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
               <Button variant="outline" asChild>
                 <Link href={`/outsource-performances/${performance.id}/edit`}>
                   <Edit className="h-4 w-4 mr-2" />
-                  Edit
+                  {t('outsourcePerformances.actions.edit')}
                 </Link>
               </Button>
             )}
             {hasPermission('outsource-performances.destroy') && (
               <Button variant="outline" className="border-rose-200 text-rose-600 hover:bg-rose-50" onClick={() => setDeleteDialogOpen(true)}>
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                {t('outsourcePerformances.actions.delete')}
               </Button>
             )}
           </div>
@@ -297,14 +301,14 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
       <DetailSummaryGrid items={kpiSummary} />
 
       <div className="grid gap-6 xl:grid-cols-3">
-        <DetailSectionCard title="Trip Snapshot" description="Key operational figures" icon={<Activity className="h-5 w-5" />} className="xl:col-span-2">
+        <DetailSectionCard title={t('outsourcePerformances.show.sections.snapshot.title')} description={t('outsourcePerformances.show.sections.snapshot.description')} icon={<Activity className="h-5 w-5" />} className="xl:col-span-2">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="flex items-center gap-3 rounded-lg border p-3">
               <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900/30">
                 <Navigation className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-xs font-medium uppercase text-muted-foreground">Distance</p>
+                <p className="text-xs font-medium uppercase text-muted-foreground">{t('outsourcePerformances.show.fields.distance')}</p>
                 <p className="text-lg font-semibold">{formatNumber(performance.distance_km, ' km')}</p>
               </div>
             </div>
@@ -313,7 +317,7 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
                 <Package className="h-4 w-4 text-emerald-600" />
               </div>
               <div>
-                <p className="text-xs font-medium uppercase text-muted-foreground">Cargo</p>
+                <p className="text-xs font-medium uppercase text-muted-foreground">{t('outsourcePerformances.show.fields.cargo')}</p>
                 <p className="text-lg font-semibold">{formatNumber(performance.cargo_volume_mt, ' MT')}</p>
               </div>
             </div>
@@ -322,7 +326,7 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
                 <TrendingUp className="h-4 w-4 text-indigo-600" />
               </div>
               <div>
-                <p className="text-xs font-medium uppercase text-muted-foreground">Ton-km</p>
+                <p className="text-xs font-medium uppercase text-muted-foreground">{t('outsourcePerformances.show.fields.tonkm')}</p>
                 <p className="text-lg font-semibold">{formatNumber(performance.tonkm, ' ton-km')}</p>
               </div>
             </div>
@@ -331,7 +335,7 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
                 <Coins className="h-4 w-4 text-amber-600" />
               </div>
               <div>
-                <p className="text-xs font-medium uppercase text-muted-foreground">Cost</p>
+                <p className="text-xs font-medium uppercase text-muted-foreground">{t('outsourcePerformances.show.fields.cost')}</p>
                 <p className="text-lg font-semibold">{formatCurrency(performance.cost)}</p>
               </div>
             </div>
@@ -341,18 +345,18 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
             <div className="rounded-lg border p-3">
               <div className="flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
                 <Gauge className="h-4 w-4" />
-                Cost per km
+                {t('outsourcePerformances.show.fields.costPerKm')}
               </div>
               <p className="mt-2 text-lg font-semibold">{formatNumber(performance.cost_per_km, ' Birr/km')}</p>
-              <p className="text-xs text-muted-foreground">Spend per kilometre travelled</p>
+              <p className="text-xs text-muted-foreground">{t('outsourcePerformances.show.fields.costPerKmHelper')}</p>
             </div>
             <div className="rounded-lg border p-3">
               <div className="flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
                 <Percent className="h-4 w-4" />
-                Cost per ton-km
+                {t('outsourcePerformances.show.fields.costPerTonkm')}
               </div>
               <p className="mt-2 text-lg font-semibold">{formatNumber(performance.cost_per_tonkm, ' Birr/ton-km')}</p>
-              <p className="text-xs text-muted-foreground">Efficiency of spend across tonnage</p>
+              <p className="text-xs text-muted-foreground">{t('outsourcePerformances.show.fields.costPerTonkmHelper')}</p>
             </div>
           </div>
 
@@ -360,56 +364,56 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg border p-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Distance share</p>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">{t('outsourcePerformances.show.fields.distanceShare')}</p>
                   <Navigation className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <p className="mt-2 text-lg font-semibold">{formatPercent(insights.share.distance)}</p>
-                <p className="text-xs text-muted-foreground">Contribution to vendor portfolio</p>
+                <p className="text-xs text-muted-foreground">{t('outsourcePerformances.show.fields.distanceShareHelper')}</p>
               </div>
               <div className="rounded-lg border p-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Cargo share</p>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">{t('outsourcePerformances.show.fields.cargoShare')}</p>
                   <Package className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <p className="mt-2 text-lg font-semibold">{formatPercent(insights.share.cargo)}</p>
-                <p className="text-xs text-muted-foreground">Portion of cargo moved</p>
+                <p className="text-xs text-muted-foreground">{t('outsourcePerformances.show.fields.cargoShareHelper')}</p>
               </div>
               <div className="rounded-lg border p-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Ton-km share</p>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">{t('outsourcePerformances.show.fields.tonkmShare')}</p>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <p className="mt-2 text-lg font-semibold">{formatPercent(insights.share.tonkm)}</p>
-                <p className="text-xs text-muted-foreground">Share of productivity</p>
+                <p className="text-xs text-muted-foreground">{t('outsourcePerformances.show.fields.tonkmShareHelper')}</p>
               </div>
               <div className="rounded-lg border p-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Cost share</p>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">{t('outsourcePerformances.show.fields.costShare')}</p>
                   <Coins className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <p className="mt-2 text-lg font-semibold">{formatPercent(insights.share.cost)}</p>
-                <p className="text-xs text-muted-foreground">Percentage of vendor spend</p>
+                <p className="text-xs text-muted-foreground">{t('outsourcePerformances.show.fields.costShareHelper')}</p>
               </div>
             </div>
           )}
         </DetailSectionCard>
 
-        <DetailSectionCard title="Vendor Metrics" description="Performance across vendor history" icon={<Activity className="h-5 w-5" />}>
+        <DetailSectionCard title={t('outsourcePerformances.show.sections.vendor.title')} description={t('outsourcePerformances.show.sections.vendor.description')} icon={<Activity className="h-5 w-5" />}>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Vendor trips</span>
+              <span className="text-muted-foreground">{t('outsourcePerformances.show.vendorMetrics.trips')}</span>
               <span className="font-semibold">{formatNumber(metrics.vendorTripCount, '', 0)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Completed</span>
+              <span className="text-muted-foreground">{t('outsourcePerformances.status.completed')}</span>
               <span className="font-semibold">{formatNumber(metrics.vendorCompletedTrips, '', 0)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Active</span>
+              <span className="text-muted-foreground">{t('outsourcePerformances.status.active')}</span>
               <span className="font-semibold">{formatNumber(metrics.vendorActiveTrips, '', 0)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Cancelled</span>
+              <span className="text-muted-foreground">{t('outsourcePerformances.status.cancelled')}</span>
               <span className="font-semibold">{formatNumber(metrics.vendorCancelledTrips, '', 0)}</span>
             </div>
           </div>
@@ -432,23 +436,23 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
-        <DetailSectionCard title="Route & Context" description="Logistical details" icon={<MapPin className="h-5 w-5" />} className="xl:col-span-2">
+        <DetailSectionCard title={t('outsourcePerformances.show.sections.route.title')} description={t('outsourcePerformances.show.sections.route.description')} icon={<MapPin className="h-5 w-5" />} className="xl:col-span-2">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border p-3">
               <div className="flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
                 <MapPin className="h-4 w-4" />
-                Route
+                {t('outsourcePerformances.show.fields.route')}
               </div>
               <p className="mt-2 text-sm font-semibold">{routeLabel}</p>
-              <p className="text-xs text-muted-foreground">{formatNumber(performance.distance_km, ' km')} recorded</p>
+              <p className="text-xs text-muted-foreground">{t('outsourcePerformances.show.fields.routeRecorded', { value: formatNumber(performance.distance_km, ' km') })}</p>
             </div>
             <div className="rounded-lg border p-3">
               <div className="flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
                 <Calendar className="h-4 w-4" />
-                Dispatch date
+                {t('outsourcePerformances.show.fields.dispatchDate')}
               </div>
               <p className="mt-2 text-sm font-semibold">{formatDate(performance.dispatch_date)}</p>
-              <p className="text-xs text-muted-foreground">Execution window</p>
+              <p className="text-xs text-muted-foreground">{t('outsourcePerformances.show.fields.executionWindow')}</p>
             </div>
           </div>
 
@@ -456,14 +460,14 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
             <div className="rounded-lg border p-3">
               <div className="flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
                 <FileText className="h-4 w-4" />
-                Operation
+                {t('outsourcePerformances.show.fields.operation')}
               </div>
               {performance.operation ? (
                 <Link href={`/operations/${performance.operation.id}`} className="mt-2 text-sm font-semibold text-indigo-600 hover:underline">
                   {performance.operation.label}
                 </Link>
               ) : (
-                <p className="mt-2 text-sm font-semibold text-muted-foreground">Not linked</p>
+                <p className="mt-2 text-sm font-semibold text-muted-foreground">{t('outsourcePerformances.show.operationFallback')}</p>
               )}
               {performance.operation?.customer && (
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -475,28 +479,28 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
             <div className="rounded-lg border p-3">
               <div className="flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
                 <ClipboardList className="h-4 w-4" />
-                Vendor
+                {t('outsourcePerformances.show.fields.vendor')}
               </div>
               {performance.outsource ? (
                 <Link href={`/outsources/${performance.outsource.id}`} className="mt-2 text-sm font-semibold text-indigo-600 hover:underline">
                   {performance.outsource.name}
                 </Link>
               ) : (
-                <p className="mt-2 text-sm font-semibold text-muted-foreground">Not linked</p>
+                <p className="mt-2 text-sm font-semibold text-muted-foreground">{t('outsourcePerformances.show.vendorFallback')}</p>
               )}
-              <p className="text-xs text-muted-foreground">Captured by {performance.author?.name ?? 'System'}</p>
+              <p className="text-xs text-muted-foreground">{t('outsourcePerformances.show.fields.capturedBy', { name: performance.author?.name ?? t('outsourcePerformances.show.system') })}</p>
             </div>
           </div>
 
           {performance.remarks && (
             <div className="rounded-lg border p-4">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Trip Notes</p>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">{t('outsourcePerformances.show.fields.notes')}</p>
               <p className="mt-2 whitespace-pre-wrap text-sm">{performance.remarks}</p>
             </div>
           )}
         </DetailSectionCard>
 
-        <DetailSectionCard title="Recent Vendor Trends" description="Cost trajectory" icon={<Activity className="h-5 w-5" />}>
+        <DetailSectionCard title={t('outsourcePerformances.show.sections.trends.title')} description={t('outsourcePerformances.show.sections.trends.description')} icon={<Activity className="h-5 w-5" />}>
           <div className="h-44 w-full">
             {timelineData.length > 0 ? (
               <ResponsiveContainer>
@@ -508,7 +512,9 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-full items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">No trend data available yet.</div>
+              <div className="flex h-full items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
+                {t('outsourcePerformances.show.trends.empty')}
+              </div>
             )}
           </div>
 
@@ -516,9 +522,9 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Trip</TableHead>
-                  <TableHead className="hidden sm:table-cell">Date</TableHead>
-                  <TableHead className="text-right">Cost</TableHead>
+                  <TableHead>{t('outsourcePerformances.show.trends.trip')}</TableHead>
+                  <TableHead className="hidden sm:table-cell">{t('outsourcePerformances.show.trends.date')}</TableHead>
+                  <TableHead className="text-right">{t('outsourcePerformances.show.trends.cost')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -533,7 +539,7 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
                 ) : (
                   <TableRow>
                     <TableCell colSpan={3} className="py-6 text-center text-sm text-muted-foreground">
-                      No recent trips recorded.
+                      {t('outsourcePerformances.show.trends.emptyTable')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -543,7 +549,14 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
         </DetailSectionCard>
       </div>
 
-      <DeleteConfirmationDialog title="Delete outsource performance" description="This action will permanently remove the outsource performance record." open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} onConfirm={handleDeleteConfirm} isLoading={isDeleting} />
+      <DeleteConfirmationDialog
+        title={t('outsourcePerformances.delete.title')}
+        description={t('outsourcePerformances.delete.description')}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        isLoading={isDeleting}
+      />
     </DetailPageLayout>
   );
 }

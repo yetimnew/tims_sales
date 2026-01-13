@@ -18,14 +18,9 @@ import { useRemoteLookup } from '@/hooks/use-remote-lookup';
 import { search as operationsSearch } from '@/routes/operations';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
+import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react';
 import { AlertCircle, ArrowLeft, CheckCircle, ClipboardList, Loader2, Pencil } from 'lucide-react';
-
-const breadcrumbs = (performance: Performance): BreadcrumbItem[] => [
-    { title: 'Performances', href: '/performances' },
-    { title: performance.trip || `Record #${performance.id}`, href: `/performances/${performance.id}` },
-    { title: 'Edit', href: `/performances/${performance.id}/edit` },
-];
 
 interface Customer {
     id: number;
@@ -237,9 +232,21 @@ const areFormValuesEqual = (left: PerformanceFormData, right: PerformanceFormDat
     JSON.stringify(left) === JSON.stringify(right);
 
 export default function PerformancesEdit({ driverTrucks, performance, places }: PerformancesEditProps) {
+    const { t } = useTranslation();
     const initialFormData = useMemo<PerformanceFormData>(() => buildInitialForm(performance), [performance]);
     const initialDataRef = useRef<PerformanceFormData>(initialFormData);
     const formRef = useRef<HTMLFormElement | null>(null);
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(
+        () => [
+            { title: t('performances.breadcrumb'), href: '/performances' },
+            {
+                title: performance.trip || t('performances.form.edit.recordFallback', { id: performance.id }),
+                href: `/performances/${performance.id}`,
+            },
+            { title: t('performances.form.edit.breadcrumb'), href: `/performances/${performance.id}/edit` },
+        ],
+        [performance, t],
+    );
 
     const { data, setData, setDefaults, put, processing, errors, clearErrors } = useForm<PerformanceFormData>(
         initialFormData,
@@ -319,12 +326,12 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
 
         if (errorMessages.length > 0) {
             toast({
-                title: '⚠️ Validation Error',
+                title: t('performances.form.validation.toastTitle'),
                 description: errorMessages.join(', '),
                 variant: 'destructive',
             });
         }
-    }, [errors]);
+    }, [errors, t]);
 
     const backendErrors = useMemo(
         () =>
@@ -422,7 +429,7 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                     setData('tonkm', computeTonKilometers(formattedDistance, cargoVolume));
                     setDistanceStatus({
                         found: true,
-                        message: `Distance auto-filled from registered route (${formattedDistance} km).`,
+                        message: t('performances.form.distance.autoFilledFromRoute', { value: formattedDistance }),
                     });
                 } else {
                     setData('DistanceWCargo', '0.00');
@@ -431,8 +438,7 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                     setDistanceStatus({
                         found: false,
                         message:
-                            result.note ??
-                            'Distance for this origin and destination is not registered yet. Values defaulted to 0 km.',
+                            result.note ?? t('performances.form.distance.notRegisteredDefaulted'),
                     });
                 }
             } catch (error) {
@@ -442,13 +448,13 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                 setData('tonkm', computeTonKilometers('0.00', cargoVolume));
                 setDistanceStatus({
                     found: false,
-                    message: 'Unable to resolve distance. Distance was set to 0 km.',
+                    message: t('performances.form.distance.unableResolveDefaulted'),
                 });
             } finally {
                 setDistanceLoading(false);
             }
         },
-        [computeTonKilometers, setData],
+        [computeTonKilometers, setData, t],
     );
 
     const handleFieldChange = <K extends PerformanceFormField>(field: K, value: PerformanceFormData[K]) => {
@@ -511,12 +517,12 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
         requiredFields.forEach(field => {
             const value = data[field];
             if (typeof value === 'string' && value.trim().length === 0) {
-                validationErrors[field] = 'This field is required.';
+                validationErrors[field] = t('performances.form.validation.required');
             }
         });
 
         if (data.is_returned && data.returned_date.trim().length === 0) {
-            validationErrors.returned_date = 'Returned date is required when the trip is marked as returned.';
+            validationErrors.returned_date = t('performances.form.validation.returnedRequired');
         }
 
         return validationErrors;
@@ -529,8 +535,8 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
         if (Object.values(clientValidation).some(Boolean)) {
             setFrontendErrors(clientValidation);
             toast({
-                title: '⚠️ Validation Error',
-                description: 'Please resolve the highlighted fields before saving.',
+                title: t('performances.form.validation.toastTitle'),
+                description: t('performances.form.validation.resolveUpdate'),
                 variant: 'destructive',
             });
             return;
@@ -549,10 +555,10 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                 setDistanceLoading(false);
                 setIsDirty(false);
                 toast({
-                    title: '✅ Performance Updated',
+                    title: t('performances.form.edit.successTitle'),
                     description: performance.trip
-                        ? `${performance.trip} has been refreshed with the latest metrics.`
-                        : 'Trip metrics have been updated.',
+                        ? t('performances.form.edit.successDescription', { trip: performance.trip })
+                        : t('performances.form.edit.successDescriptionFallback'),
                 });
                 formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
             },
@@ -568,27 +574,31 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
 
     return (
         <FormPageLayout
-            title="Update Performance"
-            headTitle={performance.trip ? `Edit Performance • ${performance.trip}` : 'Edit Performance'}
-            description="Refine this trip’s operational metrics with quick favorites and inline validation."
-            breadcrumbs={breadcrumbs(performance)}
+            title={t('performances.form.edit.title')}
+            headTitle={
+                performance.trip
+                    ? t('performances.form.edit.headTitleWithTrip', { trip: performance.trip })
+                    : t('performances.form.edit.headTitle')
+            }
+            description={t('performances.form.edit.description')}
+            breadcrumbs={breadcrumbs}
             icon={<Pencil className="h-5 w-5" />}
             headerAside={
                 <>
                     <Button variant="ghost" size="sm" asChild>
                         <Link href="/performances">
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Performances
+                            {t('performances.form.edit.backToList')}
                         </Link>
                     </Button>
                     {performance.trip && (
                         <Badge variant="outline" className="border-indigo-200 text-indigo-700 dark:border-indigo-900/40 dark:text-indigo-200">
-                            Trip: {performance.trip}
+                            {t('performances.form.edit.tripLabel', { trip: performance.trip })}
                         </Badge>
                     )}
                     {isDirty && <UnsavedChangesBadge />}
                     <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                        Performance Control
+                        {t('performances.form.edit.controlBadge')}
                     </Badge>
                 </>
             }
@@ -597,7 +607,7 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                 <div className="px-6 pt-6">
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                        <AlertDescription>{t('performances.form.validation.resolveForm')}</AlertDescription>
                     </Alert>
                 </div>
             )}
@@ -609,8 +619,8 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                 style={{ minHeight: 0 }}
             >
                 <FormSection
-                    title="Trip Overview"
-                    description="Identify the trip and link operational actors."
+                    title={t('performances.form.sections.overview.title')}
+                    description={t('performances.form.sections.overview.description')}
                     icon={
                         <div className="rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
                             <ClipboardList className="h-4 w-4" />
@@ -618,7 +628,7 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                     }
                     contentClassName="gap-6 md:grid-cols-3"
                 >
-                    <FormField id="load_phase" label="Load Phase" required error={getFieldError('load_phase')}>
+                    <FormField id="load_phase" label={t('performances.form.fields.loadPhase.label')} required error={getFieldError('load_phase')}>
                         <Select
                             value={data.load_phase}
                             onValueChange={value => handleFieldChange('load_phase', value as PerformanceFormData['load_phase'])}
@@ -628,16 +638,21 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                                 aria-required
                                 className={getFieldError('load_phase') ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-200' : ''}
                             >
-                                <SelectValue placeholder="Select phase" />
+                                <SelectValue placeholder={t('performances.form.fields.loadPhase.placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="main">Main Load</SelectItem>
-                                <SelectItem value="return">Return Load</SelectItem>
+                                <SelectItem value="main">{t('performances.form.fields.loadPhase.main')}</SelectItem>
+                                <SelectItem value="return">{t('performances.form.fields.loadPhase.return')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </FormField>
 
-                    <FormField id="load_completion" label="Load Completion" required error={getFieldError('load_completion')}>
+                    <FormField
+                        id="load_completion"
+                        label={t('performances.form.fields.loadCompletion.label')}
+                        required
+                        error={getFieldError('load_completion')}
+                    >
                         <Select
                             value={data.load_completion}
                             onValueChange={value => handleFieldChange('load_completion', value as PerformanceFormData['load_completion'])}
@@ -651,26 +666,26 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                                         : ''
                                 }
                             >
-                                <SelectValue placeholder="Select completion" />
+                                <SelectValue placeholder={t('performances.form.fields.loadCompletion.placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="full">Full Load</SelectItem>
-                                <SelectItem value="partial">Partial Load</SelectItem>
+                                <SelectItem value="full">{t('performances.form.fields.loadCompletion.full')}</SelectItem>
+                                <SelectItem value="partial">{t('performances.form.fields.loadCompletion.partial')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </FormField>
 
-                    <FormField id="FOnumber" label="FO Number" required error={getFieldError('FOnumber')}>
+                    <FormField id="FOnumber" label={t('performances.form.fields.foNumber.label')} required error={getFieldError('FOnumber')}>
                         <Input
                             id="FOnumber"
                             value={data.FOnumber}
                             onChange={event => handleFieldChange('FOnumber', event.target.value)}
-                            placeholder="Enter FO number"
+                            placeholder={t('performances.form.fields.foNumber.placeholder')}
                             className={getFieldError('FOnumber') ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-200' : ''}
                         />
                     </FormField>
 
-                    <FormField id="operation_id" label="Operation" required error={getFieldError('operation_id')}>
+                    <FormField id="operation_id" label={t('performances.form.fields.operation.label')} required error={getFieldError('operation_id')}>
                         <SearchableEntityCombobox
                             id="operation_id"
                             required
@@ -680,12 +695,12 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                             getLabel={operation => operation.operationid}
                             getDescription={operation => operation.customer?.name}
                             getKeywords={operation => [operation.operationid, operation.customer?.name]}
-                            placeholder="Search operations..."
-                            searchPlaceholder="Search operations..."
+                            placeholder={t('performances.form.fields.operation.placeholder')}
+                            searchPlaceholder={t('performances.form.fields.operation.searchPlaceholder')}
                             searchValue={operationsLookup.query}
                             onSearchChange={operationsLookup.setQuery}
                             isLoading={operationsLookup.isLoading}
-                            loadingMessage="Searching operations..."
+                            loadingMessage={t('performances.form.fields.operation.loading')}
                             onSelect={selectedValue => {
                                 handleFieldChange('operation_id', selectedValue);
                                 pushRecent('operations', selectedValue);
@@ -723,14 +738,16 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                         )}
                     </FormField>
 
-                    <FormField id="driver_truck_id" label="Driver & Truck" required error={getFieldError('driver_truck_id')}>
+                    <FormField id="driver_truck_id" label={t('performances.form.fields.driverTruck.label')} required error={getFieldError('driver_truck_id')}>
                         <SearchableEntityCombobox
                             id="driver_truck_id"
                             required
                             value={data.driver_truck_id}
                             items={driverTrucks}
                             getValue={driverTruck => driverTruck.id}
-                            getLabel={driverTruck => driverTruck.driver?.name?.trim() || 'Driver unknown'}
+                            getLabel={driverTruck =>
+                                driverTruck.driver?.name?.trim() || t('performances.form.fields.driverTruck.unknownDriver')
+                            }
                             getDescription={driverTruck => {
                                 const segments = [
                                     driverTruck.truck?.plate,
@@ -745,8 +762,8 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                                 driverTruck.truck?.model,
                                 driverTruck.truck?.code,
                             ]}
-                            placeholder="Search driver or truck..."
-                            searchPlaceholder="Search driver or truck..."
+                            placeholder={t('performances.form.fields.driverTruck.placeholder')}
+                            searchPlaceholder={t('performances.form.fields.driverTruck.searchPlaceholder')}
                             onSelect={selectedValue => {
                                 handleFieldChange('driver_truck_id', selectedValue);
                                 pushRecent('driverTrucks', selectedValue);
@@ -755,7 +772,11 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                             showErrorMessage={false}
                             renderDisplay={selected => {
                                 if (!selected) {
-                                    return <span className="text-sm text-muted-foreground">Search driver or truck...</span>;
+                                    return (
+                                        <span className="text-sm text-muted-foreground">
+                                            {t('performances.form.fields.driverTruck.placeholder')}
+                                        </span>
+                                    );
                                 }
 
                                 return (
@@ -789,7 +810,7 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                                                     : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100'
                                             }`}
                                         >
-                                            {driverTruck.driver?.name?.split(' ')[0] ?? 'Driver'}
+                                            {driverTruck.driver?.name?.split(' ')[0] ?? t('performances.form.fields.driverTruck.fallbackDriver')}
                                         </button>
                                     );
                                 })}
@@ -797,7 +818,12 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                         )}
                     </FormField>
 
-                    <FormField id="DateDispach" label="Dispatch Date & Time" required error={getFieldError('DateDispach')}>
+                    <FormField
+                        id="DateDispach"
+                        label={t('performances.form.fields.dispatchDate.label')}
+                        required
+                        error={getFieldError('DateDispach')}
+                    >
                         <Input
                             id="DateDispach"
                             type="datetime-local"
@@ -807,25 +833,30 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                         />
                     </FormField>
 
-                    <FormField id="orgion_id" label="Origin" required error={getFieldError('orgion_id')}>
+                    <FormField id="orgion_id" label={t('performances.form.fields.origin.label')} required error={getFieldError('orgion_id')}>
                         <PlaceCombobox
                             id="orgion_id"
                             required
                             value={data.orgion_id}
                             places={places}
-                            placeholder="Select origin"
+                            placeholder={t('performances.form.fields.origin.placeholder')}
                             onSelect={value => handleFieldChange('orgion_id', value)}
                             error={getFieldError('orgion_id')}
                         />
                     </FormField>
 
-                    <FormField id="destination_id" label="Destination" required error={getFieldError('destination_id')}>
+                    <FormField
+                        id="destination_id"
+                        label={t('performances.form.fields.destination.label')}
+                        required
+                        error={getFieldError('destination_id')}
+                    >
                         <PlaceCombobox
                             id="destination_id"
                             required
                             value={data.destination_id}
                             places={places}
-                            placeholder="Select destination"
+                            placeholder={t('performances.form.fields.destination.placeholder')}
                             onSelect={value => handleFieldChange('destination_id', value)}
                             error={getFieldError('destination_id')}
                         />
@@ -833,8 +864,8 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                 </FormSection>
 
                 <FormSection
-                    title="Costs & Metrics"
-                    description="Capture distance, tonnage, and cost elements."
+                    title={t('performances.form.sections.costs.title')}
+                    description={t('performances.form.sections.costs.description')}
                     icon={
                         <div className="rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
                             <ClipboardList className="h-4 w-4" />
@@ -844,8 +875,8 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                 >
                     <FormField
                         id="DistanceWCargo"
-                        label="Distance with Cargo (km)"
-                        helperText="Auto-filled when the route distance is registered."
+                        label={t('performances.form.fields.distanceWithCargo.label')}
+                        helperText={t('performances.form.fields.distanceWithCargo.helper')}
                     >
                         <Input
                             id="DistanceWCargo"
@@ -853,13 +884,13 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                             step="0.01"
                             value={data.DistanceWCargo}
                             readOnly
-                            placeholder="Auto-filled from distance table"
+                            placeholder={t('performances.form.fields.distanceWithCargo.placeholder')}
                             className="cursor-not-allowed bg-muted/50"
                         />
                         {distanceLoading && (
                             <p className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <Loader2 className="h-3 w-3 animate-spin" />
-                                Resolving distance…
+                                {t('performances.form.distance.resolving')}
                             </p>
                         )}
                         {distanceStatus && (
@@ -869,13 +900,17 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                                 ) : (
                                     <AlertCircle className="h-4 w-4 text-destructive" />
                                 )}
-                                <AlertTitle>{distanceStatus.found ? 'Distance applied' : 'Distance missing'}</AlertTitle>
+                                <AlertTitle>
+                                    {distanceStatus.found
+                                        ? t('performances.form.distance.applied')
+                                        : t('performances.form.distance.missing')}
+                                </AlertTitle>
                                 <AlertDescription>{distanceStatus.message}</AlertDescription>
                             </Alert>
                         )}
                     </FormField>
 
-                    <FormField id="DistanceWOCargo" label="Distance Empty (km)">
+                    <FormField id="DistanceWOCargo" label={t('performances.form.fields.distanceEmpty.label')}>
                         <Input
                             id="DistanceWOCargo"
                             type="number"
@@ -885,7 +920,7 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                         />
                     </FormField>
 
-                    <FormField id="CargoVolumMT" label="Cargo Volume (MT)">
+                    <FormField id="CargoVolumMT" label={t('performances.form.fields.cargoVolume.label')}>
                         <Input
                             id="CargoVolumMT"
                             type="number"
@@ -895,11 +930,11 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                         />
                     </FormField>
 
-                    <FormField id="tonkm" label="Ton-Km">
+                    <FormField id="tonkm" label={t('performances.form.fields.tonKm.label')}>
                         <Input id="tonkm" value={data.tonkm} readOnly className="cursor-not-allowed bg-muted/50" />
                     </FormField>
 
-                    <FormField id="fuelInLitter" label="Fuel (L)">
+                    <FormField id="fuelInLitter" label={t('performances.form.fields.fuelLiters.label')}>
                         <Input
                             id="fuelInLitter"
                             type="number"
@@ -909,7 +944,7 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                         />
                     </FormField>
 
-                    <FormField id="fuelInBirr" label="Fuel Cost (Birr)">
+                    <FormField id="fuelInBirr" label={t('performances.form.fields.fuelCost.label')}>
                         <Input
                             id="fuelInBirr"
                             type="number"
@@ -919,7 +954,7 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                         />
                     </FormField>
 
-                    <FormField id="perdiem" label="Per Diem (Birr)">
+                    <FormField id="perdiem" label={t('performances.form.fields.perDiem.label')}>
                         <Input
                             id="perdiem"
                             type="number"
@@ -929,7 +964,7 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                         />
                     </FormField>
 
-                    <FormField id="other" label="Other Cost (Birr)">
+                    <FormField id="other" label={t('performances.form.fields.otherCost.label')}>
                         <Input
                             id="other"
                             type="number"
@@ -941,8 +976,8 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                 </FormSection>
 
                 <FormSection
-                    title="Status & Return"
-                    description="Update lifecycle state and return info."
+                    title={t('performances.form.sections.status.title')}
+                    description={t('performances.form.sections.status.description')}
                     icon={
                         <div className="rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
                             <ClipboardList className="h-4 w-4" />
@@ -950,23 +985,23 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                     }
                     contentClassName="gap-6 md:grid-cols-3"
                 >
-                    <FormField id="satus" label="Status" required error={getFieldError('satus')}>
+                    <FormField id="satus" label={t('performances.form.fields.status.label')} required error={getFieldError('satus')}>
                         <Select value={data.satus} onValueChange={value => handleFieldChange('satus', value as 'active' | 'inactive')}>
                             <SelectTrigger
                                 id="satus"
                                 aria-required
                                 className={getFieldError('satus') ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-200' : ''}
                             >
-                                <SelectValue placeholder="Select status" />
+                                <SelectValue placeholder={t('performances.form.fields.status.placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
+                                <SelectItem value="active">{t('performances.form.fields.status.options.active')}</SelectItem>
+                                <SelectItem value="inactive">{t('performances.form.fields.status.options.inactive')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </FormField>
 
-                    <FormField id="is_returned" label="Returned?">
+                    <FormField id="is_returned" label={t('performances.form.fields.returned.label')}>
                         <div className="flex items-center gap-3 rounded-lg border border-dashed border-slate-200 px-4 py-3 dark:border-slate-700">
                             <Checkbox
                                 id="is_returned"
@@ -974,12 +1009,19 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                                 onCheckedChange={handleCheckboxChange}
                                 className="border-slate-300 text-indigo-600 focus-visible:ring-indigo-500 dark:border-slate-600"
                             />
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Trip returned to origin</span>
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                {t('performances.form.fields.returned.helper')}
+                            </span>
                         </div>
                     </FormField>
 
                     {data.is_returned && (
-                        <FormField id="returned_date" label="Returned Date & Time" required error={getFieldError('returned_date')}>
+                        <FormField
+                            id="returned_date"
+                            label={t('performances.form.fields.returnedDate.label')}
+                            required
+                            error={getFieldError('returned_date')}
+                        >
                             <Input
                                 id="returned_date"
                                 type="datetime-local"
@@ -994,12 +1036,12 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                         </FormField>
                     )}
 
-                    <FormField id="comment" label="Comment / Notes" className="md:col-span-3">
+                    <FormField id="comment" label={t('performances.form.fields.comment.label')} className="md:col-span-3">
                         <Textarea
                             id="comment"
                             value={data.comment}
                             onChange={event => handleFieldChange('comment', event.target.value)}
-                            placeholder="Add any observations, delays, or unexpected events."
+                            placeholder={t('performances.form.fields.comment.placeholder')}
                             className="min-h-[120px] resize-y"
                         />
                     </FormField>
@@ -1010,11 +1052,11 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                         <>
                             <span className="flex items-center gap-2 text-sm">
                                 <span className="text-red-500">*</span>
-                                All required fields must be completed before updating.
+                                {t('performances.form.actions.requiredUpdate')}
                             </span>
                             <span className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <ClipboardList className="h-3 w-3" />
-                                Accurate logs keep fleet performance insights reliable.
+                                {t('performances.form.actions.accurate')}
                             </span>
                         </>
                     }
@@ -1026,7 +1068,7 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                                 asChild
                                 className="border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                             >
-                                <Link href="/performances">Cancel</Link>
+                                <Link href="/performances">{t('performances.form.actions.cancel')}</Link>
                             </Button>
                             <Button
                                 type="submit"
@@ -1036,12 +1078,12 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                                 {processing ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Updating…
+                                        {t('performances.form.actions.updating')}
                                     </>
                                 ) : (
                                     <>
                                         <Pencil className="mr-2 h-4 w-4" />
-                                        Update Performance
+                                        {t('performances.form.actions.update')}
                                     </>
                                 )}
                             </Button>

@@ -19,12 +19,7 @@ import { validateUser, type ValidationErrors } from '@/lib/validation';
 import { evaluatePasswordStrength } from '@/lib/password-strength';
 import { index as usersIndexRoute, create as createUserRoute } from '@/routes/users';
 import { toast } from '@/hooks/use-toast';
-
-const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'User management', href: usersIndexRoute().url },
-  { title: 'Users', href: usersIndexRoute().url },
-  { title: 'Create', href: createUserRoute().url },
-];
+import { useTranslation } from 'react-i18next';
 
 interface Role {
   id: number;
@@ -69,6 +64,7 @@ interface UsersCreateProps {
 }
 
 export default function UsersCreate({ roles, notificationTypes }: UsersCreateProps) {
+  const { t } = useTranslation();
   const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({});
   const { data, setData, post, processing, errors } = useForm<UserFormData>({
     name: '',
@@ -86,6 +82,15 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
   const [isDirty, setIsDirty] = useState(false);
 
   const isAdminRole = data.role === 'admin';
+
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('users.breadcrumbs.management'), href: usersIndexRoute().url },
+      { title: t('users.title'), href: usersIndexRoute().url },
+      { title: t('users.create.breadcrumb'), href: createUserRoute().url },
+    ],
+    [t],
+  );
 
   useEffect(() => {
     setData(
@@ -260,8 +265,8 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
     if (Object.keys(validationErrors).length > 0) {
       setFrontendErrors(validationErrors);
       toast({
-        title: '⚠️ Validation Error',
-        description: 'Please resolve the highlighted fields before submitting.',
+        title: t('users.validation.title'),
+        description: t('users.validation.description'),
         variant: 'destructive',
       });
       return;
@@ -272,8 +277,8 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
       onSuccess: () => {
         setIsDirty(false);
         toast({
-          title: '✅ User Created',
-          description: 'The new user has been added successfully.',
+          title: t('users.create.successTitle'),
+          description: t('users.create.successDescription'),
         });
       },
     });
@@ -285,9 +290,9 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
 
   return (
     <FormPageLayout
-      title="Create New User"
-      headTitle="Create User"
-      description="Add a new teammate, set their role, and configure notification preferences."
+      title={t('users.create.title')}
+      headTitle={t('users.create.headTitle')}
+      description={t('users.create.description')}
       breadcrumbs={breadcrumbs}
       icon={<User className="h-5 w-5" />}
       headerAside={isDirty && <UnsavedChangesBadge />}
@@ -296,44 +301,48 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
         {hasErrors && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Please fix all errors in the form below</AlertDescription>
+            <AlertDescription>{t('users.validation.formDescription')}</AlertDescription>
           </Alert>
         )}
 
-        <FormSection title="Profile & Contact" description="Name and sign-in email for the new teammate." icon={<User className="h-4 w-4" />}>
+        <FormSection
+          title={t('users.form.sections.profile.title')}
+          description={t('users.form.sections.profile.description')}
+          icon={<User className="h-4 w-4" />}
+        >
           <div className="grid gap-6 md:grid-cols-2">
-            <FormField label="Name" required error={frontendErrors.name || (errors.name as string)}>
+            <FormField label={t('users.form.fields.name.label')} required error={frontendErrors.name || (errors.name as string)}>
               <Input
                 id="name"
                 type="text"
                 value={data.name}
                 onChange={event => handleFieldChange('name', event.target.value)}
-                placeholder="Enter user name"
+                placeholder={t('users.form.fields.name.placeholder')}
               />
             </FormField>
 
-            <FormField label="Email" required error={frontendErrors.email || (errors.email as string)}>
+            <FormField label={t('users.form.fields.email.label')} required error={frontendErrors.email || (errors.email as string)}>
               <Input
                 id="email"
                 type="email"
                 value={data.email}
                 onChange={event => handleFieldChange('email', event.target.value)}
-                placeholder="Enter email address"
+                placeholder={t('users.form.fields.email.placeholder')}
               />
             </FormField>
           </div>
         </FormSection>
 
         <FormSection
-          title="Access & Security"
-          description="Assign the right role and set a strong starter password."
+          title={t('users.form.sections.access.title')}
+          description={t('users.form.sections.access.description')}
           icon={<Shield className="h-4 w-4" />}
         >
           <div className="space-y-6">
-            <FormField label="Role" required error={frontendErrors.role || (errors.role as string)}>
+            <FormField label={t('users.form.fields.role.label')} required error={frontendErrors.role || (errors.role as string)}>
               <Select value={data.role} onValueChange={value => handleFieldChange('role', value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a role" />
+                  <SelectValue placeholder={t('users.form.fields.role.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {roles.map(role => (
@@ -351,7 +360,7 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="password">
-                  Password <span className="text-red-500">*</span>
+                  {t('users.form.fields.password.label')} <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
@@ -359,23 +368,23 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                     type={showPassword ? 'text' : 'password'}
                     value={data.password}
                     onChange={event => handleFieldChange('password', event.target.value)}
-                    placeholder="Enter password"
+                    placeholder={t('users.form.fields.password.placeholder')}
                     className="pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(prev => !prev)}
                     className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={showPassword ? t('users.form.fields.password.hide') : t('users.form.fields.password.show')}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
-                    <span>Password strength</span>
+                    <span>{t('users.form.fields.passwordStrength.label')}</span>
                     <span className={passwordStrength.evaluated ? passwordStrength.textClass : 'text-slate-500 dark:text-slate-400'}>
-                      {passwordStrength.evaluated ? passwordStrength.label : 'Waiting for input'}
+                      {passwordStrength.evaluated ? passwordStrength.label : t('users.form.fields.passwordStrength.waiting')}
                     </span>
                   </div>
                   <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800">
@@ -385,7 +394,7 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                     />
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {passwordStrength.evaluated ? passwordStrength.hint : 'Start typing to evaluate this password.'}
+                    {passwordStrength.evaluated ? passwordStrength.hint : t('users.form.fields.passwordStrength.helper')}
                   </p>
                 </div>
                 {(frontendErrors.password || errors.password) && (
@@ -398,7 +407,7 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
 
               <div className="space-y-2">
                 <Label htmlFor="password_confirmation">
-                  Confirm Password <span className="text-red-500">*</span>
+                  {t('users.form.fields.passwordConfirmation.label')} <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
@@ -406,14 +415,14 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                     type={showPasswordConfirmation ? 'text' : 'password'}
                     value={data.password_confirmation}
                     onChange={event => handleFieldChange('password_confirmation', event.target.value)}
-                    placeholder="Confirm password"
+                    placeholder={t('users.form.fields.passwordConfirmation.placeholder')}
                     className="pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPasswordConfirmation(prev => !prev)}
                     className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                    aria-label={showPasswordConfirmation ? 'Hide password confirmation' : 'Show password confirmation'}
+                    aria-label={showPasswordConfirmation ? t('users.form.fields.passwordConfirmation.hide') : t('users.form.fields.passwordConfirmation.show')}
                   >
                     {showPasswordConfirmation ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -430,20 +439,19 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
         </FormSection>
 
         <FormSection
-          title="Notification Preferences"
-          description="Fine-tune advanced notification defaults for this account."
+          title={t('users.form.sections.notifications.title')}
+          description={t('users.form.sections.notifications.description')}
           icon={<BellRing className="h-4 w-4" />}
-          badge={<Badge variant="outline">Optional</Badge>}
+          badge={<Badge variant="outline">{t('users.form.sections.notifications.optional')}</Badge>}
         >
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Select which lifecycle notifications this user should receive by default. They can personalize their channels later inside
-              their profile.
+              {t('users.form.sections.notifications.helper')}
             </p>
             {isAdminRole && (
               <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>Admins automatically receive every notification across all channels.</span>
+                <span>{t('users.form.sections.notifications.adminHint')}</span>
               </div>
             )}
 
@@ -458,11 +466,11 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                     }}
                   >
                     <SelectTrigger className="w-full md:w-72">
-                      <SelectValue placeholder="Add notification type" />
+                      <SelectValue placeholder={t('users.form.sections.notifications.addPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent className="max-h-64">
                       {availableNotificationTypes.length === 0 ? (
-                        <div className="px-3 py-2 text-sm text-slate-500">All notification types are already assigned.</div>
+                        <div className="px-3 py-2 text-sm text-slate-500">{t('users.form.sections.notifications.allAssigned')}</div>
                       ) : (
                         availableNotificationTypes.map(type => (
                           <SelectItem key={type.id} value={String(type.id)}>
@@ -474,7 +482,7 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                   </Select>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Plus className="h-3.5 w-3.5" />
-                    Add notification
+                    {t('users.form.sections.notifications.addAction')}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -486,7 +494,7 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                     className="flex items-center gap-2"
                   >
                     <Sparkles className="h-4 w-4" />
-                    Assign all
+                    {t('users.form.sections.notifications.assignAll')}
                   </Button>
                   <Button
                     type="button"
@@ -496,7 +504,7 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                     className="flex items-center gap-2"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Clear
+                    {t('users.form.sections.notifications.clear')}
                   </Button>
                 </div>
               </div>
@@ -505,12 +513,10 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
             <div className="flex flex-col gap-3 rounded-md border bg-card p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="flex flex-col gap-1">
-                  <span className="text-sm font-medium">Assignment overview</span>
+                  <span className="text-sm font-medium">{t('users.form.sections.notifications.overview.title')}</span>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Filter className="h-3.5 w-3.5" />
-                    <span>
-                      {assignedCount} of {totalNotificationTypes} notifications selected
-                    </span>
+                    <span>{t('users.form.sections.notifications.overview.selected', { count: assignedCount, total: totalNotificationTypes })}</span>
                   </div>
                 </div>
                 {assignedNotifications.length > 0 && (
@@ -521,7 +527,7 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                     />
                     <span className="relative flex items-center gap-1">
                       <Sparkles className="h-3.5 w-3.5" />
-                      {assignmentProgress}% coverage
+                      {t('users.form.sections.notifications.overview.coverage', { value: assignmentProgress })}
                     </span>
                   </div>
                 )}
@@ -531,7 +537,7 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                 <Input
                   value={notificationSearchTerm}
                   onChange={event => setNotificationSearchTerm(event.target.value)}
-                  placeholder="Search assigned notifications"
+                  placeholder={t('users.form.sections.notifications.searchPlaceholder')}
                   className="pl-10"
                 />
               </div>
@@ -540,11 +546,11 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
             {filteredAssignedNotifications.length === 0 ? (
               assignedNotifications.length === 0 ? (
                 <div className="rounded-md border border-dashed px-4 py-6 text-sm text-muted-foreground">
-                  No notifications selected. The user will inherit only default alerts from their permissions.
+                  {t('users.form.sections.notifications.empty')}
                 </div>
               ) : (
                 <div className="rounded-md border border-dashed px-4 py-6 text-sm text-muted-foreground">
-                  No notifications match your search.
+                  {t('users.form.sections.notifications.noMatches')}
                 </div>
               )
             ) : (
@@ -558,7 +564,7 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                       <div>
                         <h3 className="text-sm font-semibold">{notification.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {notification.description ?? 'No description available for this notification.'}
+                          {notification.description ?? t('users.form.sections.notifications.noDescription')}
                         </p>
                       </div>
                       {!isAdminRole && (
@@ -569,7 +575,7 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                           onClick={() => handleNotificationRemove(notification.typeId)}
                           className="self-start text-muted-foreground hover:text-destructive"
                         >
-                          <Trash2 className="mr-1 h-4 w-4" /> Remove
+                          <Trash2 className="mr-1 h-4 w-4" /> {t('users.form.sections.notifications.remove')}
                         </Button>
                       )}
                     </div>
@@ -586,9 +592,9 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                         />
                         <div>
                           <Label htmlFor={`notification-${notification.typeId}-in-app`} className="text-sm font-medium">
-                            In-app alerts
+                            {t('users.form.sections.notifications.channels.inApp.title')}
                           </Label>
-                          <p className="text-xs text-muted-foreground">Deliver real-time messages inside the dashboard.</p>
+                          <p className="text-xs text-muted-foreground">{t('users.form.sections.notifications.channels.inApp.description')}</p>
                         </div>
                       </div>
                       <div
@@ -602,9 +608,9 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                         />
                         <div>
                           <Label htmlFor={`notification-${notification.typeId}-email`} className="text-sm font-medium">
-                            Email alerts
+                            {t('users.form.sections.notifications.channels.email.title')}
                           </Label>
-                          <p className="text-xs text-muted-foreground">Send transactional emails when this event occurs.</p>
+                          <p className="text-xs text-muted-foreground">{t('users.form.sections.notifications.channels.email.description')}</p>
                         </div>
                       </div>
                     </div>
@@ -618,10 +624,10 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
 
       <FormActionsBar>
         <Button type="button" variant="outline" asChild>
-          <Link href="/users">Cancel</Link>
+          <Link href="/users">{t('users.actions.cancel')}</Link>
         </Button>
         <Button type="submit" disabled={processing} onClick={handleSubmit}>
-          {processing ? 'Creating...' : 'Create User'}
+          {processing ? t('users.create.submitting') : t('users.create.submit')}
         </Button>
       </FormActionsBar>
 

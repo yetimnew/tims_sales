@@ -33,13 +33,7 @@ import {
     Mail,
     UserCircle,
 } from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Outsourcing',
-        href: '/outsources',
-    },
-];
+import { useTranslation } from 'react-i18next';
 
 interface OutsourceRecord {
     id: number;
@@ -97,67 +91,27 @@ type ColumnKey =
 
 interface ColumnDefinition {
     id: ColumnKey;
-    label: string;
+    labelKey: string;
     sortKey?: string;
     align?: 'center' | 'right';
 }
 
 const COLUMN_DEFINITIONS: ColumnDefinition[] = [
-    { id: 'name', label: 'Vendor', sortKey: 'name' },
-    { id: 'service_type', label: 'Service Type', sortKey: 'service_type' },
-    { id: 'contact_person', label: 'Contact', sortKey: 'contact_person' },
-    { id: 'phone', label: 'Phone', sortKey: 'phone' },
-    { id: 'email', label: 'Email', sortKey: 'email' },
-    { id: 'status', label: 'Status', sortKey: 'status', align: 'center' },
-    { id: 'outsource_performances_count', label: 'Trips', sortKey: 'outsource_performances_count', align: 'right' },
+    { id: 'name', labelKey: 'outsources.index.columns.name', sortKey: 'name' },
+    { id: 'service_type', labelKey: 'outsources.index.columns.serviceType', sortKey: 'service_type' },
+    { id: 'contact_person', labelKey: 'outsources.index.columns.contact', sortKey: 'contact_person' },
+    { id: 'phone', labelKey: 'outsources.index.columns.phone', sortKey: 'phone' },
+    { id: 'email', labelKey: 'outsources.index.columns.email', sortKey: 'email' },
+    { id: 'status', labelKey: 'outsources.index.columns.status', sortKey: 'status', align: 'center' },
+    {
+        id: 'outsource_performances_count',
+        labelKey: 'outsources.index.columns.trips',
+        sortKey: 'outsource_performances_count',
+        align: 'right',
+    },
 ];
 
-const dateFormatter = new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-});
-
-const decimalFormatter = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 1,
-});
-
 const SKELETON_FLAG_KEY = 'outsources.index.shouldShowSkeleton';
-
-const formatNumberValue = (value?: number | string | null, fractionDigits = 0): string => {
-    if (value === null || value === undefined || value === '') {
-        return '—';
-    }
-
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) {
-        return '—';
-    }
-
-    return numeric.toLocaleString('en-US', {
-        minimumFractionDigits: fractionDigits,
-        maximumFractionDigits: fractionDigits,
-    });
-};
-
-const renderStatusBadge = (status: string): JSX.Element => {
-    const normalized = status?.toLowerCase();
-
-    if (normalized === 'active') {
-        return (
-            <Badge className="flex w-fit items-center gap-1 border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200">
-                Active
-            </Badge>
-        );
-    }
-
-    return (
-        <Badge className="flex w-fit items-center gap-1 border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/30 dark:text-rose-200">
-            {status || 'Inactive'}
-        </Badge>
-    );
-};
 
 export default function OutsourcesIndex({
     outsources,
@@ -167,8 +121,41 @@ export default function OutsourcesIndex({
     serviceTypeOptions,
     perPageOptions,
 }: OutsourceIndexProps) {
+    const { t, i18n } = useTranslation();
     const { hasPermission } = usePermissions();
     const { toast } = useToast();
+    const locale = i18n.language || 'en-US';
+
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('outsources.title'),
+                href: '/outsources',
+            },
+        ],
+        [t],
+    );
+
+    const dateFormatter = useMemo(
+        () =>
+            new Intl.DateTimeFormat(locale, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            }),
+        [locale],
+    );
+
+    const decimalFormatter = useMemo(
+        () =>
+            new Intl.NumberFormat(locale, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 1,
+            }),
+        [locale],
+    );
+
+    const notAvailableLabel = t('outsources.index.fallbacks.notAvailable');
 
     const [searchTerm, setSearchTerm] = useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = useState(filters?.status ?? 'all');
@@ -215,60 +202,113 @@ export default function OutsourcesIndex({
 
     const rowOffset = Math.max((outsources?.from ?? 1) - 1, 0);
 
+    const formatNumberValue = useCallback(
+        (value?: number | string | null, fractionDigits = 0): string => {
+            if (value === null || value === undefined || value === '') {
+                return notAvailableLabel;
+            }
+
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) {
+                return notAvailableLabel;
+            }
+
+            return numeric.toLocaleString(locale, {
+                minimumFractionDigits: fractionDigits,
+                maximumFractionDigits: fractionDigits,
+            });
+        },
+        [locale, notAvailableLabel],
+    );
+
     const perPageSelectOptions = useMemo(
-        () => availablePerPageOptions.map((option) => ({ value: String(option), label: `${option} / page` })),
-        [availablePerPageOptions],
+        () =>
+            availablePerPageOptions.map((option) => ({
+                value: String(option),
+                label: t('outsources.index.filters.perPageOption', { value: option }),
+            })),
+        [availablePerPageOptions, t],
     );
 
     const tableColumns: ListingTableColumn[] = useMemo(
         () => [
-            { id: 'index', label: '#', align: 'center' },
+            { id: 'index', label: t('outsources.index.table.index'), align: 'center' },
             ...COLUMN_DEFINITIONS.map((column) => ({
                 id: column.id,
-                label: column.label,
+                label: t(column.labelKey),
                 sortKey: column.sortKey ?? column.id,
                 sortable: true,
                 align: column.align,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' },
+            { id: 'actions', label: t('outsources.index.table.actions'), align: 'center' },
         ],
-        [],
+        [t],
     );
 
-    const statsDefinitions: ListingStatDefinition[] = [
-        {
-            id: 'vendors-total',
-            label: 'Vendors',
-            icon: <Building2 className="h-3.5 w-3.5 text-indigo-600" />,
-            value: isLoading ? <Skeleton className="h-4 w-16" /> : formatNumberValue(totalVendors),
-            description: isLoading ? <Skeleton className="h-3 w-24" /> : 'Total outsourcing partners',
-            valueClassName: isLoading ? undefined : 'text-indigo-600',
-        },
-        {
-            id: 'vendors-active',
-            label: 'Active',
-            icon: <Users2 className="h-3.5 w-3.5 text-emerald-600" />,
-            value: isLoading ? <Skeleton className="h-4 w-14" /> : formatNumberValue(activeVendors),
-            description: isLoading ? <Skeleton className="h-3 w-20" /> : 'Currently engaged',
-            valueClassName: isLoading ? undefined : 'text-emerald-600',
-        },
-        {
-            id: 'vendors-trips',
-            label: 'Avg Trips / Vendor',
-            icon: <ClipboardList className="h-3.5 w-3.5 text-rose-600" />,
-            value: isLoading ? <Skeleton className="h-4 w-20" /> : decimalFormatter.format(averageTripsPerVendor),
-            description: isLoading ? <Skeleton className="h-3 w-24" /> : 'Performance coverage',
-            valueClassName: isLoading ? undefined : 'text-rose-600',
-        },
-        {
-            id: 'vendors-service-lines',
-            label: 'Service Lines',
-            icon: <Layers className="h-3.5 w-3.5 text-amber-600" />,
-            value: isLoading ? <Skeleton className="h-4 w-16" /> : formatNumberValue(serviceCategoryCount),
-            description: isLoading ? <Skeleton className="h-3 w-24" /> : 'Unique service categories',
-            valueClassName: isLoading ? undefined : 'text-amber-600',
-        },
-    ];
+    const statsDefinitions: ListingStatDefinition[] = useMemo(
+        () => [
+            {
+                id: 'vendors-total',
+                label: t('outsources.index.stats.total.label'),
+                icon: <Building2 className="h-3.5 w-3.5 text-indigo-600" />,
+                value: isLoading ? <Skeleton className="h-4 w-16" /> : formatNumberValue(totalVendors),
+                description: isLoading ? (
+                    <Skeleton className="h-3 w-24" />
+                ) : (
+                    t('outsources.index.stats.total.description', {
+                        count: formatNumberValue(totalVendors),
+                    })
+                ),
+                valueClassName: isLoading ? undefined : 'text-indigo-600',
+            },
+            {
+                id: 'vendors-active',
+                label: t('outsources.index.stats.active.label'),
+                icon: <Users2 className="h-3.5 w-3.5 text-emerald-600" />,
+                value: isLoading ? <Skeleton className="h-4 w-14" /> : formatNumberValue(activeVendors),
+                description: isLoading ? (
+                    <Skeleton className="h-3 w-20" />
+                ) : (
+                    t('outsources.index.stats.active.description')
+                ),
+                valueClassName: isLoading ? undefined : 'text-emerald-600',
+            },
+            {
+                id: 'vendors-trips',
+                label: t('outsources.index.stats.tripsAverage.label'),
+                icon: <ClipboardList className="h-3.5 w-3.5 text-rose-600" />,
+                value: isLoading ? <Skeleton className="h-4 w-20" /> : decimalFormatter.format(averageTripsPerVendor),
+                description: isLoading ? (
+                    <Skeleton className="h-3 w-24" />
+                ) : (
+                    t('outsources.index.stats.tripsAverage.description')
+                ),
+                valueClassName: isLoading ? undefined : 'text-rose-600',
+            },
+            {
+                id: 'vendors-service-lines',
+                label: t('outsources.index.stats.serviceLines.label'),
+                icon: <Layers className="h-3.5 w-3.5 text-amber-600" />,
+                value: isLoading ? <Skeleton className="h-4 w-16" /> : formatNumberValue(serviceCategoryCount),
+                description: isLoading ? (
+                    <Skeleton className="h-3 w-24" />
+                ) : (
+                    t('outsources.index.stats.serviceLines.description')
+                ),
+                valueClassName: isLoading ? undefined : 'text-amber-600',
+            },
+        ],
+        [
+            activeVendors,
+            averageTripsPerVendor,
+            decimalFormatter,
+            formatNumberValue,
+            isLoading,
+            serviceCategoryCount,
+            t,
+            totalVendors,
+        ],
+    );
 
     const handleNavigate = useCallback(
         (overrides: Partial<{
@@ -351,6 +391,28 @@ export default function OutsourcesIndex({
         handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
     };
 
+    const renderStatusBadge = useCallback(
+        (status: string): JSX.Element => {
+            const normalized = status?.toLowerCase?.();
+            if (normalized === 'active') {
+                return (
+                    <Badge className="flex w-fit items-center gap-1 border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200">
+                        {t('outsources.status.active')}
+                    </Badge>
+                );
+            }
+
+            const label = normalized === 'inactive' ? t('outsources.status.inactive') : status || t('outsources.status.unknown');
+
+            return (
+                <Badge className="flex w-fit items-center gap-1 border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/30 dark:text-rose-200">
+                    {label}
+                </Badge>
+            );
+        },
+        [t],
+    );
+
     const handleSortToggle = useCallback(
         (columnId: string) => {
             const definition = COLUMN_DEFINITIONS.find((column) => {
@@ -391,23 +453,25 @@ export default function OutsourcesIndex({
                 setSelectedOutsource(null);
                 setIsDeleting(false);
                 toast({
-                    title: '✅ Vendor Deleted',
-                    description: `${selectedOutsource.name} has been removed successfully.`,
+                    title: t('outsources.delete.successTitle'),
+                    description: t('outsources.delete.successDescription', {
+                        name: selectedOutsource.name,
+                    }),
                 });
             },
             onError: (errors) => {
                 setIsDeleting(false);
-                const fallback = 'Failed to delete vendor. Please try again.';
+                const fallback = t('outsources.delete.failedDescription');
                 if (errors && typeof errors === 'object') {
                     const messages = Object.values(errors).flat().join('\n');
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('outsources.delete.failedTitle'),
                         description: messages || fallback,
                         variant: 'destructive',
                     });
                 } else {
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('outsources.delete.failedTitle'),
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -422,7 +486,7 @@ export default function OutsourcesIndex({
                 <Button asChild>
                     <Link href="/outsources/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Vendor
+                        {t('outsources.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -433,23 +497,23 @@ export default function OutsourcesIndex({
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search vendors or contacts',
+                placeholder: t('outsources.index.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('outsources.index.filters.rowsLabel'),
                 onChange: handlePerPageChange,
                 options: perPageSelectOptions,
             }}
         >
             <Select value={selectedStatus} onValueChange={handleStatusChange}>
                 <SelectTrigger className="w-full min-w-[140px] sm:w-auto">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t('outsources.index.filters.statusPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="all">{t('outsources.index.filters.statusAll')}</SelectItem>
                     {statusOptions?.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -459,10 +523,10 @@ export default function OutsourcesIndex({
             </Select>
             <Select value={selectedServiceType} onValueChange={handleServiceTypeChange}>
                 <SelectTrigger className="w-full min-w-[160px] sm:w-auto">
-                    <SelectValue placeholder="Service type" />
+                    <SelectValue placeholder={t('outsources.index.filters.servicePlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All services</SelectItem>
+                    <SelectItem value="all">{t('outsources.index.filters.serviceAll')}</SelectItem>
                     {serviceTypeOptions?.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -473,60 +537,73 @@ export default function OutsourcesIndex({
         </ListingFilterBar>
     );
 
-    const renderColumnValue = useCallback((outsource: OutsourceRecord, column: ColumnKey): JSX.Element | string => {
-        switch (column) {
-            case 'name':
-                return (
-                    <div className="flex flex-col">
-                        <span className="font-medium text-foreground">{outsource.name}</span>
-                        {outsource.created_at && (
-                            <span className="text-xs text-muted-foreground">
-                                Joined {dateFormatter.format(new Date(outsource.created_at))}
-                            </span>
-                        )}
-                    </div>
-                );
-            case 'service_type':
-                return <span className="text-sm text-muted-foreground">{outsource.service_type || '—'}</span>;
-            case 'contact_person':
-                return (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <UserCircle className="h-4 w-4 text-slate-400" />
-                        <span>{outsource.contact_person || '—'}</span>
-                    </div>
-                );
-            case 'phone':
-                return (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Phone className="h-4 w-4 text-slate-400" />
-                        <span>{outsource.phone || '—'}</span>
-                    </div>
-                );
-            case 'email':
-                return (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Mail className="h-4 w-4 text-slate-400" />
-                        <span>{outsource.email || '—'}</span>
-                    </div>
-                );
-            case 'status':
-                return renderStatusBadge(outsource.status);
-            case 'outsource_performances_count':
-                return <span className="font-semibold text-foreground">{formatNumberValue(outsource.outsource_performances_count)}</span>;
-            default:
-                return '—';
-        }
-    }, []);
+    const renderColumnValue = useCallback(
+        (outsource: OutsourceRecord, column: ColumnKey): JSX.Element | string => {
+            switch (column) {
+                case 'name':
+                    return (
+                        <div className="flex flex-col">
+                            <span className="font-medium text-foreground">{outsource.name}</span>
+                            {outsource.created_at && (
+                                <span className="text-xs text-muted-foreground">
+                                    {t('outsources.index.columns.joinedOn', {
+                                        date: dateFormatter.format(new Date(outsource.created_at)),
+                                    })}
+                                </span>
+                            )}
+                        </div>
+                    );
+                case 'service_type':
+                    return (
+                        <span className="text-sm text-muted-foreground">
+                            {outsource.service_type || notAvailableLabel}
+                        </span>
+                    );
+                case 'contact_person':
+                    return (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <UserCircle className="h-4 w-4 text-slate-400" />
+                            <span>{outsource.contact_person || notAvailableLabel}</span>
+                        </div>
+                    );
+                case 'phone':
+                    return (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Phone className="h-4 w-4 text-slate-400" />
+                            <span>{outsource.phone || notAvailableLabel}</span>
+                        </div>
+                    );
+                case 'email':
+                    return (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Mail className="h-4 w-4 text-slate-400" />
+                            <span>{outsource.email || notAvailableLabel}</span>
+                        </div>
+                    );
+                case 'status':
+                    return renderStatusBadge(outsource.status);
+                case 'outsource_performances_count':
+                    return (
+                        <span className="font-semibold text-foreground">
+                            {formatNumberValue(outsource.outsource_performances_count)}
+                        </span>
+                    );
+                default:
+                    return notAvailableLabel;
+            }
+        },
+        [dateFormatter, formatNumberValue, notAvailableLabel, renderStatusBadge, t],
+    );
 
     const tableRows = useMemo(() => {
         if (!outsources?.data?.length) {
             return (
                 <TableRow>
                     <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No outsourcing vendors found.
+                        {t('outsources.index.empty.title')}
                         {hasPermission('outsources.create') && (
                             <Link href="/outsources/create" className="ml-1 text-primary underline">
-                                Create one
+                                {t('outsources.index.empty.createAction')}
                             </Link>
                         )}
                     </TableCell>
@@ -557,17 +634,17 @@ export default function OutsourcesIndex({
                     <ListingRowActionsMenu
                         actions={[
                             {
-                                label: 'View',
+                                label: t('outsources.actions.view'),
                                 icon: <Eye className="h-4 w-4" />,
                                 href: `/outsources/${outsource.id}`,
                             },
                             hasPermission('outsources.edit') && {
-                                label: 'Edit',
+                                label: t('outsources.actions.edit'),
                                 icon: <Edit className="h-4 w-4" />,
                                 href: `/outsources/${outsource.id}/edit`,
                             },
                             hasPermission('outsources.destroy') && {
-                                label: 'Delete',
+                                label: t('outsources.actions.delete'),
                                 icon: <Trash2 className="h-4 w-4" />,
                                 danger: true,
                                 disabled: isDeleting && selectedOutsource?.id === outsource.id,
@@ -586,6 +663,7 @@ export default function OutsourcesIndex({
         rowOffset,
         selectedOutsource?.id,
         tableColumns.length,
+        t,
     ]);
 
     const mobileItems = useMemo(
@@ -603,40 +681,52 @@ export default function OutsourcesIndex({
             getKey={(item) => item.record.id}
             renderTitle={(item) => (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {t('outsources.index.mobile.position', { value: item.position })}
+                    </span>
                     <span className="text-base font-semibold text-foreground">{item.record.name}</span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
-            renderSubtitle={(item) => item.record.service_type || 'Service type unknown'}
+            renderSubtitle={(item) => item.record.service_type || t('outsources.index.fallbacks.serviceTypeUnknown')}
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Contact</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('outsources.index.mobile.contact')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.contact_person || '—'}
+                            {item.record.contact_person || notAvailableLabel}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Phone</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('outsources.index.mobile.phone')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.phone || '—'}
+                            {item.record.phone || notAvailableLabel}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Email</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('outsources.index.mobile.email')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.email || '—'}
+                            {item.record.email || notAvailableLabel}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('outsources.index.mobile.status')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {renderStatusBadge(item.record.status)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Trips</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('outsources.index.mobile.trips')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {formatNumberValue(item.record.outsource_performances_count)}
                         </span>
@@ -648,14 +738,14 @@ export default function OutsourcesIndex({
                     <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                         <Link href={`/outsources/${item.record.id}`}>
                             <Eye className="mr-2 h-4 w-4" />
-                            View
+                            {t('outsources.actions.view')}
                         </Link>
                     </Button>
                     {hasPermission('outsources.edit') && (
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/outsources/${item.record.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('outsources.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -668,7 +758,7 @@ export default function OutsourcesIndex({
                             disabled={isDeleting && selectedOutsource?.id === item.record.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('outsources.actions.delete')}
                         </Button>
                     )}
                 </div>
@@ -678,10 +768,10 @@ export default function OutsourcesIndex({
                     <ListingLoadingPlaceholder showStats={false} filterItemCount={2} rowCount={4} className="p-4" />
                 ) : (
                     <div className="py-8 text-center text-muted-foreground">
-                        No outsourcing vendors found.
+                        {t('outsources.index.empty.title')}
                         {hasPermission('outsources.create') && (
                             <Link href="/outsources/create" className="ml-1 text-primary underline">
-                                Create one
+                                {t('outsources.index.empty.createAction')}
                             </Link>
                         )}
                     </div>
@@ -693,14 +783,16 @@ export default function OutsourcesIndex({
     return (
         <>
             <ListPageLayout
-                headTitle="Outsourcing"
-                title="Outsourcing Vendors"
-                description={`Manage ${formatNumberValue(totalVendors)} outsourcing partner${totalVendors === 1 ? '' : 's'} and their performance footprint.`}
+                headTitle={t('outsources.index.headTitle')}
+                title={t('outsources.index.title')}
+                description={t('outsources.index.description', {
+                    total: formatNumberValue(totalVendors),
+                })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={<ListingStatsHeader stats={statsDefinitions} orientation="row" />}
-                tableTitle="Vendor Directory"
-                tableDescription="Track vendor capabilities, contacts, and trip coverage"
+                tableTitle={t('outsources.index.table.title')}
+                tableDescription={t('outsources.index.table.description')}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     !isLoading && outsources?.links ? (
@@ -712,7 +804,9 @@ export default function OutsourcesIndex({
                             total={outsources.total ?? undefined}
                             extra={
                                 <Badge variant="outline" className="bg-white/80 text-xs text-slate-600 dark:bg-slate-900/80 dark:text-slate-300">
-                                    Active: {formatNumberValue(activeVendors)}
+                                    {t('outsources.index.pagination.activeBadge', {
+                                        count: formatNumberValue(activeVendors),
+                                    })}
                                 </Badge>
                             }
                         />
@@ -745,8 +839,8 @@ export default function OutsourcesIndex({
                         setIsDeleting(false);
                     }
                 }}
-                title="Delete Vendor"
-                description="Are you sure you want to delete this vendor? This action cannot be undone."
+                title={t('outsources.delete.title')}
+                description={t('outsources.delete.description')}
                 itemName={selectedOutsource?.name ?? undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}

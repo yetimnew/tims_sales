@@ -17,6 +17,7 @@ import { evaluatePasswordStrength } from '@/lib/password-strength';
 import { validateUser, type ValidationErrors } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { index as usersIndexRoute, show as showUserRoute, edit as editUserRoute } from '@/routes/users';
+import { useTranslation } from 'react-i18next';
 
 interface Role {
     id: number;
@@ -46,12 +47,12 @@ interface UserEditProps {
     roles: Role[];
 }
 
-const formatDate = (value?: string | null): string => {
+const formatDate = (value: string | null | undefined, locale: string, emptyLabel: string): string => {
     if (!value) {
-        return 'Not available';
+        return emptyLabel;
     }
 
-    return new Date(value).toLocaleDateString(undefined, {
+    return new Date(value).toLocaleDateString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -59,6 +60,9 @@ const formatDate = (value?: string | null): string => {
 };
 
 export default function UsersEdit({ user, roles }: UserEditProps) {
+    const { t, i18n } = useTranslation();
+    const locale = i18n.language || 'en-US';
+    const notAvailableLabel = t('users.fallbacks.notAvailable');
     const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({});
     const formRef = useRef<HTMLFormElement | null>(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
@@ -76,12 +80,12 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
 
     const breadcrumbs = useMemo<BreadcrumbItem[]>(
         () => [
-            { title: 'User management', href: usersIndexRoute().url },
-            { title: 'Users', href: usersIndexRoute().url },
+            { title: t('users.breadcrumbs.management'), href: usersIndexRoute().url },
+            { title: t('users.title'), href: usersIndexRoute().url },
             { title: user.name, href: showUserRoute(user.id).url },
-            { title: 'Edit', href: editUserRoute(user.id).url },
+            { title: t('users.edit.breadcrumb'), href: editUserRoute(user.id).url },
         ],
-        [user.id, user.name],
+        [t, user.id, user.name],
     );
 
     const passwordStrength = useMemo(() => evaluatePasswordStrength(data.password ?? ''), [data.password]);
@@ -156,14 +160,14 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
     };
 
     const hasErrors = Object.keys(frontendErrors).length > 0 || Object.keys(errors).length > 0;
-    const summaryRole = data.role || user.roles?.[0]?.name || 'Unassigned';
+    const summaryRole = data.role || user.roles?.[0]?.name || t('users.fallbacks.unassigned');
     const isVerified = Boolean(user.email_verified_at);
 
     return (
         <FormPageLayout
-            title="Edit User"
-            description="Refresh profile details, adjust access, and keep credentials secure."
-            headTitle={`Edit ${user.name}`}
+            title={t('users.edit.title')}
+            description={t('users.edit.description')}
+            headTitle={t('users.edit.headTitle', { name: user.name })}
             breadcrumbs={breadcrumbs}
             icon={<User className="h-5 w-5" />}
             headerAside={
@@ -171,7 +175,7 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                     <Button variant="ghost" size="sm" asChild>
                         <Link href={`/users/${user.id}`}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to profile
+                            {t('users.edit.backToProfile')}
                         </Link>
                     </Button>
                     {isDirty && <UnsavedChangesBadge />}
@@ -187,15 +191,15 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                 {hasErrors && (
                     <Alert variant="destructive" className="mb-2">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertDescription className="text-sm">Please resolve the highlighted issues before saving.</AlertDescription>
+                        <AlertDescription className="text-sm">{t('users.validation.formDescription')}</AlertDescription>
                     </Alert>
                 )}
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
                     <div className="space-y-4">
                         <FormSection
-                            title="Profile & Contact"
-                            description="Keep the name and email aligned with your directory."
+                            title={t('users.form.sections.profile.title')}
+                            description={t('users.edit.sections.profile.description')}
                             icon={
                                 <span className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
                                     <User className="h-4 w-4" />
@@ -205,7 +209,7 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                         >
                             <FormField
                                 id="name"
-                                label="Full name"
+                                label={t('users.edit.fields.fullName.label')}
                                 required
                                 error={frontendErrors.name || errors.name}
                             >
@@ -215,14 +219,14 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                                         id="name"
                                         value={data.name}
                                         onChange={(event) => handleFieldChange('name', event.target.value)}
-                                        placeholder="e.g. Jane Smith"
+                                        placeholder={t('users.edit.fields.fullName.placeholder')}
                                         className={frontendErrors.name || errors.name ? 'pl-10 focus:border-red-500 focus-visible:ring-red-500/20' : 'pl-10'}
                                     />
                                 </div>
                             </FormField>
                             <FormField
                                 id="email"
-                                label="Email address"
+                                label={t('users.form.fields.email.label')}
                                 required
                                 error={frontendErrors.email || errors.email}
                             >
@@ -233,7 +237,7 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                                         type="email"
                                         value={data.email}
                                         onChange={(event) => handleFieldChange('email', event.target.value)}
-                                        placeholder="person@company.com"
+                                        placeholder={t('users.form.fields.email.placeholder')}
                                         className={frontendErrors.email || errors.email ? 'pl-10 focus:border-red-500 focus-visible:ring-red-500/20' : 'pl-10'}
                                     />
                                 </div>
@@ -241,8 +245,8 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                         </FormSection>
 
                         <FormSection
-                            title="Access & Security"
-                            description="Adjust the user's role or rotate their credentials when needed."
+                            title={t('users.form.sections.access.title')}
+                            description={t('users.edit.sections.access.description')}
                             icon={
                                 <span className="rounded-lg bg-purple-100 p-2 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300">
                                     <Shield className="h-4 w-4" />
@@ -252,14 +256,14 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                         >
                             <FormField
                                 id="role"
-                                label="Primary role"
+                                label={t('users.form.fields.role.label')}
                                 required
-                                helperText="Roles define which areas of the platform this teammate can access."
+                                helperText={t('users.edit.fields.role.helper')}
                                 error={frontendErrors.role || errors.role}
                             >
                                 <Select value={data.role} onValueChange={(value) => handleFieldChange('role', value)}>
                                     <SelectTrigger className={frontendErrors.role || errors.role ? 'focus:border-red-500 focus-visible:ring-red-500/20' : ''}>
-                                        <SelectValue placeholder="Select a role" />
+                                        <SelectValue placeholder={t('users.form.fields.role.placeholder')} />
                                     </SelectTrigger>
                                     <SelectContent className="z-50 max-h-64">
                                         {roles.map((role) => (
@@ -274,8 +278,8 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                             <div className="grid gap-6 md:grid-cols-2">
                                 <FormField
                                     id="password"
-                                    label="New password"
-                                    helperText="Leave blank to keep the current password."
+                                    label={t('users.edit.fields.password.label')}
+                                    helperText={t('users.edit.fields.password.helper')}
                                     error={frontendErrors.password || errors.password}
                                 >
                                     <div className="relative">
@@ -285,14 +289,14 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                                             type={showPassword ? 'text' : 'password'}
                                             value={data.password}
                                             onChange={(event) => handleFieldChange('password', event.target.value)}
-                                            placeholder="Generate a stronger secret"
+                                            placeholder={t('users.edit.fields.password.placeholder')}
                                             className={frontendErrors.password || errors.password ? 'pl-10 pr-12 focus:border-red-500 focus-visible:ring-red-500/20' : 'pl-10 pr-12'}
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword((previous) => !previous)}
                                             className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                            aria-label={showPassword ? t('users.form.fields.password.hide') : t('users.form.fields.password.show')}
                                         >
                                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                         </button>
@@ -300,7 +304,7 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                                     {data.password && (
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-                                                <span>Password strength</span>
+                                                <span>{t('users.form.fields.passwordStrength.label')}</span>
                                                 <span className={passwordStrength.textClass}>{passwordStrength.label}</span>
                                             </div>
                                             <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800">
@@ -316,7 +320,7 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
 
                                 <FormField
                                     id="password_confirmation"
-                                    label="Confirm password"
+                                    label={t('users.form.fields.passwordConfirmation.label')}
                                     error={frontendErrors.password_confirmation || errors.password_confirmation}
                                 >
                                     <div className="relative">
@@ -326,14 +330,14 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                                             type={showPasswordConfirmation ? 'text' : 'password'}
                                             value={data.password_confirmation}
                                             onChange={(event) => handleFieldChange('password_confirmation', event.target.value)}
-                                            placeholder="Repeat the new password"
+                                            placeholder={t('users.form.fields.passwordConfirmation.placeholder')}
                                             className={frontendErrors.password_confirmation || errors.password_confirmation ? 'pl-10 pr-12 focus:border-red-500 focus-visible:ring-red-500/20' : 'pl-10 pr-12'}
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowPasswordConfirmation((previous) => !previous)}
                                             className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                                            aria-label={showPasswordConfirmation ? 'Hide password confirmation' : 'Show password confirmation'}
+                                            aria-label={showPasswordConfirmation ? t('users.form.fields.passwordConfirmation.hide') : t('users.form.fields.passwordConfirmation.show')}
                                         >
                                             {showPasswordConfirmation ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                         </button>
@@ -345,20 +349,20 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
 
                     <aside className="space-y-4 lg:sticky lg:top-24">
                         <div className="rounded-lg border border-slate-200/60 bg-white/90 p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/50">
-                            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Account snapshot</h3>
-                            <p className="mt-0.5 text-xs text-muted-foreground">Quickly confirm the essentials before saving.</p>
+                            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('users.edit.sidebar.title')}</h3>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{t('users.edit.sidebar.description')}</p>
                             <dl className="mt-5 space-y-4 text-sm">
                                 <div className="flex items-center justify-between">
                                     <dt className="flex items-center gap-2 text-muted-foreground">
                                         <User className="h-4 w-4" />
-                                        User ID
+                                        {t('users.edit.sidebar.labels.userId')}
                                     </dt>
                                     <dd className="font-medium text-slate-900 dark:text-slate-100">#{user.id}</dd>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <dt className="flex items-center gap-2 text-muted-foreground">
                                         <Mail className="h-4 w-4" />
-                                        Email
+                                        {t('users.form.fields.email.label')}
                                     </dt>
                                     <dd className="font-medium text-slate-900 dark:text-slate-100" title={data.email}>
                                         {data.email}
@@ -367,35 +371,35 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                                 <div className="flex items-center justify-between">
                                     <dt className="flex items-center gap-2 text-muted-foreground">
                                         <Shield className="h-4 w-4" />
-                                        Assigned role
+                                        {t('users.edit.sidebar.labels.role')}
                                     </dt>
-                                    <dd className="font-medium capitalize text-slate-900 dark:text-slate-100">{summaryRole || 'Unassigned'}</dd>
+                                    <dd className="font-medium capitalize text-slate-900 dark:text-slate-100">{summaryRole || t('users.fallbacks.unassigned')}</dd>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <dt className="flex items-center gap-2 text-muted-foreground">
                                         <Lock className="h-4 w-4" />
-                                        Verification
+                                        {t('users.edit.sidebar.labels.verification')}
                                     </dt>
                                     <dd>
                                         <Badge variant={isVerified ? 'default' : 'secondary'}>
-                                            {isVerified ? 'Verified' : 'Pending'}
+                                            {isVerified ? t('users.status.verified') : t('users.status.pending')}
                                         </Badge>
                                     </dd>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <dt className="flex items-center gap-2 text-muted-foreground">
                                         <AlertCircle className="h-4 w-4" />
-                                        Member since
+                                        {t('users.edit.sidebar.labels.memberSince')}
                                     </dt>
-                                    <dd className="font-medium text-slate-900 dark:text-slate-100">{formatDate(user.created_at)}</dd>
+                                    <dd className="font-medium text-slate-900 dark:text-slate-100">{formatDate(user.created_at, locale, notAvailableLabel)}</dd>
                                 </div>
                             </dl>
                         </div>
 
                         <div className="rounded-lg border border-dashed border-slate-200/60 bg-slate-50/70 p-3 text-xs text-muted-foreground dark:border-slate-700/60 dark:bg-slate-900/40">
-                            <p className="font-medium text-slate-700 dark:text-slate-200">Tip</p>
+                            <p className="font-medium text-slate-700 dark:text-slate-200">{t('users.edit.tip.title')}</p>
                             <p className="mt-1 leading-relaxed">
-                                If you rotate credentials, let the teammate know so they can sign in with the updated password immediately.
+                                {t('users.edit.tip.description')}
                             </p>
                         </div>
                     </aside>
@@ -405,16 +409,16 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                     left={
                         <>
                             <span className="text-red-500">*</span>
-                            <span>Required fields</span>
+                            <span>{t('users.edit.requiredFields')}</span>
                         </>
                     }
                     right={
                         <>
                             <Button type="button" variant="outline" asChild>
-                                <Link href={`/users/${user.id}`}>Cancel</Link>
+                                <Link href={`/users/${user.id}`}>{t('users.actions.cancel')}</Link>
                             </Button>
                             <Button type="submit" disabled={processing}>
-                                {processing ? 'Saving…' : 'Save changes'}
+                                {processing ? t('users.edit.saving') : t('users.edit.save')}
                             </Button>
                         </>
                     }
@@ -424,4 +428,3 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
         </FormPageLayout>
     );
 }
-

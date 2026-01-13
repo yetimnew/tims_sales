@@ -21,6 +21,7 @@ import { validateOutsourcePerformance, type ValidationErrors } from '@/lib/valid
 import { cn } from '@/lib/utils';
 import type { BreadcrumbItem } from '@/types';
 import { AlertCircle, ArrowLeft, CheckCircle, ClipboardList, Loader2, MapPin, Package, Save, Wallet } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface OutsourceOption {
   id: number;
@@ -68,11 +69,6 @@ type OutsourcePerformanceFormData = {
   status: string;
 };
 
-const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Outsource Performances', href: '/outsource-performances' },
-  { title: 'Create', href: '/outsource-performances/create' },
-];
-
 type DistanceStatus = {
   found: boolean;
   message: string;
@@ -102,6 +98,7 @@ const computeTonKilometers = (distance: string, cargo: string): string => {
 };
 
 export default function OutsourcePerformancesCreate({ outsources, statusOptions, places }: OutsourcePerformancesCreateProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const defaultStatus = statusOptions[0]?.value ?? 'active';
 
@@ -152,7 +149,10 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
     limit: 20,
   });
 
-  const statusOptionValues = useMemo(() => (statusOptions.length ? statusOptions : [{ label: 'Active', value: 'active' }]), [statusOptions]);
+  const statusOptionValues = useMemo(
+    () => (statusOptions.length ? statusOptions : [{ label: t('outsourcePerformances.status.active'), value: 'active' }]),
+    [statusOptions, t],
+  );
 
   useEffect(() => {
     try {
@@ -181,11 +181,11 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
     if (backendMessages.length > 0) {
       toast({
         variant: 'destructive',
-        title: 'Validation error',
+        title: t('outsourcePerformances.form.validation.toastTitle'),
         description: backendMessages.join('\n'),
       });
     }
-  }, [errors, toast]);
+  }, [errors, t, toast]);
 
   const recalculateTonKilometers = useCallback(
     (nextState: OutsourcePerformanceFormData) => {
@@ -236,7 +236,7 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
           recalculateTonKilometers({ ...nextState, distance_km: formattedDistance });
           setDistanceStatus({
             found: true,
-            message: `Distance auto-filled from registered route (${formattedDistance} km).`,
+            message: t('outsourcePerformances.form.distanceStatus.applied', { value: formattedDistance }),
           });
         } else {
           setData('distance_km', '0.00');
@@ -245,7 +245,7 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
             found: false,
             message:
               result.note ??
-              'Distance for this origin and destination is not registered yet. Values defaulted to 0 km.',
+              t('outsourcePerformances.form.distanceStatus.missing'),
           });
         }
       } catch (error) {
@@ -254,13 +254,13 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
         recalculateTonKilometers({ ...nextState, distance_km: '0.00' });
         setDistanceStatus({
           found: false,
-          message: 'Unable to resolve distance. Distance was set to 0 km.',
+          message: t('outsourcePerformances.form.distanceStatus.failed'),
         });
       } finally {
         setDistanceLoading(false);
       }
     },
-    [recalculateTonKilometers, setData],
+    [recalculateTonKilometers, setData, t],
   );
 
   const setFieldError = useCallback((field: keyof OutsourcePerformanceFormData, message: string | undefined) => {
@@ -356,8 +356,8 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
     if (!validateClient(trimmed)) {
       toast({
         variant: 'destructive',
-        title: 'Please review the form',
-        description: 'Some fields need your attention before submission.',
+        title: t('outsourcePerformances.form.validation.reviewTitle'),
+        description: t('outsourcePerformances.form.validation.reviewDescription'),
       });
       return;
     }
@@ -375,8 +375,8 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
       preserveScroll: true,
       onSuccess: () => {
         toast({
-          title: '✅ Trip Logged',
-          description: 'The outsource performance record has been saved successfully.',
+          title: t('outsourcePerformances.form.create.successTitle'),
+          description: t('outsourcePerformances.form.create.successDescription'),
         });
         setClientErrors({});
         setDistanceStatus(null);
@@ -400,12 +400,19 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
 
   const generalError = errors.error ? String(errors.error) : '';
   const hasErrors = Object.keys(clientErrors).length > 0 || Object.keys(errors).length > 0;
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('outsourcePerformances.title'), href: '/outsource-performances' },
+      { title: t('outsourcePerformances.form.create.breadcrumb'), href: '/outsource-performances/create' },
+    ],
+    [t],
+  );
 
   return (
     <FormPageLayout
-      title="Log Outsource Trip"
-      headTitle="Log Outsource Trip"
-      description="Capture vendor dispatch metrics, route details, and cost insights in one streamlined form."
+      title={t('outsourcePerformances.form.create.title')}
+      headTitle={t('outsourcePerformances.form.create.headTitle')}
+      description={t('outsourcePerformances.form.create.description')}
       breadcrumbs={breadcrumbs}
       icon={<CheckCircle className="h-5 w-5" />}
       headerAside={
@@ -413,12 +420,12 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
           <Button variant="ghost" size="sm" asChild>
             <Link href="/outsource-performances">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Outsource Trips
+              {t('outsourcePerformances.form.create.backToList')}
             </Link>
           </Button>
           {isDirty && <UnsavedChangesBadge />}
           <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-            Vendor Ledger
+            {t('outsourcePerformances.form.create.badge')}
           </Badge>
         </>
       }
@@ -427,7 +434,7 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
         <div className="px-6 pt-6">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+            <AlertDescription>{t('outsourcePerformances.form.validation.resolve')}</AlertDescription>
           </Alert>
         </div>
       )}
@@ -449,8 +456,8 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
       >
 
         <FormSection
-          title="Trip Overview"
-          description="Link the vendor, operation, and trip identifiers."
+          title={t('outsourcePerformances.form.sections.overview.title')}
+          description={t('outsourcePerformances.form.sections.overview.description')}
           icon={
             <div className="rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
               <ClipboardList className="h-4 w-4" />
@@ -459,10 +466,10 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
           contentClassName="gap-6 md:grid-cols-3"
         >
           <div className="space-y-2">
-            <FormField label="Vendor" required error={clientErrors.outsource_id}>
+            <FormField label={t('outsourcePerformances.form.fields.vendor.label')} required error={clientErrors.outsource_id}>
               <Select value={data.outsource_id} onValueChange={value => handleFieldChange('outsource_id', value)}>
                 <SelectTrigger id="outsource_id" className={clientErrors.outsource_id ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-200' : ''}>
-                  <SelectValue placeholder="Select vendor" />
+                  <SelectValue placeholder={t('outsourcePerformances.form.fields.vendor.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {outsources.map(option => (
@@ -504,7 +511,7 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
           <div className="space-y-2">
             <SearchableEntityCombobox
               id="operation_id"
-              label="Operation"
+              label={t('outsourcePerformances.form.fields.operation.label')}
               required
               value={data.operation_id}
               items={operationsLookup.items}
@@ -512,12 +519,12 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
               getLabel={operation => operation.operationid}
               getDescription={operation => operation.customer?.name}
               getKeywords={operation => [operation.operationid, operation.customer?.name]}
-              placeholder="Search operation..."
-              searchPlaceholder="Search operations..."
+              placeholder={t('outsourcePerformances.form.fields.operation.placeholder')}
+              searchPlaceholder={t('outsourcePerformances.form.fields.operation.searchPlaceholder')}
               searchValue={operationsLookup.query}
               onSearchChange={operationsLookup.setQuery}
               isLoading={operationsLookup.isLoading}
-              loadingMessage="Searching operations..."
+              loadingMessage={t('outsourcePerformances.form.fields.operation.loading')}
               onSelect={value => {
                 handleFieldChange('operation_id', value);
                 operationsLookup.setQuery('');
@@ -554,16 +561,16 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
             )}
           </div>
 
-          <FormField label="Trip Number" required error={clientErrors.trip_number}>
+          <FormField label={t('outsourcePerformances.form.fields.tripNumber.label')} required error={clientErrors.trip_number}>
             <Input
               id="trip_number"
               value={data.trip_number}
               onChange={event => handleFieldChange('trip_number', event.target.value)}
-              placeholder="e.g., OUT-TRIP-2309"
+              placeholder={t('outsourcePerformances.form.fields.tripNumber.placeholder')}
             />
           </FormField>
 
-          <FormField label="Dispatch Date & Time" required error={clientErrors.dispatch_date}>
+          <FormField label={t('outsourcePerformances.form.fields.dispatchDate.label')} required error={clientErrors.dispatch_date}>
             <Input
               id="dispatch_date"
               type="datetime-local"
@@ -576,10 +583,10 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
             />
           </FormField>
 
-          <FormField label="Trip Status" required error={clientErrors.status}>
+          <FormField label={t('outsourcePerformances.form.fields.status.label')} required error={clientErrors.status}>
             <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
               <SelectTrigger id="status" className={clientErrors.status ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-200' : ''}>
-                <SelectValue placeholder="Select status" />
+                <SelectValue placeholder={t('outsourcePerformances.form.fields.status.placeholder')} />
               </SelectTrigger>
               <SelectContent>
                 {statusOptionValues.map(option => (
@@ -593,8 +600,8 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
         </FormSection>
 
         <FormSection
-          title="Route & Distance"
-          description="Select the origin and destination to auto-resolve registered distances."
+          title={t('outsourcePerformances.form.sections.route.title')}
+          description={t('outsourcePerformances.form.sections.route.description')}
           icon={
             <div className="rounded-lg bg-sky-100 p-2 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400">
               <MapPin className="h-4 w-4" />
@@ -604,21 +611,21 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
         >
           <PlaceCombobox
             id="from_place_id"
-            label="Origin"
+            label={t('outsourcePerformances.form.fields.origin.label')}
             required
             value={data.from_place_id}
             places={places}
-            placeholder="Select origin"
+            placeholder={t('outsourcePerformances.form.fields.origin.placeholder')}
             onSelect={value => handleFieldChange('from_place_id', value)}
             error={clientErrors.from_place_id}
           />
           <PlaceCombobox
             id="to_place_id"
-            label="Destination"
+            label={t('outsourcePerformances.form.fields.destination.label')}
             required
             value={data.to_place_id}
             places={places}
-            placeholder="Select destination"
+            placeholder={t('outsourcePerformances.form.fields.destination.placeholder')}
             onSelect={value => handleFieldChange('to_place_id', value)}
             error={clientErrors.to_place_id}
           />
@@ -626,38 +633,42 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
             {distanceLoading && (
               <p className="flex items-center gap-2 rounded-lg border border-dashed bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Resolving registered distance...
+                {t('outsourcePerformances.form.distanceStatus.resolving')}
               </p>
             )}
 
             {distanceStatus && (
               <Alert variant={distanceStatus.found ? 'default' : 'destructive'}>
                 {distanceStatus.found ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <AlertCircle className="h-4 w-4" />}
-                <AlertTitle>{distanceStatus.found ? 'Distance applied' : 'Distance missing'}</AlertTitle>
+                <AlertTitle>
+                  {distanceStatus.found
+                    ? t('outsourcePerformances.form.distanceStatus.appliedTitle')
+                    : t('outsourcePerformances.form.distanceStatus.missingTitle')}
+                </AlertTitle>
                 <AlertDescription>{distanceStatus.message}</AlertDescription>
               </Alert>
             )}
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              <FormField label="Distance (km)" error={clientErrors.distance_km}>
+              <FormField label={t('outsourcePerformances.form.fields.distance.label')} error={clientErrors.distance_km}>
                 <Input
                   id="distance_km"
                   value={data.distance_km}
                   onChange={event => handleFieldChange('distance_km', event.target.value)}
-                  placeholder="e.g., 540"
+                  placeholder={t('outsourcePerformances.form.fields.distance.placeholder')}
                 />
               </FormField>
 
-              <FormField label="Cargo Volume (MT)" error={clientErrors.cargo_volume_mt}>
+              <FormField label={t('outsourcePerformances.form.fields.cargo.label')} error={clientErrors.cargo_volume_mt}>
                 <Input
                   id="cargo_volume_mt"
                   value={data.cargo_volume_mt}
                   onChange={event => handleFieldChange('cargo_volume_mt', event.target.value)}
-                  placeholder="e.g., 32.5"
+                  placeholder={t('outsourcePerformances.form.fields.cargo.placeholder')}
                 />
               </FormField>
 
-              <FormField label="Ton-Kilometres">
+              <FormField label={t('outsourcePerformances.form.fields.tonkm.label')}>
                 <Input id="tonkm" value={data.tonkm} readOnly className="bg-muted text-muted-foreground" />
               </FormField>
             </div>
@@ -665,8 +676,8 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
         </FormSection>
 
         <FormSection
-          title="Cost & Notes"
-          description="Record spend and supporting remarks for context."
+          title={t('outsourcePerformances.form.sections.cost.title')}
+          description={t('outsourcePerformances.form.sections.cost.description')}
           icon={
             <div className="rounded-lg bg-amber-100 p-2 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
               <Wallet className="h-4 w-4" />
@@ -674,21 +685,21 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
           }
           contentClassName="gap-6 md:grid-cols-2"
         >
-          <FormField label="Trip Cost" error={clientErrors.cost}>
+          <FormField label={t('outsourcePerformances.form.fields.cost.label')} error={clientErrors.cost}>
             <Input
               id="cost"
               value={data.cost}
               onChange={event => handleFieldChange('cost', event.target.value)}
-              placeholder="e.g., 125000"
+              placeholder={t('outsourcePerformances.form.fields.cost.placeholder')}
             />
           </FormField>
 
-          <FormField label="Remarks">
+          <FormField label={t('outsourcePerformances.form.fields.remarks.label')}>
             <Textarea
               id="remarks"
               value={data.remarks}
               onChange={event => handleFieldChange('remarks', event.target.value)}
-              placeholder="Add optional context such as special conditions or vendor notes"
+              placeholder={t('outsourcePerformances.form.fields.remarks.placeholder')}
               className="min-h-[112px]"
             />
           </FormField>
@@ -696,7 +707,7 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
           <div className="rounded-lg border border-dashed bg-muted/50 p-4 text-sm text-muted-foreground md:col-span-2">
             <div className="flex items-center gap-2">
               <Package className="h-4 w-4" />
-              <span>Tip: leave cost and cargo fields blank if they are not yet confirmed. You can update them after the trip closes.</span>
+              <span>{t('outsourcePerformances.form.tip')}</span>
             </div>
           </div>
         </FormSection>
@@ -704,18 +715,18 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
 
       <FormActionsBar>
         <Button type="button" variant="outline" asChild>
-          <Link href="/outsource-performances">Cancel</Link>
+          <Link href="/outsource-performances">{t('outsourcePerformances.actions.cancel')}</Link>
         </Button>
         <Button type="submit" disabled={processing} onClick={submit}>
           {processing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              {t('outsourcePerformances.form.actions.saving')}
             </>
           ) : (
             <>
               <Save className="mr-2 h-4 w-4" />
-              Save Trip
+              {t('outsourcePerformances.form.actions.save')}
             </>
           )}
         </Button>

@@ -16,6 +16,7 @@ import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import {
     Layers,
@@ -31,13 +32,6 @@ import {
     Search,
     ChevronRight,
 } from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Woredas',
-        href: '/woredas',
-    },
-];
 
 type ColumnKey =
     | 'name'
@@ -111,92 +105,112 @@ interface WoredasIndexProps {
 
 const SKELETON_FLAG_KEY = 'woredas.index.shouldShowSkeleton';
 
-const COLUMN_DEFINITIONS: Array<{
-    id: ColumnKey;
-    label: string;
-    sortKey?: string;
-    align?: 'center' | 'right';
-}> = [
-    { id: 'name', label: 'Woreda', sortKey: 'name' },
-    { id: 'code', label: 'Code', sortKey: 'code' },
-    { id: 'status', label: 'Status', sortKey: 'status', align: 'center' },
-    { id: 'zone', label: 'Zone', sortKey: 'zone_id' },
-    { id: 'region', label: 'Region' },
-    { id: 'administrative_center', label: 'Admin Center', sortKey: 'administrative_center' },
-    { id: 'population', label: 'Population', sortKey: 'population', align: 'right' },
-    { id: 'area_km2', label: 'Area (km²)', sortKey: 'area_km2', align: 'right' },
-    { id: 'accessibility_score', label: 'Accessibility', sortKey: 'accessibility_score', align: 'center' },
-    { id: 'places_count', label: 'Places', sortKey: 'places_count', align: 'center' },
-];
-
-const formatNumberValue = (value?: number | string | null, fractionDigits = 0): string => {
-    if (value === null || value === undefined || value === '') {
-        return '—';
-    }
-
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) {
-        return '—';
-    }
-
-    return numeric.toLocaleString('en-US', {
-        minimumFractionDigits: fractionDigits,
-        maximumFractionDigits: fractionDigits,
-    });
-};
-
-const formatCount = (value?: number | string | null): string => {
-    if (value === null || value === undefined || value === '') {
-        return '0';
-    }
-
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) {
-        return '0';
-    }
-
-    return numeric.toLocaleString();
-};
-
-const getStatusBadge = (status?: string | null): React.ReactNode => {
-    if (!status) {
-        return (
-            <Badge variant="outline" className="bg-muted text-muted-foreground">
-                Unknown
-            </Badge>
-        );
-    }
-
-    const normalized = status.toLowerCase();
-    if (normalized === 'active') {
-        return (
-            <Badge className="flex items-center gap-1 border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:border-emerald-900/50 dark:bg-emerald-900/30 dark:text-emerald-200">
-                <CheckCircle className="h-3 w-3" /> Active
-            </Badge>
-        );
-    }
-
-    if (normalized === 'inactive') {
-        return (
-            <Badge className="flex items-center gap-1 border-slate-300 bg-slate-200 text-slate-700 hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
-                <XCircle className="h-3 w-3" /> Inactive
-            </Badge>
-        );
-    }
-
-    return (
-        <Badge variant="outline" className="capitalize">
-            {status}
-        </Badge>
-    );
-};
-
 export default function WoredasIndex({ woredas, metrics, filters, statusOptions, perPageOptions }: WoredasIndexProps) {
+    const { t, i18n } = useTranslation();
     const { hasPermission } = usePermissions();
     const canViewWoreda = hasPermission('woredas.show');
     const canCreateWoreda = hasPermission('woredas.create');
     const canEditWoreda = hasPermission('woredas.edit');
     const canDeleteWoreda = hasPermission('woredas.destroy');
+    const locale = i18n.language || 'en-US';
+    const notAvailableLabel = t('woredas.fallbacks.notAvailable');
+
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('woredas.title'),
+                href: '/woredas',
+            },
+        ],
+        [t],
+    );
+
+    const columnDefinitions = React.useMemo<Array<{ id: ColumnKey; label: string; sortKey?: string; align?: 'center' | 'right' }>>(
+        () => [
+            { id: 'name', label: t('woredas.columns.name'), sortKey: 'name' },
+            { id: 'code', label: t('woredas.columns.code'), sortKey: 'code' },
+            { id: 'status', label: t('woredas.columns.status'), sortKey: 'status', align: 'center' },
+            { id: 'zone', label: t('woredas.columns.zone'), sortKey: 'zone_id' },
+            { id: 'region', label: t('woredas.columns.region') },
+            { id: 'administrative_center', label: t('woredas.columns.adminCenter'), sortKey: 'administrative_center' },
+            { id: 'population', label: t('woredas.columns.population'), sortKey: 'population', align: 'right' },
+            { id: 'area_km2', label: t('woredas.columns.area'), sortKey: 'area_km2', align: 'right' },
+            { id: 'accessibility_score', label: t('woredas.columns.accessibility'), sortKey: 'accessibility_score', align: 'center' },
+            { id: 'places_count', label: t('woredas.columns.places'), sortKey: 'places_count', align: 'center' },
+        ],
+        [t],
+    );
+
+    const formatNumberValue = React.useCallback(
+        (value?: number | string | null, fractionDigits = 0): string => {
+            if (value === null || value === undefined || value === '') {
+                return notAvailableLabel;
+            }
+
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) {
+                return notAvailableLabel;
+            }
+
+            return numeric.toLocaleString(locale, {
+                minimumFractionDigits: fractionDigits,
+                maximumFractionDigits: fractionDigits,
+            });
+        },
+        [locale, notAvailableLabel],
+    );
+
+    const formatCount = React.useCallback(
+        (value?: number | string | null): string => {
+            if (value === null || value === undefined || value === '') {
+                return '0';
+            }
+
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) {
+                return '0';
+            }
+
+            return numeric.toLocaleString(locale);
+        },
+        [locale],
+    );
+
+    const getStatusBadge = React.useCallback(
+        (status?: string | null): React.ReactNode => {
+            if (!status) {
+                return (
+                    <Badge variant="outline" className="bg-muted text-muted-foreground">
+                        {t('woredas.status.unknown')}
+                    </Badge>
+                );
+            }
+
+            const normalized = status.toLowerCase();
+            if (normalized === 'active') {
+                return (
+                    <Badge className="flex items-center gap-1 border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:border-emerald-900/50 dark:bg-emerald-900/30 dark:text-emerald-200">
+                        <CheckCircle className="h-3 w-3" /> {t('woredas.status.active')}
+                    </Badge>
+                );
+            }
+
+            if (normalized === 'inactive') {
+                return (
+                    <Badge className="flex items-center gap-1 border-slate-300 bg-slate-200 text-slate-700 hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
+                        <XCircle className="h-3 w-3" /> {t('woredas.status.inactive')}
+                    </Badge>
+                );
+            }
+
+            return (
+                <Badge variant="outline" className="capitalize">
+                    {status}
+                </Badge>
+            );
+        },
+        [t],
+    );
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
@@ -346,14 +360,14 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                 setSelectedWoreda(null);
                 setIsDeleting(false);
                 toast({
-                    title: '✅ Woreda Deleted',
-                    description: `${selectedWoreda.name} has been removed successfully.`,
+                    title: t('woredas.delete.successTitle'),
+                    description: t('woredas.delete.successDescription', { name: selectedWoreda.name }),
                 });
             },
             onError: (errors) => {
                 setIsDeleting(false);
 
-                const fallback = 'Failed to delete woreda. Please try again.';
+                const fallback = t('woredas.delete.failedDescription');
                 if (errors && typeof errors === 'object') {
                     const errorMessages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
@@ -361,13 +375,13 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                         .join('\n');
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('woredas.delete.failedTitle'),
                         description: errorMessages || fallback,
                         variant: 'destructive',
                     });
                 } else {
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('woredas.delete.failedTitle'),
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -379,7 +393,7 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
     const statsDefinitions = [
         {
             id: 'total-woredas',
-            label: 'Total Woredas',
+            label: t('woredas.stats.total.label'),
             icon: <Layers className="h-3.5 w-3.5 text-sky-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
@@ -390,13 +404,13 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
             description: isLoading ? (
                 <Skeleton className="h-3 w-32" aria-hidden="true" />
             ) : (
-                `${formatCount(activeCount)} active`
+                t('woredas.stats.total.description', { count: formatCount(activeCount) })
             ),
             valueClassName: isLoading ? undefined : 'text-sky-600',
         },
         {
             id: 'inactive-woredas',
-            label: 'Inactive Woredas',
+            label: t('woredas.stats.inactive.label'),
             icon: <XCircle className="h-3.5 w-3.5 text-rose-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
@@ -407,13 +421,13 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
             description: isLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Paused districts'
+                t('woredas.stats.inactive.description')
             ),
             valueClassName: isLoading ? undefined : 'text-rose-600',
         },
         {
             id: 'population-reach',
-            label: 'Population Reach',
+            label: t('woredas.stats.population.label'),
             icon: <Users className="h-3.5 w-3.5 text-emerald-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
@@ -424,13 +438,13 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
             description: isLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                'Residents covered'
+                t('woredas.stats.population.description')
             ),
             valueClassName: isLoading ? undefined : 'text-emerald-600',
         },
         {
             id: 'accessibility-index',
-            label: 'Accessibility Index',
+            label: t('woredas.stats.accessibility.label'),
             icon: <Target className="h-3.5 w-3.5 text-indigo-500" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
@@ -441,7 +455,7 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
             description: isLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                `${formatCount(roadNoteCount)} road intel`
+                t('woredas.stats.accessibility.description', { count: formatCount(roadNoteCount) })
             ),
             valueClassName: isLoading ? undefined : 'text-indigo-600',
         },
@@ -453,64 +467,67 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
         () =>
             availablePerPageOptions.map((option) => ({
                 value: String(option),
-                label: `${option} / page`,
+                label: t('woredas.filters.perPageOption', { value: option }),
             })),
-        [availablePerPageOptions],
+        [availablePerPageOptions, t],
     );
 
     const tableColumns = React.useMemo(
         () => [
             { id: 'index', label: '#', align: 'center' as const },
-            ...COLUMN_DEFINITIONS.map((column) => ({
+            ...columnDefinitions.map((column) => ({
                 id: column.id,
                 label: column.label,
                 sortable: Boolean(column.sortKey),
                 sortKey: column.sortKey,
                 align: column.align,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
+            { id: 'actions', label: t('woredas.table.actions'), align: 'center' as const },
         ],
-        [],
+        [columnDefinitions, t],
     );
 
-    const renderColumnValue = React.useCallback((woreda: WoredaData, column: ColumnKey): React.ReactNode => {
-        switch (column) {
-            case 'name':
-                return (
-                    <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-primary" />
-                        <div className="flex flex-col">
-                            <span className="font-medium text-foreground">{woreda.name}</span>
-                            {woreda.administrative_center && (
-                                <span className="text-xs text-muted-foreground">{woreda.administrative_center}</span>
-                            )}
+    const renderColumnValue = React.useCallback(
+        (woreda: WoredaData, column: ColumnKey): React.ReactNode => {
+            switch (column) {
+                case 'name':
+                    return (
+                        <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-primary" />
+                            <div className="flex flex-col">
+                                <span className="font-medium text-foreground">{woreda.name}</span>
+                                {woreda.administrative_center && (
+                                    <span className="text-xs text-muted-foreground">{woreda.administrative_center}</span>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                );
-            case 'code':
-                return woreda.code || '—';
-            case 'status':
-                return getStatusBadge(woreda.status);
-            case 'zone':
-                return woreda.zone?.name || '—';
-            case 'region':
-                return woreda.zone?.region?.name || '—';
-            case 'administrative_center':
-                return woreda.administrative_center || '—';
-            case 'population':
-                return formatNumberValue(woreda.population);
-            case 'area_km2':
-                return formatNumberValue(woreda.area_km2, 2);
-            case 'accessibility_score':
-                return woreda.accessibility_score !== null && woreda.accessibility_score !== undefined
-                    ? formatNumberValue(woreda.accessibility_score, 1)
-                    : '—';
-            case 'places_count':
-                return formatNumberValue(woreda.places_count ?? 0);
-            default:
-                return '—';
-        }
-    }, []);
+                    );
+                case 'code':
+                    return woreda.code || notAvailableLabel;
+                case 'status':
+                    return getStatusBadge(woreda.status);
+                case 'zone':
+                    return woreda.zone?.name || notAvailableLabel;
+                case 'region':
+                    return woreda.zone?.region?.name || notAvailableLabel;
+                case 'administrative_center':
+                    return woreda.administrative_center || notAvailableLabel;
+                case 'population':
+                    return formatNumberValue(woreda.population);
+                case 'area_km2':
+                    return formatNumberValue(woreda.area_km2, 2);
+                case 'accessibility_score':
+                    return woreda.accessibility_score !== null && woreda.accessibility_score !== undefined
+                        ? formatNumberValue(woreda.accessibility_score, 1)
+                        : notAvailableLabel;
+                case 'places_count':
+                    return formatNumberValue(woreda.places_count ?? 0);
+                default:
+                    return notAvailableLabel;
+            }
+        },
+        [formatNumberValue, getStatusBadge, notAvailableLabel],
+    );
 
     const tableRows = isLoading
         ? Array.from({ length: 8 }).map((_, index) => (
@@ -518,7 +535,7 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                     <TableCell className="text-center">
                         <Skeleton className="h-4 w-6 mx-auto" />
                     </TableCell>
-                    {COLUMN_DEFINITIONS.map((column) => (
+                    {columnDefinitions.map((column) => (
                         <TableCell
                             key={column.id}
                             className={
@@ -541,7 +558,7 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
             ? woredaData.map((woreda, index) => (
                   <TableRow key={woreda.id} className="hover:bg-muted/50">
                       <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                      {COLUMN_DEFINITIONS.map((column) => (
+                      {columnDefinitions.map((column) => (
                           <TableCell
                               key={column.id}
                               className={
@@ -559,17 +576,17 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                           <ListingRowActionsMenu
                               actions={[
                                   canViewWoreda && {
-                                      label: 'View',
+                                      label: t('woredas.actions.view'),
                                       icon: <Eye className="h-4 w-4" />,
                                       href: `/woredas/${woreda.id}`,
                                   },
                                   canEditWoreda && {
-                                      label: 'Edit',
+                                      label: t('woredas.actions.edit'),
                                       icon: <Edit className="h-4 w-4" />,
                                       href: `/woredas/${woreda.id}/edit`,
                                   },
                                   canDeleteWoreda && {
-                                      label: 'Delete',
+                                      label: t('woredas.actions.delete'),
                                       icon: <Trash2 className="h-4 w-4" />,
                                       danger: true,
                                       disabled: isDeleting && selectedWoreda?.id === woreda.id,
@@ -583,10 +600,10 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
         : (
             <TableRow>
                 <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                    No woredas found.
+                    {t('woredas.empty.title')}
                     {canCreateWoreda && (
                         <Link href="/woredas/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('woredas.empty.createAction')}
                         </Link>
                     )}
                 </TableCell>
@@ -638,29 +655,29 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
-            renderSubtitle={(item) => item.record.zone?.name || 'No zone assigned'}
+            renderSubtitle={(item) => item.record.zone?.name || t('woredas.mobile.noZone')}
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('woredas.mobile.status')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {getStatusBadge(item.record.status)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Region</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('woredas.mobile.region')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.zone?.region?.name || '—'}
+                            {item.record.zone?.region?.name || notAvailableLabel}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Population</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('woredas.mobile.population')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {formatNumberValue(item.record.population)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Places</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('woredas.mobile.places')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {formatNumberValue(item.record.places_count ?? 0)}
                         </span>
@@ -673,7 +690,7 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                         <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                             <Link href={`/woredas/${item.record.id}`}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t('woredas.actions.view')}
                             </Link>
                         </Button>
                     )}
@@ -681,7 +698,7 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/woredas/${item.record.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('woredas.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -694,17 +711,17 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                             disabled={isDeleting && selectedWoreda?.id === item.record.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('woredas.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No woredas found.
+                    {t('woredas.empty.title')}
                     {canCreateWoreda && (
                         <Link href="/woredas/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('woredas.empty.createAction')}
                         </Link>
                     )}
                 </div>
@@ -717,33 +734,33 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
             (statusOptions?.length
                 ? statusOptions
                 : [
-                      { label: 'Active', value: 'active' },
-                      { label: 'Inactive', value: 'inactive' },
+                      { label: t('woredas.status.active'), value: 'active' },
+                      { label: t('woredas.status.inactive'), value: 'inactive' },
                   ]) || [],
-        [statusOptions],
+        [statusOptions, t],
     );
 
     const tableHeaderExtras = (
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search woredas...',
+                placeholder: t('woredas.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('woredas.filters.rowsLabel'),
                 onChange: handlePerPageChange,
                 options: perPageSelectOptions,
             }}
         >
             <Select value={selectedStatus} onValueChange={handleStatusChange}>
                 <SelectTrigger className="w-full min-w-[160px] sm:w-auto">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t('woredas.filters.statusPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="all">{t('woredas.filters.allStatuses')}</SelectItem>
                     {statusFilterOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -760,7 +777,7 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                 <Button asChild>
                     <Link href="/woredas/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Woreda
+                        {t('woredas.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -770,14 +787,14 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
     return (
         <>
             <ListPageLayout
-                headTitle="Woredas"
-                title="Woredas"
-                description={`Manage ${formatCount(totalRecords)} woreda${totalRecords === 1 ? '' : 's'} and align coverage with operational needs.`}
+                headTitle={t('woredas.title')}
+                title={t('woredas.title')}
+                description={t('woredas.description', { count: formatCount(totalRecords) })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
-                tableTitle="Woreda Inventory"
-                tableDescription="Review administrative coverage, readiness signals, and child places per woreda"
+                tableTitle={t('woredas.table.title')}
+                tableDescription={t('woredas.table.description')}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     !isLoading && woredas?.links ? (
@@ -814,8 +831,8 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                         setIsDeleting(false);
                     }
                 }}
-                title="Delete Woreda"
-                description="Are you sure you want to delete this woreda? This action cannot be undone."
+                title={t('woredas.delete.title')}
+                description={t('woredas.delete.description')}
                 itemName={selectedWoreda ? selectedWoreda.name : undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
@@ -823,4 +840,3 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
         </>
     );
 }
-

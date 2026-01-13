@@ -12,6 +12,7 @@ import { type BreadcrumbItem } from '@/types';
 import { DetailPageLayout } from '@/components/detail/detail-page-layout';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { DetailSummaryGrid, type DetailSummaryItem } from '@/components/detail/detail-summary-grid';
+import { useTranslation } from 'react-i18next';
 
 interface Permission {
   id: number;
@@ -57,18 +58,27 @@ const formatModuleLabel = (value: string): string => {
   return normalized.replace(/\b\w/g, segment => segment.toUpperCase());
 };
 
-const formatDate = (value: string): string => {
+const formatDate = (value: string, locale: string): string => {
   const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-  return new Date(value).toLocaleDateString(undefined, options);
+  return new Date(value).toLocaleDateString(locale, options);
 };
 
 export default function RolesShow({ role, activityLogs }: RolesShowProps) {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language || 'en-US';
   const { toast } = useToast();
   const { hasPermission } = usePermissions();
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number; name: string } | null>(null);
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
 
-  const breadcrumbs = useMemo<BreadcrumbItem[]>(() => [{ title: 'User management', href: '/users' }, { title: 'Roles', href: '/roles' }, { title: role.name, href: `/roles/${role.id}` }], [role.id, role.name]);
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('roles.breadcrumbs.management'), href: '/users' },
+      { title: t('roles.title'), href: '/roles' },
+      { title: role.name, href: `/roles/${role.id}` },
+    ],
+    [role.id, role.name, t],
+  );
 
   const permissions = role.permissions ?? [];
   const users = role.users ?? [];
@@ -100,21 +110,21 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
   const totalUsers = users.length;
 
   const kpiSummary: DetailSummaryItem[] = [
-    { label: 'Permissions', value: totalPermissions, helper: 'Total capabilities' },
-    { label: 'Assigned Users', value: totalUsers, helper: 'Team members' },
-    { label: 'Modules', value: moduleEntries.length, helper: 'Areas covered' },
-    { label: 'Created', value: formatDate(role.created_at), helper: 'Initial setup' },
+    { label: t('roles.show.kpi.permissions.label'), value: totalPermissions, helper: t('roles.show.kpi.permissions.helper') },
+    { label: t('roles.show.kpi.users.label'), value: totalUsers, helper: t('roles.show.kpi.users.helper') },
+    { label: t('roles.show.kpi.modules.label'), value: moduleEntries.length, helper: t('roles.show.kpi.modules.helper') },
+    { label: t('roles.show.kpi.created.label'), value: formatDate(role.created_at, locale), helper: t('roles.show.kpi.created.helper') },
   ];
 
   const confirmDelete = () => {
     if (!deleteConfirmation) return;
     router.delete(`/roles/${deleteConfirmation.id}`, {
       onSuccess: () => {
-        toast({ title: 'Success', description: 'Role deleted successfully', variant: 'success' });
+        toast({ title: t('roles.delete.successTitle'), description: t('roles.delete.successDescription', { name: deleteConfirmation.name }), variant: 'success' });
         setDeleteConfirmation(null);
       },
       onError: () => {
-        toast({ title: 'Error', description: 'Failed to delete role', variant: 'destructive' });
+        toast({ title: t('roles.delete.failedTitle'), description: t('roles.delete.failedDescription'), variant: 'destructive' });
       },
     });
   };
@@ -122,35 +132,35 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
   return (
     <DetailPageLayout
       title={role.name}
-      subtitle={role.description || 'No description provided for this role yet.'}
+      subtitle={role.description || t('roles.show.subtitleFallback')}
       breadcrumbs={breadcrumbs}
-      headTitle={`Role · ${role.name}`}
+      headTitle={t('roles.show.headTitle', { name: role.name })}
       icon={<ShieldCheck className="h-6 w-6 text-indigo-700 dark:text-indigo-300" />}
       iconWrapperClassName="bg-indigo-100 dark:bg-indigo-900/30"
       leading={
         <Button variant="ghost" size="sm" asChild>
           <Link href="/roles">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Roles
+            {t('roles.actions.backToList')}
           </Link>
         </Button>
       }
       actions={
         <>
-          <Badge variant="outline">#{role.id} · Updated {formatDate(role.updated_at)}</Badge>
+          <Badge variant="outline">{t('roles.show.updatedBadge', { id: role.id, date: formatDate(role.updated_at, locale) })}</Badge>
           <div className="flex gap-2">
             {hasPermission('roles.edit') && (
               <Button variant="outline" asChild>
                 <Link href={`/roles/${role.id}/edit`}>
                   <SquarePen className="h-4 w-4 mr-2" />
-                  Edit
+                  {t('roles.actions.edit')}
                 </Link>
               </Button>
             )}
             {hasPermission('roles.destroy') && (
               <Button variant="destructive" onClick={() => setDeleteConfirmation({ id: role.id, name: role.name })}>
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                {t('roles.actions.delete')}
               </Button>
             )}
           </div>
@@ -161,11 +171,11 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
 
       <div className="grid gap-6 lg:grid-cols-[1fr,20rem]">
         <div className="space-y-6">
-          <DetailSectionCard title="Permission Library" description="Organized view of every capability attached to this role" icon={<Layers className="h-5 w-5" />}>
-            <div className="space-y-4">
-              {moduleEntries.length > 0 ? (
-                moduleEntries.map(([module, modulePermissions]) => (
-                  <div key={module} className="overflow-hidden rounded-xl border">
+        <DetailSectionCard title={t('roles.show.sections.permissions.title')} description={t('roles.show.sections.permissions.description')} icon={<Layers className="h-5 w-5" />}>
+          <div className="space-y-4">
+            {moduleEntries.length > 0 ? (
+              moduleEntries.map(([module, modulePermissions]) => (
+                <div key={module} className="overflow-hidden rounded-xl border">
                     <Collapsible open={expandedModules[module] ?? true} onOpenChange={value => setExpandedModules(previous => ({ ...previous, [module]: value }))}>
                       <div className="flex items-center justify-between border-b bg-muted/50 px-5 py-4">
                         <CollapsibleTrigger asChild>
@@ -175,7 +185,7 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
                               <div>
                                 <p className="text-sm font-semibold">{formatModuleLabel(module)}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  {modulePermissions.length} permission{modulePermissions.length === 1 ? '' : 's'}
+                                  {t('roles.show.sections.permissions.moduleCount', { count: modulePermissions.length, suffix: modulePermissions.length === 1 ? '' : 's' })}
                                 </p>
                               </div>
                             </div>
@@ -201,10 +211,10 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
                 <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-12 text-center">
                   <AlertCircle className="h-6 w-6 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">No permissions assigned to this role yet.</p>
+                    <p className="text-sm text-muted-foreground">{t('roles.show.sections.permissions.empty')}</p>
                     {hasPermission('roles.edit') && (
                       <Button variant="outline" asChild className="mt-3">
-                        <Link href={`/roles/${role.id}/edit`}>Assign Permissions</Link>
+                        <Link href={`/roles/${role.id}/edit`}>{t('roles.show.sections.permissions.assignAction')}</Link>
                       </Button>
                     )}
                   </div>
@@ -213,7 +223,7 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
             </div>
           </DetailSectionCard>
 
-          <DetailSectionCard title="People With This Role" description="Understand who inherits the permissions defined above" icon={<Users className="h-5 w-5" />}>
+          <DetailSectionCard title={t('roles.show.sections.people.title')} description={t('roles.show.sections.people.description')} icon={<Users className="h-5 w-5" />}>
             {totalUsers > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2">
                 {users.map(user => (
@@ -232,8 +242,8 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
               <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-10 text-center">
                 <Users className="h-10 w-10 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground">No users currently linked to this role.</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Assign it to teammates to extend access.</p>
+                  <p className="text-sm text-muted-foreground">{t('roles.show.sections.people.empty')}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t('roles.show.sections.people.emptyHint')}</p>
                 </div>
               </div>
             )}
@@ -241,18 +251,18 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
         </div>
 
         <div className="space-y-4">
-          <DetailSectionCard title="At a Glance" description="Quick audit summary" icon={<Activity className="h-4 w-4" />}>
+          <DetailSectionCard title={t('roles.show.sections.glance.title')} description={t('roles.show.sections.glance.description')} icon={<Activity className="h-4 w-4" />}>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Modules covered</span>
+                <span className="text-muted-foreground">{t('roles.show.sections.glance.modules')}</span>
                 <span className="font-semibold">{moduleEntries.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Permissions total</span>
+                <span className="text-muted-foreground">{t('roles.show.sections.glance.permissions')}</span>
                 <span className="font-semibold">{totalPermissions}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Members assigned</span>
+                <span className="text-muted-foreground">{t('roles.show.sections.glance.members')}</span>
                 <span className="font-semibold">{totalUsers}</span>
               </div>
             </div>
@@ -262,19 +272,26 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
             <div className="flex items-start gap-3">
               <AlertCircle className="mt-0.5 h-4 w-4" />
               <div>
-                <p className="font-medium">Need to refine this role?</p>
-                <p className="mt-1 leading-relaxed">Use the edit action to adjust responsibilities or prune unneeded access as your security posture evolves.</p>
+                <p className="font-medium">{t('roles.show.tip.title')}</p>
+                <p className="mt-1 leading-relaxed">{t('roles.show.tip.description')}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <DetailSectionCard title="Activity Log" description="Review every change captured for this role" icon={<Activity className="h-5 w-5" />}>
+      <DetailSectionCard title={t('roles.show.sections.activity.title')} description={t('roles.show.sections.activity.description')} icon={<Activity className="h-5 w-5" />}>
         <ActivityLogTable activityLogs={activityLogs} />
       </DetailSectionCard>
 
-      <DeleteConfirmationDialog open={Boolean(deleteConfirmation)} onOpenChange={open => !open && setDeleteConfirmation(null)} title="Delete Role" description="Are you sure you want to delete this role? This action cannot be undone." itemName={deleteConfirmation?.name} onConfirm={confirmDelete} />
+      <DeleteConfirmationDialog
+        open={Boolean(deleteConfirmation)}
+        onOpenChange={open => !open && setDeleteConfirmation(null)}
+        title={t('roles.delete.title')}
+        description={t('roles.delete.description')}
+        itemName={deleteConfirmation?.name}
+        onConfirm={confirmDelete}
+      />
     </DetailPageLayout>
   );
 }

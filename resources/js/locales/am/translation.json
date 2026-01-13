@@ -12,7 +12,7 @@
     },
     "sidebar": {
         "dashboard": "ዳሽቦርድ",
-        "fleetManagement": "የመኪና አስተዳደር",
+        "fleetManagement": "የቡድን አስተዳደር",
         "trucks": "ትራክቶች",
         "drivers": "አሽከርካሪዎች",
         "driverTruckAssignments": "የአሽከርካሪ-ትራክ መመደቦች",
@@ -21,80 +21,55 @@
         "cargoTypes": "የጭነት አይነቶች",
         "maintenance": "ጥገና",
         "maintenanceRecords": "የጥገና መዝገቦች",
-        "overview": "አጠቃላይ እይታ",
+        "overview": "አጠቃላይ",
         "maintenanceTypes": "የጥገና አይነቶች",
-        "overdueAlerts": "የዘገዩ እና ማስጠንቀቂያዎች",
+        "overdueAlerts": "የማብቂያ ጊዜ እና ማስጠንቀቂያዎች",
         "operations": "ኦፕሬሽኖች",
-        "performances": "አፈፃፀም",
+        "performances": "አፈፃፀሞች",
         "customers": "ደንበኞች",
-        "geographicManagement": "የአካባቢ አስተዳደር",
+        "geographicManagement": "ጂኦግራፊ አስተዳደር",
         "regions": "ክልሎች",
         "zones": "ዞኖች",
         "woredas": "ወረዳዎች",
         "places": "ቦታዎች",
         "distances": "ርቀቶች",
-        "statusManagement": "የሁኔታ አስተዳደር",
-        "statusTypeRegistration": "የሁኔታ አይነት ምዝገባ",
-        "dailyTruckStatusRegistration": "ዕለታዊ የትራክ ሁኔታ ምዝገባ",
-        "outsourcing": "ውጭ አቅርቦት",
-        "outsources": "ውጭ አቅራቢዎች",
-        "outsourcePerformances": "የውጭ አቅራቢ አፈፃፀም",
+        "statusManagement": "ሁኔታ አስተዳደር",
+        "statusTypeRegistration": "የሁኔታ አይነት መመዝገብ",
+        "dailyTruckStatusRegistration": "ዕለታዊ የትራክ ሁኔታ መመዝገብ",
+        "outsourcing": "አውትሶርሲንግ",
+        "outsources": "አውትሶርሶች",
+        "outsourcePerformances": "የአውትሶርስ አፈፃፀሞች",
         "reports": "ሪፖርቶች",
         "maintenanceReports": "የጥገና ሪፖርቶች",
-        "fuelEfficiencyCost": "የነዳጅ ውጤታማነት እና ወጪ",
+        "fuelEfficiencyCost": "የነዳጅ ብቃት እና ወጪ",
         "customerProfitability": "የደንበኛ ትርፋማነት",
-        "outsourcePerformance": "የውጭ አፈፃፀም",
+        "outsourcePerformance": "የአውትሶርስ አፈፃፀም",
         "operationProfitability": "የኦፕሬሽን ትርፋማነት",
         "routeProfitability": "የመንገድ ትርፋማነት",
-        "costPerKilometer": "በኪ.ሜ. የሚመነጨ ወጪ",
-        "loadFactorUtilization": "የጭነት መጠን እና ተጠቃሚነት",
-        "geographicHeatmaps": "የአካባቢ ሙቀት ካርታዎች",
-        "truckGrading": "የትራክ ደረጃ አሰጣጥ",
-        "driverGrading": "የአሽከርካሪ ደረጃ አሰጣጥ",
-        "driverTruckGrading": "የአሽከርካሪ-ትራክ ደረጃ አሰጣጥ",
+        "costPerKilometer": "በኪሜ ወጪ",
+        "loadFactorUtilization": "የጭነት ፋክተር እና አጠቃቀም",
+        "geographicHeatmaps": "የጂኦግራፊ ሙቀት ካርታዎች",
+        "truckGrading": "የትራክ ግሬዲንግ",
+        "driverGrading": "የአሽከርካሪ ግሬዲንግ",
+        "driverTruckGrading": "የአሽከርካሪ-ትራክ ግሬዲንግ",
         "driverSafetyReport": "የአሽከርካሪ ደህንነት",
         "performanceAll": "አፈፃፀም (ሁሉም)",
         "performanceByDriver": "በአሽከርካሪ አፈፃፀም",
         "performanceByTruck": "በትራክ አፈፃፀም",
         "performanceByStatus": "በሁኔታ አፈፃፀም",
-        "attachDetachHistory": "የመያያዝ / መለያየት ታሪክ",
+        "attachDetachHistory": "የመያዝ/መለየት ታሪክ",
         "dailyStatusReport": "ዕለታዊ የሁኔታ ሪፖርት",
-        "grading": "ደረጃ አሰጣጥ",
+        "grading": "ግሬዲንግ",
         "activityLogs": "የእንቅስቃሴ መዝገቦች",
         "userManagement": "የተጠቃሚ አስተዳደር",
         "users": "ተጠቃሚዎች",
         "roles": "ሚናዎች",
-        "permissions": "ፍቃዶች",
-        "notificationAssignments": "የማስታወቂያ መመደቦች",
-        "systemBackups": "የስርዓት ቅጂዎች",
-        "helpDocumentation": "እርዳታ እና ሰነዶች"
+        "permissions": "ፈቃዶች",
+        "notificationAssignments": "የማስታወቂያያ መመደቦች",
+        "systemBackups": "የስርዓት ባክአፕ",
+        "helpDocumentation": "እገዛ እና ሰነዶች"
     },
     "dashboard": {
-        "title": "ዳሽቦርድ",
-        "breadcrumb": "ዳሽቦርድ",
-        "header": {
-            "title": "ዋና ዳሽቦርድ",
-            "subtitle": "የተንቀሳቃሽ ቡድን እና የገንዘብ መረጃ በቀጥታ",
-            "description": "የአውታረ መረብ አፈፃፀም፣ ወጪ መመለስ እና የኦፕሬሽን ጥራትን በመከታተል ቡድንዎን ይቆጣጠሩ።"
-        },
-        "accessRestricted": {
-            "imageAlt": "የዳሽቦርድ መዳረሻ ተገድቧል",
-            "title": "የዳሽቦርድ መዳረሻ ተገድቧል",
-            "description": "የመኪና ቡድን እና የገንዘብ እይታ ለማግኘት የዳሽቦርድ ፍቃድ ያስፈልጋል። ይህ ስህተት መሆኑን ካመኑ እባክዎ አስተዳዳሪውን ያነጋግሩ።"
-        },
-        "kpi": {
-            "changeUnavailable": "ለውጥ መረጃ የለም"
-        },
-        "status": {
-            "unknown": "ያልታወቀ",
-            "active": "ንቁ",
-            "pending": "በመጠበቅ ላይ",
-            "in_progress": "በሂደት ላይ",
-            "completed": "ተጠናቋል",
-            "cancelled": "ተሰርዟል",
-            "returned": "ተመልሷል",
-            "maintenance": "ጥገና"
-        },
         "financialPulse": {
             "revenue": "ገቢ (30ቀናት)",
             "operatingCost": "የኦፕሬሽን ወጪ (30ቀናት)",
@@ -1598,6 +1573,133 @@
             }
         }
     },
+    "maintenanceReport": {
+        "title": "የጥገና ሪፖርት",
+        "breadcrumbs": {
+            "reports": "ሪፖርቶች",
+            "maintenance": "ጥገና"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "filters": {
+            "dateError": "የመጀመሪያው ቀን ከመጨረሻው ቀን በፊት መሆን አለበት።",
+            "types": {
+                "label": "የጥገና ዓይነቶች",
+                "triggerAll": "ሁሉም የጥገና ዓይነቶች",
+                "summaryAll": "ሁሉም የጥገና ዓይነቶች ተካተቱ",
+                "heading": "የጥገና ዓይነቶች",
+                "searchPlaceholder": "የጥገና ዓይነት ፈልግ...",
+                "empty": "ምንም የጥገና ዓይነቶች አልተገኙም።"
+            },
+            "statuses": {
+                "label": "ሁኔታዎች",
+                "triggerAll": "ሁሉም ሁኔታዎች",
+                "summaryAll": "ሁሉም ሁኔታዎች ተካተቱ",
+                "heading": "ሁኔታዎች",
+                "searchPlaceholder": "ሁኔታ ፈልግ...",
+                "empty": "ምንም ሁኔታዎች አልተገኙም።"
+            },
+            "providers": {
+                "label": "የአገልግሎት አቅራቢዎች",
+                "triggerAll": "ሁሉም የአገልግሎት አቅራቢዎች",
+                "summaryAll": "ሁሉም የአገልግሎት አቅራቢዎች ተካተቱ",
+                "heading": "የአገልግሎት አቅራቢዎች",
+                "searchPlaceholder": "የአገልግሎት አቅራቢ ፈልግ...",
+                "empty": "ምንም የአገልግሎት አቅራቢዎች አልተገኙም።"
+            }
+        },
+        "badges": {
+            "from": "ከ {{value}}",
+            "to": "እስከ {{value}}",
+            "truck": "{{count}} ጭነት መኪና",
+            "trucks": "{{count}} ጭነት መኪናዎች",
+            "allTrucks": "ሁሉም ጭነት መኪናዎች",
+            "type": "{{count}} ዓይነት",
+            "types": "{{count}} ዓይነቶች",
+            "allTypes": "ሁሉም ዓይነቶች",
+            "status": "{{count}} ሁኔታ",
+            "statuses": "{{count}} ሁኔታዎች",
+            "allStatuses": "ሁሉም ሁኔታዎች",
+            "provider": "{{count}} አቅራቢ",
+            "providers": "{{count}} አቅራቢዎች",
+            "allProviders": "ሁሉም አቅራቢዎች"
+        },
+        "summary": {
+            "tasks": "የጥገና ተግባሮች",
+            "completionRate": "የመጨረሻ መጠን",
+            "overdue": "የተዘገዩ ተግባሮች",
+            "totalSpend": "ጠቅላላ ወጪ",
+            "openCost": "ያልተጠናቀቀ ወጪ",
+            "upcoming": "በ7 ቀናት ውስጥ ሚመጡ"
+        },
+        "highlights": {
+            "title": "አስተዋፅዖዎች",
+            "description": "ዋና የጥገና ምልክቶችን በፍጥነት ይመልከቱ።",
+            "highestSpend": "ከፍተኛ ወጪ ያላቸው መኪናዎች",
+            "noSpend": "የወጪ መረጃ የለም።",
+            "mostOverdue": "በጣም የተዘገዩ መኪናዎች",
+            "noOverdue": "የተዘገዩ የጥገና ተግባሮች የሉም።",
+            "overdueValue": "{{value}} የተዘገዩ",
+            "daysValue": "{{value}} ቀናት",
+            "costliestTypes": "ከፍተኛ ወጪ ያላቸው ዓይነቶች",
+            "noTypes": "የዓይነት ወጪ መረጃ የለም።"
+        },
+        "upcoming": {
+            "title": "ቀርቶ ያሉ ጥገናዎች",
+            "description": "የተመዘገቡ ስራዎችን እና አቅራቢዎችን ይመልከቱ።",
+            "empty": "ምንም የቀረበ ጥገና የለም።",
+            "tbd": "ቀን አልተወሰነም",
+            "days": "{{value}} ቀናት",
+            "unassignedTruck": "ያልተመደበ ጭነት መኪና",
+            "generalMaintenance": "አጠቃላይ ጥገና"
+        },
+        "trend": {
+            "title": "የጥገና አዝማሚያ",
+            "description": "በጊዜ ላይ የተግባር መጠንና ወጪዎች።",
+            "empty": "በተመረጠው ጊዜ መስመር ውስጥ ዳታ የለም።",
+            "tasks": "{{value}} ተግባሮች",
+            "completed": "የተጠናቀቁ",
+            "cost": "ጠቅላላ ወጪ",
+            "avgCost": "አማካይ ወጪ በተግባር"
+        },
+        "typeBreakdown": {
+            "title": "የጥገና ዓይነቶች መመለከቻ",
+            "description": "ስራ መጠንን እና ወጪዎችን በዓይነት ይንፀባረቁ።",
+            "empty": "ምንም የጥገና ዓይነት ዳታ የለም።"
+        },
+        "table": {
+            "detailTitle": "ዝርዝር የጥገና መረጃ",
+            "detailDescription": "የመኪና ጭነት፣ የመጨረሻ ሁኔታ እና ወጪን በመኪና ይመልከቱ።",
+            "rowsPerPage": "ረድፎች በገጽ",
+            "perPageOption": "{{value}} / ገጽ",
+            "showing": "{{from}}–{{to}} ከ {{total}}",
+            "pageIndicator": "ገጽ {{current}} ከ {{last}}",
+            "truck": "ጭነት መኪና",
+            "status": "ሁኔታ",
+            "tasks": "ተግባሮች",
+            "completed": "የተጠናቀቁ",
+            "scheduled": "የታቀዱ",
+            "inProgress": "በሂደት ላይ",
+            "overdue": "የተዘገዩ",
+            "completionRate": "የመጨረሻ %",
+            "overdueRate": "የመዘግያ %",
+            "totalCost": "ጠቅላላ ወጪ",
+            "completedCost": "የተጠናቀቀ ወጪ",
+            "openCost": "ያልተጠናቀቀ ወጪ",
+            "averageCost": "አማካይ ወጪ",
+            "averageCompletionDays": "አማካይ የመጨረሻ ቀናት",
+            "lastCompleted": "መጨረሻ የተጠናቀቀው",
+            "nextScheduled": "ቀጣይ የታቀደው",
+            "maxOverdue": "ከፍተኛ የመዘግያ (ቀናት)",
+            "type": "የጥገና ዓይነት",
+            "category": "ምድብ",
+            "completion": "መጨረሻ",
+            "avgCost": "አማካይ ወጪ",
+            "empty": "ምንም የጥገና መዝገቦች ከተመረጡት ማጣሪያዎች ጋር አልተገኙም።",
+            "totals": "ጠቅላላ"
+        }
+    },
     "cargoTypes": {
         "title": "የጭነት አይነቶች",
         "breadcrumb": "የጭነት አይነቶች",
@@ -1811,6 +1913,2501 @@
                     "title": "የእንቅስቃሴ ታሪክ",
                     "description": "የቅርብ ጊዜ እርምጃዎች እና ማዘምኖች"
                 }
+            }
+        }
+    },
+    "zones": {
+        "title": "ዞኖች",
+        "headTitle": "ዞኖች",
+        "description": "{{formattedCount}} ዞኖችን በማስተዳደር የክልል ስትራቴጂዎችን ተመሳሳይ ያድርጉ።",
+        "columns": {
+            "name": "ዞን",
+            "code": "ኮድ",
+            "status": "ሁኔታ",
+            "region": "ክልል",
+            "administrativeCenter": "የአስተዳደር ማእከል",
+            "population": "ህዝብ",
+            "accessibility": "መዳረሻ",
+            "woredas": "ወረዳዎች"
+        },
+        "table": {
+            "title": "የዞን ማህደር",
+            "description": "የዝግጁነት ምልክቶችን፣ የህዝብ መድረሻን እና የእንቅስቃሴ ሁኔታን ይከታተሉ",
+            "index": "#",
+            "actions": "እርምጃዎች"
+        },
+        "stats": {
+            "total": {
+                "label": "ጠቅላላ ዞኖች",
+                "description": "{{count}} ተመርመሩ"
+            },
+            "active": {
+                "label": "ንቁ ዞኖች",
+                "description": "የተግባር ስፋት"
+            },
+            "inactive": {
+                "label": "ዝግ ዞኖች",
+                "description": "ለእንቅስቃሴ በመጠባበቅ"
+            },
+            "population": {
+                "label": "የህዝብ መድረሻ",
+                "description": "የሚደርሱ ነዋሪዎች"
+            },
+            "accessibility": {
+                "label": "የመዳረሻ መጠን",
+                "description": "የሎጂስቲክስ ዝግጁነት"
+            }
+        },
+        "filters": {
+            "searchPlaceholder": "ዞኖችን ፈልግ...",
+            "rowsLabel": "ረድፎች",
+            "perPageOption": "{{value}} / ገጽ",
+            "statusPlaceholder": "ሁኔታ",
+            "statusAll": "ሁሉም ሁኔታዎች",
+            "statusOptions": {
+                "active": "ንቁ",
+                "inactive": "ዝግ"
+            }
+        },
+        "actions": {
+            "add": "ዞን አክል",
+            "view": "እይ",
+            "edit": "አስተካክል",
+            "delete": "ሰርዝ",
+            "cancel": "ይቅር"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "noRegion": "ክልል አልተመዘገበም",
+            "status": "ሁኔታ",
+            "population": "ህዝብ",
+            "woredas": "ወረዳዎች"
+        },
+        "empty": {
+            "title": "ዞኖች አልተገኙም።",
+            "createAction": "አንዱን ይፍጠሩ"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "status": {
+            "active": "ንቁ",
+            "inactive": "ዝግ",
+            "unknown": "ያልታወቀ"
+        },
+        "delete": {
+            "title": "ዞን ሰርዝ",
+            "description": "ይህን ዞን ለመሰረዝ እርግጠኛ ነዎት? ይህ እርምጃ መመለስ አይችልም።",
+            "successTitle": "✅ ዞን ተሰርዟል",
+            "successDescription": "{{name}} ተሳክቶ ተወግዷል።",
+            "failedTitle": "❌ መሰረዝ አልተሳካም",
+            "failedDescription": "ዞኑን ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።"
+        },
+        "form": {
+            "badge": "የካቭሬጅ እቅድ",
+            "unsaved": "ያልተዳረሙ ለውጦች አሉዎት",
+            "validation": {
+                "title": "⚠️ የማረጋገጫ ስህተት",
+                "inlineEdit": "የተለዩትን መስኮች ይመርምሩ እና በማሻሻል በኋላ ያስቀምጡ።",
+                "inlineCreate": "ፎርሙን ከማቅረብዎ በፊት የተለዩትን መስኮች እባክዎን ያስተካክሉ።",
+                "resolve": "ፎርሙን ለመላክ በፊት የተለዩትን መስኮች እባክዎን ያስተካክሉ።"
+            },
+            "sections": {
+                "identity": {
+                    "title": "የዞን መለያ",
+                    "descriptionCreate": "የዞኑን መለያ እና የአስተዳደር ዝርዝሮችን ይመዝግቡ።",
+                    "descriptionEdit": "የስም እና የአስተዳደር መረጃዎች ተመሳሳይ እንዲሆኑ ያረጋግጡ።"
+                },
+                "geography": {
+                    "title": "የጂኦግራፊያ መግለጫ",
+                    "descriptionCreate": "የስፋት እና የህዝብ መለኪያዎችን ይገልጹ።",
+                    "descriptionEdit": "የስፋት እና የህዝብ መረጃዎች እንዲያዛመዱ ያድርጉ።"
+                },
+                "infrastructure": {
+                    "title": "መዋቅር እና አየር ንብረት",
+                    "descriptionCreate": "የሎጂስቲክስ ዝግጁነትን የሚያመለክቱ ምልክቶችን ይመዝግቡ።",
+                    "descriptionEdit": "የመዋቅር ማብራሪያዎችን እና የአየር ንብረት ግምገማዎችን ያዘምኑ።"
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "የዞን ስም",
+                    "placeholder": "ለምሳሌ፣ East Arsi"
+                },
+                "region": {
+                    "label": "ክልል",
+                    "placeholder": "ክልል ይምረጡ"
+                },
+                "status": {
+                    "label": "ሁኔታ",
+                    "placeholder": "ሁኔታ ይምረጡ"
+                },
+                "code": {
+                    "label": "የዞን ኮድ",
+                    "placeholder": "ለምሳሌ፣ EA-02"
+                },
+                "administrativeCenter": {
+                    "label": "የአስተዳደር ማእከል",
+                    "placeholder": "ዋናው የአስተዳደር ማእከል"
+                },
+                "area": {
+                    "label": "ስፋት (ኪ.ሜ²)",
+                    "placeholder": "ለምሳሌ፣ 12450"
+                },
+                "population": {
+                    "label": "ህዝብ",
+                    "placeholder": "ለምሳሌ፣ 820000"
+                },
+                "elevation": {
+                    "label": "ከፍታ (ሜትር)",
+                    "placeholder": "ለምሳሌ፣ 1325"
+                },
+                "latitude": {
+                    "label": "ላቲትዩድ",
+                    "placeholder": "ለምሳሌ፣ 7.123456"
+                },
+                "longitude": {
+                    "label": "ሎንግቲትዩድ",
+                    "placeholder": "ለምሳሌ፣ 39.987654"
+                },
+                "accessibility": {
+                    "label": "የመዳረሻ መለኪያ",
+                    "placeholder": "0 - 100"
+                },
+                "description": {
+                    "label": "መግለጫ",
+                    "placeholder": "የኢኮኖሚ ወይም የመረብ ሚናን የሚገልጽ አጭር መግለጫ"
+                },
+                "infrastructureNotes": {
+                    "label": "የመዋቅር ማስታወሻዎች",
+                    "placeholder": "የመገናኛ፣ የአገልግሎት አቅርቦት ወይም ግድቦች መግለጫ"
+                },
+                "climateProfile": {
+                    "label": "የአየር ንብረት መግለጫ",
+                    "placeholder": "የወቅታዊ ስርዓት፣ የአየር ማስጠንቀቂያዎች ወይም የአየር አደጋዎች"
+                }
+            },
+            "create": {
+                "breadcrumb": "ፍጠር",
+                "title": "አዲስ ዞን ይመዝግቡ",
+                "headTitle": "ዞን ፍጠር",
+                "description": "የካቭሬጅን፣ የዝግጁነት ምልክቶችን እና የሎጂስቲክስ እቅድን ይግለጹ።",
+                "backToList": "ወደ ዞኖች ተመለስ",
+                "submit": "ዞን ፍጠር",
+                "submitting": "በመፍጠር ላይ...",
+                "successTitle": "✅ ዞን ተመዝግቧል",
+                "successDescription": "ዞኑ በተሳካ ሁኔታ ተመዝግቧል።"
+            },
+            "edit": {
+                "breadcrumb": "አስተካክል",
+                "title": "ዞን ያዘምኑ",
+                "headTitle": "{{name}} ያስተካክሉ",
+                "description": "የፊት ስራ ግብሮችን ለማጣመም የክልሉን ዝርዝሮች ያዘምኑ።",
+                "submit": "ዞኑን ያዘምኑ",
+                "submitting": "በማዘመን ላይ..."
+            }
+        }
+    },
+    "outsources": {
+        "title": "የውጭ አገልግሎት",
+        "index": {
+            "headTitle": "የውጭ አገልግሎት",
+            "title": "የውጭ አገልግሎት አቅራቢዎች",
+            "description": "የ{{total}} የውጭ አገልግሎት አቅራቢዎችን እና የአፈፃፀም ተፅዕኖን ያቆጣጠሩ።",
+            "columns": {
+                "name": "አቅራቢ",
+                "serviceType": "የአገልግሎት አይነት",
+                "contact": "እውቂያ",
+                "phone": "ስልክ",
+                "email": "ኢሜል",
+                "status": "ሁኔታ",
+                "trips": "ጉዞዎች",
+                "joinedOn": "{{date}} ተመዝግቧል"
+            },
+            "table": {
+                "title": "የአቅራቢ ዝርዝር",
+                "description": "የአቅራቢ ችሎታዎችን፣ እውቂያዎችን እና የጉዞ ክርክሮችን ይከታተሉ",
+                "index": "#",
+                "actions": "ተግባራት"
+            },
+            "stats": {
+                "total": {
+                    "label": "አቅራቢዎች",
+                    "description": "{{count}} ጠቅላላ"
+                },
+                "active": {
+                    "label": "ንቁ",
+                    "description": "በስራ ላይ"
+                },
+                "tripsAverage": {
+                    "label": "አንድ አቅራቢ የሚፈጽመው ጉዞ",
+                    "description": "የአፈፃፀም ክትትል"
+                },
+                "serviceLines": {
+                    "label": "የአገልግሎት መስመሮች",
+                    "description": "ልዩ የአገልግሎት ምድቦች"
+                }
+            },
+            "filters": {
+                "searchPlaceholder": "አቅራቢዎችን ወይም እውቂያዎችን ፈልግ",
+                "rowsLabel": "ረድፎች",
+                "perPageOption": "{{value}} / ገፅ",
+                "statusPlaceholder": "ሁኔታ",
+                "statusAll": "ሁሉም ሁኔታዎች",
+                "servicePlaceholder": "የአገልግሎት አይነት",
+                "serviceAll": "ሁሉም አገልግሎቶች"
+            },
+            "fallbacks": {
+                "notAvailable": "—",
+                "serviceTypeUnknown": "የአገልግሎት አይነት ያልታወቀ"
+            },
+            "mobile": {
+                "position": "#{{value}}",
+                "contact": "እውቂያ",
+                "phone": "ስልክ",
+                "email": "ኢሜል",
+                "status": "ሁኔታ",
+                "trips": "ጉዞዎች"
+            },
+            "empty": {
+                "title": "የውጭ አገልግሎት አቅራቢ አልተገኘም።",
+                "createAction": "አዲስ ይፍጠሩ"
+            },
+            "pagination": {
+                "activeBadge": "ንቁ፡ {{count}}"
+            }
+        },
+        "actions": {
+            "add": "አቅራቢ አክል",
+            "view": "እይ",
+            "edit": "አስተካክል",
+            "delete": "ሰርዝ",
+            "cancel": "ይቅር",
+            "back": "ወደ አቅራቢዎች ተመለስ",
+            "create": "አቅራቢ ፍጠር",
+            "createProcessing": "በማስቀመጥ ላይ...",
+            "save": "ለውጦቹን አትር",
+            "saveProcessing": "በማስቀመጥ ላይ..."
+        },
+        "status": {
+            "active": "ንቁ",
+            "inactive": "በስራ ውጭ",
+            "unknown": "ያልታወቀ"
+        },
+        "tripStatus": {
+            "completed": "ተጠናቀቀ",
+            "inProgress": "በሂደት ላይ",
+            "cancelled": "ተሰርዟል",
+            "cancelledByVendor": "በአቅራቢው ተሰርዟል"
+        },
+        "delete": {
+            "title": "አቅራቢ ሰርዝ",
+            "description": "ይህን አቅራቢ ለማስወገድ እርግጠኛ ነዎት? ይህ እርምጃ መመለስ አይችልም።",
+            "formDescription": "ይህ እርምጃ አቅራቢውን በሙሉ ያስወግዳል እና ታሪካዊ ትንተናዎች ከእርሱ ይወገዳሉ።",
+            "detailDescription": "የአቅራቢውን ፕሮፋይል በቋሚነት ያስወግዳል። የተያያዙ የጉዞ ታሪኮች ለምርመራ ይቀራሉ።",
+            "successTitle": "✅ አቅራቢ ተሰርዟል",
+            "successDescription": "{{name}} በተሳካ ሁኔታ ተወግዷል።",
+            "failedTitle": "❌ ማስወገድ አልተሳካም",
+            "failedDescription": "አቅራቢውን ማስወገድ አልተቻለም። እባክዎን እንደገና ይሞክሩ።"
+        },
+        "form": {
+            "sections": {
+                "identity": {
+                    "title": "የአቅራቢ መለያ",
+                    "descriptionCreate": "ይህ አቅራቢ በአናሊቲክስ እና በዲስፓች መሳሪያዎች ላይ እንዴት እንደሚታይ ይወስኑ።",
+                    "descriptionEdit": "የአቅራቢውን መረጃ ይዘምኑ እና የዲስፓች ትንተናዎችን ያዛመዱ።"
+                },
+                "contact": {
+                    "title": "የእውቂያ ዝርዝሮች",
+                    "descriptionCreate": "ዲስፓች እና ፋይናንስ ቡድኖች ፈጣን እንዲገናኙ የቀጥታ እውቂያዎችን ያቅርቡ።",
+                    "descriptionEdit": "ለመተባበር እና ለመደጋገም የተዘመኑ እውቂያዎችን ይስጡ።"
+                },
+                "hints": {
+                    "title": "ፈጣን ጥቆማዎች",
+                    "descriptionCreate": "የተጠቃሚ የአገልግሎት አይነትን ይምረጡ ወይም ቦታውን ባዶ ትተው ለራሳችሁ ይቀመጡ።",
+                    "descriptionEdit": "የተለመዱ የአገልግሎት ምድቦችን በመጠቀም ትንተናዎችን ያዛመዱ።"
+                }
+            },
+            "hints": {
+                "empty": "አቅራቢዎች ካመዘገቡ በኋላ የአገልግሎት አይነት ጥቆማዎች እዚህ ይታያሉ።",
+                "suggestions": "ከላይ ያሉትን ቺፕ በመጫን እንደ {{suggestions}} ያሉ የተለመዱ ምድቦችን በፍጥነት ይሙሉ።",
+                "emptyEdit": "ቢያንስ አንድ አቅራቢ የአገልግሎት አይነት ካጋራ በኋላ ጥቆማዎች ይታያሉ።",
+                "align": "ተመሳሳይ የአገልግሎት ስሞች የአፈፃፀም ትንተናዎችን እና ማነጻጸር እይታዎችን ያዛመዳሉ።"
+            },
+            "validation": {
+                "backendTitle": "የማረጋገጫ ስህተት",
+                "reviewCreate": {
+                    "title": "ፎርሙን እባክዎን ይመልከቱ",
+                    "description": "አንዳንድ መስኮች ከመላክዎ በፊት ትኩረት ያስፈልጋቸዋል።"
+                },
+                "reviewEdit": {
+                    "title": "ፎርሙን እባክዎን ይመልከቱ",
+                    "description": "አንዳንድ መስኮች ከማስቀመጥዎ በፊት ትኩረት ያስፈልጋቸዋል።"
+                }
+            },
+            "errors": {
+                "email": "እባክዎን ትክክለኛ የኢሜል አድራሻ ያስገቡ።",
+                "status": "ሁኔታ መምረጥ አለብዎት።",
+                "serviceTypeMax": "የአገልግሎት አይነት በ255 ቁምፊዎች ውስጥ መገደብ አለበት።",
+                "addressMax": "አድራሻው ከ500 ቁምፊ በላይ መሆን አይችልም።"
+            },
+            "fields": {
+                "name": {
+                    "label": "የአቅራቢ ስም",
+                    "placeholder": "ለምሳሌ፣ Horizon Freight PLC"
+                },
+                "status": {
+                    "label": "ሁኔታ",
+                    "placeholder": "ሁኔታ ይምረጡ"
+                },
+                "serviceType": {
+                    "label": "የአገልግሎት አይነት",
+                    "placeholder": "ለምሳሌ፣ ረጅም ርቀት ጓጓዣ",
+                    "hint": "ከታች ያሉትን ቺፕ በመጫን የተለመዱ ምድቦችን ይመልሱ።"
+                },
+                "contact": {
+                    "label": "ዋና እውቂያ",
+                    "placeholder": "ለምሳሌ፣ መሮን በቀለ"
+                },
+                "phone": {
+                    "label": "ስልክ ቁጥር",
+                    "placeholder": "ለምሳሌ፣ +251 911 123 456"
+                },
+                "email": {
+                    "label": "ኢሜል",
+                    "placeholder": "ለምሳሌ፣ ops@horizonfreight.com"
+                },
+                "address": {
+                    "label": "ዋና መሥሪያ/የዲስፓች አድራሻ",
+                    "placeholder": "ለመስክ ቡድኖች ጠቃሚ መመሪያዎችን ያካትቱ"
+                }
+            },
+            "create": {
+                "breadcrumb": "ፍጠር",
+                "title": "የውጭ አቅራቢ ይመዝግቡ",
+                "headTitle": "የውጭ አቅራቢ መመዝገብ",
+                "description": "የአቅራቢውን እውቂያ፣ የአገልግሎት አይነት እና የመመዝገብ ሁኔታ በአንድ ቦታ ይከታተሉ።",
+                "successTitle": "✅ አቅራቢ ተመዝግቧል",
+                "successDescription": "አቅራቢው በተሳካ ሁኔታ ተመዝግቧል።"
+            },
+            "edit": {
+                "breadcrumb": "አስተካክል",
+                "fallbackName": "የአቅራቢ {{id}}",
+                "title": "{{name}} አስተካክል",
+                "headTitle": "{{name}} አስተካክል",
+                "description": "የመጀመሪያ መመዝገብ፣ የእውቂያ እና የአገልግሎት መረጃዎችን ይዘምኑ።",
+                "successTitle": "✅ አቅራቢ ተዘመነ",
+                "successDescription": "የአቅራቢው መረጃ በተሳካ ሁኔታ ተቀምጧል።"
+            }
+        },
+        "show": {
+            "subtitle": "የአቅራቢ ፋይል እና የአፈፃፀም እይታ",
+            "headTitle": "የአቅራቢ አጠቃላይ እይታ - {{name}}",
+            "fallbacks": {
+                "notAvailable": "—"
+            },
+            "badges": {
+                "trips": "{{count}} የተመዘገቡ ጉዞዎች"
+            },
+            "metrics": {
+                "distance": "{{value}} ኪ.ሜ",
+                "volume": "{{value}} ቶን"
+            },
+            "stats": {
+                "totalTrips": {
+                    "label": "ጠቅላላ ጉዞዎች",
+                    "helper": "የተፈጸመ ጉዞ መዝገብ"
+                },
+                "activeTrips": {
+                    "label": "ንቁ ጉዞዎች",
+                    "helper": "በሂደት ላይ"
+                },
+                "distanceCovered": {
+                    "label": "የተሸፈነ ርቀት",
+                    "helper": "የተጓዙ ኪሎ ሜትሮች"
+                },
+                "totalSpend": {
+                    "label": "ጠቅላላ ወጪ",
+                    "helper": "የጠቅላላ ወጪ መመዝገብ"
+                }
+            },
+            "recent": {
+                "title": "የቅርብ ጊዜ አፈፃፀም",
+                "description": "የዲስፓች ታሪክ አጭር ማብራሪያ - ከመጨረሻው አምስት ተልዕኮዎች",
+                "emptyTitle": "እስካሁን ድረስ የዲስፓች መዝገብ የለም",
+                "emptyDescription": "ስራዎች ከተመዘገቡ በኋላ በፍጥነት ለግምገማ እዚህ ይታያሉ።",
+                "table": {
+                    "trip": "ጉዞ #",
+                    "route": "መንገድ",
+                    "dispatchDate": "የዲስፓች ቀን",
+                    "distance": "ርቀት",
+                    "cargo": "ጭነት",
+                    "cost": "ወጪ",
+                    "status": "ሁኔታ"
+                }
+            },
+            "contact": {
+                "title": "የእውቂያ መረጃ",
+                "description": "የዲስፓች ግንኙነትን ለማስተካከል ማስታወቂያዎች",
+                "primaryLabel": "ዋና እውቂያ",
+                "phoneLabel": "ስልክ",
+                "phoneFallback": "ስልክ አልተመዘገበም",
+                "emailLabel": "ኢሜል",
+                "emailFallback": "ኢሜል አልተመዘገበም",
+                "addressLabel": "የዲስፓች ማዕከል",
+                "addressFallback": "አድራሻ አልተሰጠም"
+            },
+            "timeline": {
+                "title": "የመዝገብ ጊዜ መስመር",
+                "description": "የምርመራ መወሰኛዎች",
+                "created": "ተፈጠረ",
+                "updated": "መጨረሻ ዝመና"
+            }
+        }
+    },
+    "customers": {
+        "title": "ደንበኞች",
+        "breadcrumb": "ደንበኞች",
+        "description": "የ{{count}} ደንበኛ{{plural}}ን ያስተዳድሩ እና የግንኙነት ጤናን ይከታተሉ።",
+        "columns": {
+            "name": "ደንበኛ",
+            "contactPerson": "የግንኙነት ባለቤት",
+            "phone": "ስልክ",
+            "email": "ኢሜይል",
+            "operations": "ኦፕሬሽኖች",
+            "status": "ሁኔታ",
+            "created": "የተፈጠረ"
+        },
+        "table": {
+            "title": "የደንበኞች መዝገብ",
+            "description": "የንግድ መለያዎችን, ሁኔታቸውን, እና ኦፕሬሽን እንቅስቃሴን ይከታተሉ።",
+            "index": "#",
+            "actions": "እርምጃዎች"
+        },
+        "actions": {
+            "add": "ደንበኛ አክል",
+            "view": "ይመልከቱ",
+            "edit": "አስተካክል",
+            "delete": "ሰርዝ",
+            "cancel": "ይቅር"
+        },
+        "filters": {
+            "searchPlaceholder": "ደንበኞችን ፈልግ...",
+            "rowsLabel": "ረድፎች",
+            "statusPlaceholder": "ሁኔታ",
+            "allStatuses": "ሁሉም ሁኔታዎች",
+            "perPageOption": "{{value}} / ገጽ"
+        },
+        "stats": {
+            "total": {
+                "label": "ጠቅላላ ደንበኞች",
+                "description": "ሙሉ ፖርትፎሊዮ"
+            },
+            "active": {
+                "label": "ንቁ መለያዎች",
+                "description": "አሁን ንቁ"
+            },
+            "inactive": {
+                "label": "ንቁ ያልሆኑ",
+                "description": "ጊዜያዊ እንቅስቃሴ የሌለ"
+            },
+            "withOperations": {
+                "label": "ኦፕሬሽን ያላቸው",
+                "description": "ኦፕሬሽኖች ያላቸው"
+            }
+        },
+        "status": {
+            "active": "ንቁ",
+            "inactive": "ንቁ ያልሆነ"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "email": "ኢሜይል",
+            "phone": "ስልክ",
+            "operations": "ኦፕሬሽኖች",
+            "status": "ሁኔታ",
+            "joined": "የተመዘገበበት"
+        },
+        "empty": {
+            "title": "ደንበኛ አልተገኘም።",
+            "createAction": "አንዱን ይፍጠሩ"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "unknown": "ያልታወቀ",
+            "address": "አድራሻ አልተሰጠም",
+            "contactPerson": "ግንኙነት አልተገለጸም",
+            "notProvided": "አልተሰጠም"
+        },
+        "delete": {
+            "title": "ደንበኛ ሰርዝ",
+            "description": "ይህን ደንበኛ መሰረዝ እርግጠኛ ነዎት? ይህ እርምጃ መልሶ አይመለስም።",
+            "successTitle": "✅ ደንበኛ ተሰርዟል",
+            "successDescription": "ደንበኛው በተሳካ ሁኔታ ተወግዷል።",
+            "successDescriptionWithName": "ደንበኛው \"{{name}}\" በተሳካ ሁኔታ ተወግዷል።",
+            "failedTitle": "❌ መሰረዝ አልተሳካም",
+            "failedDescription": "ደንበኛውን ማስወገድ አልተሳካም። እባክዎ ደግመው ይሞክሩ።"
+        },
+        "form": {
+            "validation": {
+                "title": "⚠️ የማረጋገጫ ስህተት",
+                "resolve": "እባክዎ ከመላክ በፊት የተጠቁ መስኮችን ያስተካክሉ።",
+                "resolveForm": "እባክዎ ቅጹን ከማስገባት በፊት የማረጋገጫ ስህተቶችን ያስተካክሉ።",
+                "statusRequired": "ሁኔታ ያስፈልጋል።",
+                "statusInvalid": "የተሳሳተ ሁኔታ።"
+            },
+            "sections": {
+                "profile": {
+                    "title": "የግንኙነት መግለጫ",
+                    "description": "ዋና መለያዎች እና የደንበኛ ጤና መረጃ።",
+                    "descriptionEdit": "የደንበኛ ዝርዝሮችን ያዘምኑ።"
+                },
+                "contacts": {
+                    "title": "ዋና ግንኙነቶች",
+                    "description": "የግንኙነት መንገዶችን ያስተካክሉ።"
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "የደንበኛ ስም",
+                    "tooltip": "የተመዘገበ የንግድ ስም ይጻፉ።",
+                    "placeholder": "ለምሳሌ፦ Horizon Logistics PLC"
+                },
+                "status": {
+                    "label": "ሁኔታ",
+                    "tooltip": "ንቁ ደንበኞች በስራ ሂደቶች ይታያሉ።",
+                    "placeholder": "ሁኔታ ይምረጡ"
+                },
+                "address": {
+                    "label": "ዋና ቢሮ / የክፍያ አድራሻ",
+                    "helper": "አማራጭ። መንገድ፣ ከተማ፣ እና የክፍያ መመሪያዎች።",
+                    "placeholder": "መንገድ፣ ከተማ፣ እና የክፍያ መመሪያዎች"
+                },
+                "contactPerson": {
+                    "label": "የግንኙነት ባለቤት",
+                    "helper": "አማራጭ። በደንበኛው ወገን ዋና ግንኙነት ነጥብ።",
+                    "placeholder": "ለምሳሌ፦ ሰላም ተስፋዬ"
+                },
+                "phone": {
+                    "label": "የስልክ ቁጥር",
+                    "helper": "አማራጭ። የአገር ኮድ ያካትቱ።",
+                    "placeholder": "ለምሳሌ፦ +251 91 123 4567"
+                },
+                "email": {
+                    "label": "የኢሜይል አድራሻ",
+                    "helper": "አማራጭ። ለማሳወቂያዎች ይጠቅማል።",
+                    "placeholder": "ለምሳሌ፦ partnerships@horizon-logistics.com"
+                }
+            },
+            "requiredNote": "ለመጀመሪያ መመዝገብ የሚያስፈልጉ መስኮች",
+            "unsavedNote": "ያልተቀመጡ ለውጦች ተገኝተዋል",
+            "create": {
+                "breadcrumb": "ፍጠር",
+                "title": "አዲስ ደንበኛ መመዝገብ",
+                "headTitle": "ደንበኛ ፍጠር",
+                "description": "የግንኙነት መግለጫ፣ ዋና ግንኙነቶችን እና የሥራ ሁኔታን ያስገቡ።",
+                "backToList": "ወደ ደንበኞች ተመለስ",
+                "badge": "CRM መመዝገብ",
+                "submit": "ደንበኛ ፍጠር",
+                "submitting": "በመቀመጥ ላይ...",
+                "successTitle": "✅ ደንበኛ ተፈጥሯል",
+                "successDescription": "ደንበኛው በተሳካ ሁኔታ ተመዝግቧል።"
+            },
+            "edit": {
+                "breadcrumb": "አስተካክል",
+                "title": "ደንበኛ አስተካክል",
+                "headTitle": "ደንበኛ አስተካክል: {{name}}",
+                "description": "{{name}}ን ያዘምኑ",
+                "submit": "ደንበኛ አዘምን",
+                "submitting": "በማዘመን ላይ..."
+            }
+        },
+        "show": {
+            "subtitle": "የስትራቴጂክ አጋር አጠቃላይ እይታ እና የቀጥታ ኦፕሬሽን አፈፃፀም እይታ።",
+            "headTitle": "ደንበኛ: {{name}}",
+            "deleteDescription": "{{name}}ን መሰረዝ እርግጠኛ ነዎት? ይህ እርምጃ መልሶ አይመለስም።",
+            "tabs": {
+                "overview": "አጠቃላይ",
+                "operations": "ኦፕሬሽኖች",
+                "analytics": "ትንታኔ",
+                "activity": "እንቅስቃሴ"
+            },
+            "badges": {
+                "activeOperations": "{{count}} ንቁ ኦፕሬሽኖች"
+            },
+            "summary": {
+                "activeOperations": "ንቁ ኦፕሬሽኖች",
+                "totalTrips": "{{count}} ጉዞዎች",
+                "volumeDelivered": "የተላከ መጠን",
+                "tonnageValue": "{{value}} MT",
+                "plannedShare": "{{value}}% ከተፈለገው",
+                "totalRevenue": "ጠቅላላ ገቢ",
+                "marginRate": "ማርጅን: {{value}}%",
+                "grossMargin": "አጠቃላይ ትርፍ",
+                "profitable": "ትርፋማ",
+                "loss": "ኪሳራ"
+            },
+            "fields": {
+                "name": "የደንበኛ ስም",
+                "status": "ሁኔታ",
+                "contactPerson": "የግንኙነት ሰው",
+                "email": "ኢሜይል",
+                "phone": "ስልክ",
+                "created": "የተፈጠረበት",
+                "address": "አድራሻ"
+            },
+            "sections": {
+                "overview": {
+                    "title": "የደንበኛ አጠቃላይ እይታ",
+                    "description": "ዋና መለያዎችና ግንኙነቶች"
+                },
+                "quickLinks": {
+                    "title": "ፈጣን ሊንኮች"
+                },
+                "activeOperations": {
+                    "title": "ንቁ ኦፕሬሽኖች",
+                    "description": "ቀጣይ ስራዎችና እድገታቸው",
+                    "empty": "ይህ ደንበኛ ንቁ ኦፕሬሽን የለውም።"
+                },
+                "activity": {
+                    "title": "የእንቅስቃሴ ታሪክ",
+                    "description": "የመለያ ለውጦች የሚታዩበት ጊዜ መስመር",
+                    "empty": "የእንቅስቃሴ ታሪክ የለም።"
+                }
+            },
+            "actions": {
+                "viewOperations": "ሁሉንም ኦፕሬሽኖች ይመልከቱ",
+                "viewPerformances": "ሁሉንም አፈፃፀሞች ይመልከቱ"
+            },
+            "performanceSnapshot": {
+                "title": "የአፈፃፀም ማጠቃለያ",
+                "description": "በኦፕሬሽኖች ላይ ቁልፍ መለኪያዎች",
+                "customerId": "የደንበኛ መለያ",
+                "tripsInProgress": "በሂደት ላይ ጉዞዎች",
+                "completedTrips": "የተጠናቀቁ ጉዞዎች",
+                "distanceCovered": "የተሸፈነ ርቀት",
+                "totalRevenue": "ጠቅላላ ገቢ",
+                "totalCost": "ጠቅላላ ወጪ",
+                "grossMargin": "አጠቃላይ ትርፍ"
+            },
+            "contactDetails": {
+                "title": "የግንኙነት ዝርዝሮች",
+                "description": "በቀጥታ ያግኙ"
+            },
+            "operationCard": {
+                "title": "ኦፕሬሽን {{id}}",
+                "lastDispatch": "መጨረሻ መላክ: {{date}}",
+                "tripProgress": "የጉዞ እድገት",
+                "completedTrips": "{{count}} ተጠናቋል",
+                "totalTrips": "{{count}} ጠቅላላ",
+                "volumeProgress": "የመጠን እድገት",
+                "remainingTonnage": "{{value}} MT ቀሪ",
+                "inProgress": "በሂደት ላይ",
+                "completion": "ማጠናቀቂያ",
+                "revenue": "ገቢ",
+                "margin": "ትርፍ መጠን",
+                "viewDetails": "ዝርዝር ይመልከቱ"
+            },
+            "analytics": {
+                "acrossOperations": "በሁሉም ኦፕሬሽኖች ላይ"
+            },
+            "charts": {
+                "operationsPerformance": "የኦፕሬሽኖች አፈፃፀም",
+                "tripStatus": "የጉዞ ሁኔታ አሰራር",
+                "tonnage": "ቶንናጅ (MT)",
+                "trips": "ጉዞዎች",
+                "status": {
+                    "completed": "ተጠናቀቁ",
+                    "inProgress": "በሂደት ላይ"
+                }
+            },
+            "financial": {
+                "title": "የገንዘብ መለኪያዎች",
+                "operationalExpenses": "የኦፕሬሽን ወጪዎች",
+                "marginRate": "{{value}}% ትርፍ",
+                "avgPerOperation": "በኦፕሬሽን አማካይ",
+                "revenueAverage": "አማካይ ገቢ",
+                "revenuePerTrip": "በጉዞ ገቢ",
+                "costPerTrip": "በጉዞ ወጪ",
+                "costPerTonKm": "በቶን-ኪ.ሜ ወጪ",
+                "avgRevenuePerOperation": "በኦፕሬሽን አማካይ ገቢ",
+                "avgCostPerOperation": "በኦፕሬሽን አማካይ ወጪ",
+                "totalTonKm": "ጠቅላላ ቶን-ኪ.ሜ"
+            },
+            "units": {
+                "km": "ኪ.ሜ"
+            },
+            "valueWithUnit": "{{value}} {{unit}}",
+            "percent": "{{value}}%"
+        }
+    },
+    "performances": {
+        "title": "አፈፃፀሞች",
+        "breadcrumb": "አፈፃፀሞች",
+        "description": "የትራንስፖርት አፈፃፀምን ያስተዳድሩ (በ30 ቀናት ውስጥ {{count}})",
+        "columns": {
+            "foNumber": "FO ቁጥር",
+            "dispatchDate": "የመላኪያ ቀን",
+            "truckDriver": "ጭነት መኪና / አሽከርካሪ",
+            "origin": "መነሻ",
+            "destination": "መድረሻ",
+            "distance": "ርቀት (ኪ.ሜ)"
+        },
+        "table": {
+            "title": "የአፈፃፀም መዝገቦች",
+            "description": "እያንዳንዱን የአፈፃፀም መዝገብ ይከታተሉ",
+            "index": "#",
+            "actions": "እርምጃዎች"
+        },
+        "actions": {
+            "add": "አፈፃፀም አክል",
+            "view": "ይመልከቱ",
+            "edit": "አስተካክል",
+            "delete": "ሰርዝ",
+            "cancel": "ይቅር"
+        },
+        "filters": {
+            "searchPlaceholder": "አፈፃፀሞችን ፈልግ...",
+            "rowsLabel": "ረድፎች",
+            "statusPlaceholder": "ሁኔታ",
+            "allStatuses": "ሁሉም ሁኔታዎች",
+            "loadPhasePlaceholder": "የጭነት ደረጃ",
+            "allLoadPhases": "ሁሉም ደረጃዎች",
+            "perPageOption": "{{value}} / ገጽ"
+        },
+        "stats": {
+            "windowLabel": "የቅርብ 30 ቀናት",
+            "total": {
+                "label": "ጠቅላላ አፈፃፀሞች",
+                "description": "አጠቃላይ እቅድ"
+            },
+            "active": {
+                "label": "ንቁ",
+                "description": "በ30 ቀናት ውስጥ ንቁ"
+            },
+            "completed": {
+                "label": "ተጠናቀቀ",
+                "description": "በ30 ቀናት ውስጥ ተጠናቀቀ"
+            },
+            "failed": {
+                "label": "አልተሳካም",
+                "description": "በ30 ቀናት ውስጥ አልተሳካም"
+            }
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "driver": "አሽከርካሪ",
+            "truck": "ጭነት መኪና",
+            "origin": "መነሻ",
+            "destination": "መድረሻ",
+            "distance": "ርቀት"
+        },
+        "empty": {
+            "title": "አፈፃፀም አልተገኘም።",
+            "createAction": "አንዱን ይፍጠሩ"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "unknown": "ያልታወቀ",
+            "truckDriver": "{{plate}} • {{driver}}",
+            "distanceValue": "{{value}} ኪ.ሜ"
+        },
+        "dateLabels": {
+            "today": "ዛሬ",
+            "yesterday": "ትናንት",
+            "tomorrow": "ነገ",
+            "daysAgo": "{{count}} ቀን በፊት",
+            "inDays": "በ{{count}} ቀናት ውስጥ",
+            "withRelative": "{{date}} ({{label}})"
+        },
+        "delete": {
+            "title": "አፈፃፀም ሰርዝ",
+            "description": "ይህን አፈፃፀም መሰረዝ እርግጠኛ ነዎት? ይህ እርምጃ መልሶ አይመለስም።",
+            "successTitle": "✅ አፈፃፀም ተሰርዟል",
+            "successDescription": "{{foNumber}} በተሳካ ሁኔታ ተወግዷል።",
+            "failedTitle": "❌ መሰረዝ አልተሳካም",
+            "failedDescription": "አፈፃፀሙን ማስወገድ አልተሳካም። እባክዎ ደግመው ይሞክሩ።"
+        },
+        "form": {
+            "create": {
+                "breadcrumb": "አፈፃፀም ፍጠር",
+                "title": "አፈፃፀም ፍጠር",
+                "headTitle": "አፈፃፀም ፍጠር",
+                "description": "አዲስ የአፈፃፀም መዝገብ ያስገቡ።",
+                "backToList": "ወደ አፈፃፀሞች ተመለስ",
+                "badge": "አዲስ",
+                "successTitle": "✅ አፈፃፀም ተፈጥሯል",
+                "successDescription": "{{foNumber}} በተሳካ ሁኔታ ተፈጥሯል።"
+            },
+            "validation": {
+                "toastTitle": "⚠️ ማረጋገጫ ስህተት",
+                "title": "የሚያስፈልጉ መስኮች አልተሞሉም",
+                "required": "ይህ መስክ ያስፈልጋል።",
+                "returnedRequired": "ጉዞው ተመለሰ ከሆነ የመመለሻ ቀን ያስፈልጋል።",
+                "resolve": "በቀይ የታዩትን መስኮች ያስተካክሉ እና ይቀጥሉ።",
+                "resolveForm": "በመላክ በፊት የታዩትን መስኮች ያስተካክሉ።",
+                "resolveUpdate": "ከመቀመጥ በፊት የታዩትን መስኮች ያስተካክሉ።"
+            },
+            "distance": {
+                "autoFilled": "ርቀት በራስ-ሰር ተሞልቷል: {{value}} ኪ.ሜ",
+                "autoFilledFromRoute": "ርቀት ከተመዘገበ መንገድ በራስ-ሰር ተሞልቷል ({{value}} ኪ.ሜ).",
+                "notRegistered": "ለዚህ መንገድ ርቀት አልተመዘገበም።",
+                "notRegisteredDefaulted": "ለዚህ መነሻ እና መድረሻ ርቀት አልተመዘገበም። እሴቶቹ ወደ 0 ኪ.ሜ ተመለሱ።",
+                "unableResolve": "ለዚህ መንገድ ርቀት ማግኘት አልተቻለም።",
+                "unableResolveDefaulted": "ርቀት ማግኘት አልተቻለም። ርቀት ወደ 0 ኪ.ሜ ተቀናጀ።",
+                "resolving": "ርቀት በመፍታት ላይ...",
+                "applied": "ርቀት ተተግብሯል",
+                "missing": "ርቀት አልተገኘም"
+            },
+            "edit": {
+                "breadcrumb": "አስተካክል",
+                "recordFallback": "መዝገብ #{{id}}",
+                "title": "አፈፃፀም አዘምን",
+                "headTitle": "አፈፃፀም አስተካክል",
+                "headTitleWithTrip": "አፈፃፀም አስተካክል • {{trip}}",
+                "description": "የጉዞውን መለኪያዎች በፈጣን ምርጫዎች እና በቀጥታ ማረጋገጫ ያሻሽሉ።",
+                "backToList": "ወደ አፈፃፀሞች ተመለስ",
+                "tripLabel": "ጉዞ: {{trip}}",
+                "controlBadge": "የአፈፃፀም መቆጣጠሪያ",
+                "successTitle": "✅ አፈፃፀም ተዘምኗል",
+                "successDescription": "{{trip}} በአዲስ መለኪያዎች ተዘምኗል።",
+                "successDescriptionFallback": "የጉዞ መለኪያዎች ተዘምነዋል።"
+            },
+            "sections": {
+                "overview": {
+                    "title": "የጉዞ ማጠቃለያ",
+                    "description": "የጉዞ ዋና መረጃዎችን ያስገቡ።"
+                },
+                "costs": {
+                    "title": "ወጪዎች እና መለኪያዎች",
+                    "description": "ርቀት፣ መጠን እና ወጪ ዝርዝሮችን ያስገቡ።"
+                },
+                "status": {
+                    "title": "ሁኔታ እና መመለሻ",
+                    "description": "የሂደት ሁኔታ እና መመለሻ መረጃ ያዘምኑ።"
+                }
+            },
+            "fields": {
+                "loadPhase": {
+                    "label": "የጭነት ደረጃ",
+                    "placeholder": "የጭነት ደረጃ ይምረጡ",
+                    "main": "ዋና",
+                    "return": "መመለሻ"
+                },
+                "loadCompletion": {
+                    "label": "የጭነት ሙሉነት",
+                    "placeholder": "ሙሉነት ይምረጡ",
+                    "full": "ሙሉ",
+                    "partial": "ከፊል"
+                },
+                "foNumber": {
+                    "label": "FO ቁጥር",
+                    "placeholder": "FO ቁጥር ያስገቡ"
+                },
+                "operation": {
+                    "label": "ኦፕሬሽን",
+                    "placeholder": "ኦፕሬሽን ይምረጡ",
+                    "searchPlaceholder": "ኦፕሬሽኖችን ፈልግ...",
+                    "loading": "ኦፕሬሽኖች በመጫን ላይ..."
+                },
+                "driverTruck": {
+                    "label": "አሽከርካሪ እና ጭነት መኪና",
+                    "placeholder": "አሽከርካሪ እና ጭነት መኪና ይምረጡ",
+                    "searchPlaceholder": "አሽከርካሪዎችን ወይም መኪናዎችን ፈልግ...",
+                    "unknownDriver": "ያልታወቀ አሽከርካሪ",
+                    "fallbackDriver": "አሽከርካሪ"
+                },
+                "dispatchDate": {
+                    "label": "የመላኪያ ቀን እና ሰዓት"
+                },
+                "origin": {
+                    "label": "መነሻ",
+                    "placeholder": "መነሻ ይምረጡ"
+                },
+                "destination": {
+                    "label": "መድረሻ",
+                    "placeholder": "መድረሻ ይምረጡ"
+                },
+                "distanceWithCargo": {
+                    "label": "ከጭነት ጋር ርቀት (ኪ.ሜ)",
+                    "helper": "የመንገድ ርቀት ተመዝግቦ ካለ በራስ-ሰር ይሞላል።",
+                    "placeholder": "ከርቀት ሰንጠረዥ በራስ-ሰር"
+                },
+                "distanceEmpty": {
+                    "label": "ባዶ ርቀት (ኪ.ሜ)"
+                },
+                "cargoVolume": {
+                    "label": "የጭነት መጠን (ቶን)"
+                },
+                "tonKm": {
+                    "label": "ቶን-ኪ.ሜ"
+                },
+                "fuelLiters": {
+                    "label": "ነዳጅ (ሊ.)"
+                },
+                "fuelCost": {
+                    "label": "የነዳጅ ወጪ (ብር)"
+                },
+                "perDiem": {
+                    "label": "የቀን ወጪ (ብር)"
+                },
+                "otherCost": {
+                    "label": "ሌሎች ወጪዎች (ብር)"
+                },
+                "status": {
+                    "label": "ሁኔታ",
+                    "placeholder": "ሁኔታ ይምረጡ",
+                    "options": {
+                        "active": "ንቁ",
+                        "inactive": "ንቁ ያልሆነ"
+                    }
+                },
+                "returned": {
+                    "label": "ተመለሰ?",
+                    "helper": "ጉዞው ወደ መነሻ ተመለሰ"
+                },
+                "returnedDate": {
+                    "label": "የመመለሻ ቀን እና ሰዓት"
+                },
+                "comment": {
+                    "label": "አስተያየት / ማስታወሻ",
+                    "placeholder": "ማናቸውንም ምልከታዎች፣ መዘግየቶች ወይም ያልተጠበቁ ክስተቶች ያክሉ።"
+                }
+            },
+            "actions": {
+                "required": "ሁሉም አስፈላጊ መስኮች ከመላክ በፊት መሞላት አለባቸው።",
+                "requiredUpdate": "ሁሉም አስፈላጊ መስኮች ከመዘመን በፊት መሞላት አለባቸው።",
+                "accurate": "ትክክለኛ መዝገቦች የመኪና አፈፃፀም ትንታኔዎችን የታማኝ ያደርጋሉ።",
+                "cancel": "ይቅር",
+                "saving": "በማስቀመጥ ላይ...",
+                "save": "አፈፃፀም አስቀምጥ",
+                "updating": "በመዘመን ላይ...",
+                "update": "አፈፃፀም አዘምን"
+            }
+        },
+        "show": {
+            "title": "FO {{foNumber}}",
+            "notAvailable": "የለም",
+            "pending": "በመጠባበቅ ላይ",
+            "deleteUnexpectedError": "ማስወገድ ላይ ያልተጠበቀ ስህተት ተፈጥሯል።",
+            "currency": {
+                "birr": "ብር"
+            },
+            "units": {
+                "km": "ኪ.ሜ",
+                "kmLabel": "ኪ.ሜ",
+                "mt": "ቶን",
+                "liter": "ሊ.",
+                "kmPerLiter": "ኪ.ሜ/ሊ.",
+                "tonKm": "ቶን-ኪ.ሜ",
+                "tonKmLabel": "ቶን-ኪ.ሜ",
+                "hourShort": "ሰ",
+                "minuteShort": "ደ"
+            },
+            "timing": {
+                "onTime": "በጊዜው",
+                "lateBy": "{{duration}} ዘግይቶ",
+                "earlyBy": "{{duration}} ቀደም ብሎ"
+            },
+            "actions": {
+                "back": "ተመለስ",
+                "edit": "አስተካክል",
+                "delete": "ሰርዝ"
+            },
+            "tabs": {
+                "overview": "አጠቃላይ",
+                "economics": "ኢኮኖሚክስ",
+                "operation": "ኦፕሬሽን",
+                "activity": "እንቅስቃሴ"
+            },
+            "kpi": {
+                "distanceLabel": "ርቀት",
+                "distanceHelper": "የጭነት ምርጥነት: {{value}}",
+                "cargoLabel": "የጭነት መጠን",
+                "cargoHelper": "ቶን-ኪ.ሜ: {{value}}",
+                "totalCostLabel": "ጠቅላላ ወጪ",
+                "revenueLabel": "ገቢ",
+                "revenueHelper": "ትርፍ: {{value}} {{indicator}}",
+                "positive": "✓",
+                "negative": "✗"
+            },
+            "sections": {
+                "tripDetails": "የጉዞ ዝርዝሮች",
+                "cargoFuel": "ጭነት እና ነዳጅ",
+                "driverTruck": "አሽከርካሪ እና ጭነት መኪና",
+                "comments": "አስተያየቶች",
+                "operation": "ኦፕሬሽን",
+                "dates": "ቀናት",
+                "costBreakdown": "የወጪ ዝርዝር",
+                "revenueProfitability": "ገቢ እና ትርፍ",
+                "yieldMetrics": "የምርት መለኪያዎች",
+                "efficiencyMetrics": "የብቃት መለኪያዎች",
+                "contribution": "ወደ ኦፕሬሽን ያለው አበርክቶ",
+                "operationProgress": "የኦፕሬሽን ሂደት",
+                "recentTrips": "የቅርብ ጊዜ ጉዞዎች አቅጣጫ",
+                "activityHistory": "የእንቅስቃሴ ታሪክ"
+            },
+            "fields": {
+                "origin": "መነሻ",
+                "destination": "መድረሻ",
+                "loadPhase": "የጭነት ደረጃ",
+                "loadCompletion": "የጭነት ሙሉነት",
+                "avgDurationRoute": "አማካይ የመንገድ ጊዜ",
+                "actualDuration": "ትክክለኛ ጊዜ",
+                "delayVsAverage": "ከአማካይ ጊዜ ጋር ልዩነት",
+                "distanceWithCargo": "ከጭነት ጋር ርቀት",
+                "distanceWithoutCargo": "ያለጭነት ርቀት",
+                "totalDistance": "ጠቅላላ ርቀት",
+                "loadFactor": "የጭነት ምርጥነት",
+                "loadFactorHelper": "{{loaded}} / {{total}} {{unit}}",
+                "cargoVolume": "የጭነት መጠን",
+                "fuelLiters": "ነዳጅ (ሊትር)",
+                "fuelEfficiency": "የነዳጅ ብቃት",
+                "driver": "አሽከርካሪ",
+                "license": "ፈቃድ",
+                "phone": "ስልክ",
+                "truck": "ጭነት መኪና",
+                "model": "ሞዴል",
+                "capacity": "ችሎታ",
+                "operationId": "የኦፕሬሽን መለያ",
+                "customer": "ደንበኛ",
+                "tariff": "ታሪፍ",
+                "dispatch": "መላኪያ",
+                "returned": "ተመለሰ",
+                "fuel": "ነዳጅ",
+                "perDiem": "የቀን ወጪ",
+                "other": "ሌሎች",
+                "total": "ጠቅላላ",
+                "tonKm": "ቶን-ኪ.ሜ",
+                "revenue": "ገቢ",
+                "totalCost": "ጠቅላላ ወጪ",
+                "grossMargin": "ጠቅላላ ትርፍ",
+                "marginPercent": "የትርፍ %",
+                "costPerTonKm": "ወጪ/ቶን-ኪ.ሜ",
+                "costPerKm": "ወጪ/ኪ.ሜ",
+                "yieldPerTon": "በቶን የምርት",
+                "yieldPerKm": "በኪ.ሜ የምርት",
+                "costPerTon": "ወጪ በቶን",
+                "fuelCostShare": "የነዳጅ ወጪ ድርሻ",
+                "revenuePerTonnage": "ገቢ / ቶን",
+                "revenuePerDistance": "ገቢ / ርቀት",
+                "costPerTonnage": "ወጪ / ቶን",
+                "fuelCostOfTotal": "{{value}} ከጠቅላላ",
+                "emptyBackhaul": "ያለጭነት መመለሻ",
+                "emptyDistanceLabel": "{{value}} {{unit}} ባዶ",
+                "fuelConsumedLabel": "{{value}} {{unit}} ተጠቃሚ",
+                "tonnageShare": "የቶን ድርሻ",
+                "distanceShare": "የርቀት ድርሻ",
+                "costShare": "የወጪ ድርሻ",
+                "plannedContribution": "የታቀደ አበርክቶ",
+                "plannedVolume": "የታቀደ መጠን",
+                "plannedDistance": "የታቀደ ርቀት",
+                "volumeCompletion": "የመጠን ሙሉነት",
+                "volumeCompletionHelper": "{{total}} / {{planned}} {{unit}}",
+                "tonKmCompletion": "የቶን-ኪ.ሜ ሙሉነት",
+                "tonKmCompletionHelper": "{{total}} / {{planned}}",
+                "operationRevenue": "የኦፕሬሽን ገቢ",
+                "operationMargin": "የኦፕሬሽን ትርፍ",
+                "totalEarned": "ጠቅላላ ገቢ",
+                "totalTrips": "ጠቅላላ ጉዞዎች",
+                "completedTrips": "ተጠናቀቁ",
+                "ongoingTrips": "በሂደት ላይ"
+            },
+            "trends": {
+                "tripLabel": "ጉዞ {{number}}"
+            },
+            "operation": {
+                "title": "ኦፕሬሽን {{id}}",
+                "viewFull": "ሙሉ ኦፕሬሽን ይመልከቱ"
+            },
+            "contribution": {
+                "summary": "ይህ ጉዞ የኦፕሬሽኑ ጠቅላላ ቶን መጠን {{tonnage}} እና ወደ የታቀደው አላማ {{planned}} አበርክቷል።"
+            },
+            "activity": {
+                "empty": "ምንም የእንቅስቃሴ ታሪክ አልተገኘም።"
+            },
+            "deleteDescription": "ይህን የአፈፃፀም መዝገብ ለመሰረዝ እርግጠኛ ነዎት? ይህ እርምጃ መልሶ አይመለስም።"
+        }
+    },
+    "regions": {
+        "title": "ክልሎች",
+        "description": "{{count}} ክልሎችን ያስተዳድሩ እና የዝግጅት ምልክቶችን ይከታተሉ።",
+        "columns": {
+            "name": "ክልል",
+            "code": "ኮድ",
+            "status": "ሁኔታ",
+            "capital": "ዋና ከተማ",
+            "population": "ህዝብ",
+            "accessibility": "ተደራሽነት",
+            "zones": "ዞኖች",
+            "lastSurveyed": "የመጨረሻ ጥናት"
+        },
+        "table": {
+            "title": "የክልል ዝርዝር",
+            "description": "የክትትል፣ ዝግጅት እና የጥናት መረጃዎችን ይቆጥቡ",
+            "actions": "እርምጃዎች"
+        },
+        "actions": {
+            "add": "ክልል አክል",
+            "view": "አሳይ",
+            "edit": "አስተካክል",
+            "delete": "ሰርዝ"
+        },
+        "filters": {
+            "searchPlaceholder": "ክልሎችን ፈልግ...",
+            "rowsLabel": "ረድፎች",
+            "statusPlaceholder": "ሁኔታ",
+            "allStatuses": "ሁሉም ሁኔታዎች",
+            "perPageOption": "{{value}} / ገጽ"
+        },
+        "stats": {
+            "total": {
+                "label": "ጠቅላላ ክልሎች",
+                "description": "{{count}} ዞኖች"
+            },
+            "active": {
+                "label": "ንቁ ክልሎች",
+                "description": "የስራ ሽፋን"
+            },
+            "inactive": {
+                "label": "ንቁ ያልሆኑ ክልሎች",
+                "description": "ማረጋገጫ በመጠባበቅ"
+            },
+            "surveyed": {
+                "label": "የተጠናቀቁ ጥናቶች",
+                "description": "{{count}} ነዋሪዎች"
+            }
+        },
+        "empty": {
+            "title": "ምንም ክልል አልተገኘም።",
+            "createAction": "አንዱን ፍጠር"
+        },
+        "status": {
+            "active": "ንቁ",
+            "inactive": "ንቁ ያልሆነ",
+            "unknown": "ያልታወቀ"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "mobile": {
+            "noCapital": "ዋና ከተማ አልተወሰነም",
+            "status": "ሁኔታ",
+            "population": "ህዝብ",
+            "zones": "ዞኖች",
+            "lastSurveyed": "የመጨረሻ ጥናት"
+        },
+        "delete": {
+            "title": "ክልል ሰርዝ",
+            "description": "ይህን ክልል ለመሰረዝ እርግጠኛ ነዎት? ይህ እርምጃ መልሶ አይመለስም።",
+            "successTitle": "✅ ክልል ተሰርዟል",
+            "successDescription": "{{name}} በተሳካ ሁኔታ ተወግዷል።",
+            "failedTitle": "❌ መሰረዝ አልተሳካም",
+            "failedDescription": "ክልሉን ማስወገድ አልተሳካም። እባክዎ ደግመው ይሞክሩ።"
+        },
+        "form": {
+            "create": {
+                "breadcrumb": "ፍጠር",
+                "title": "አዲስ ክልል ይመዝግቡ",
+                "headTitle": "ክልል ፍጠር",
+                "description": "የአስተዳደር ዝርዝሮችን፣ የጂኦ መረጃ እና የሎጂስቲክ ዝግጅት ይመዝግቡ።",
+                "backToList": "ወደ ክልሎች ተመለስ",
+                "badge": "የክልል እቅድ",
+                "successTitle": "✅ ክልል ተፈጥሯል",
+                "successDescription": "ክልሉ በተሳካ ሁኔታ ተመዝግቧል።",
+                "submit": "ክልል ፍጠር"
+            },
+            "edit": {
+                "breadcrumb": "አስተካክል",
+                "title": "ክልል አዘምን",
+                "headTitle": "{{name}} አስተካክል",
+                "description": "የአስተዳደር መረጃን እና ጂኦ መለኪያዎችን ያዘምኑ።",
+                "successTitle": "✅ ክልል ተዘምኗል",
+                "successDescription": "{{name}} ተዘምኗል።"
+            },
+            "validation": {
+                "toastTitle": "⚠️ ማረጋገጫ ስህተት",
+                "resolve": "በቀይ የታዩትን መስኮች ያስተካክሉ።",
+                "resolveForm": "ቅጹን ከመላክ በፊት ያስተካክሉ።"
+            },
+            "sections": {
+                "identity": {
+                    "title": "የክልል መለያ",
+                    "description": "ክልሉ በመድረኩ ላይ እንዴት እንደሚታይ ይግለጹ።",
+                    "descriptionEdit": "ስምና የአስተዳደር መረጃ ዘመናዊ እንዲሆን ያረጋግጡ።"
+                },
+                "geography": {
+                    "title": "ጂኦግራፊ ፕሮፋይል",
+                    "description": "የክልሉን መጠን እና የህዝብ መረጃ ያቅርቡ።",
+                    "descriptionEdit": "የክልሉን መጠን፣ የህዝብ መረጃ እና አቀማመጥ ያዘምኑ።"
+                },
+                "infrastructure": {
+                    "title": "መሠረተ ልማት እና አየር ንብረት",
+                    "description": "ለሎጂስቲክ ዝግጅት ምልክቶችን ይመዝግቡ።",
+                    "descriptionEdit": "የዝግጅት ምልክቶችን፣ የአየር ሁኔታ እና ኦፕሬሽን ማስታወሻዎችን ያቅርቡ።"
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "የክልል ስም",
+                    "placeholder": "ምሳሌ፦ ኦሮሚያ"
+                },
+                "code": {
+                    "label": "የክልል ኮድ",
+                    "placeholder": "ምሳሌ፦ OR-01"
+                },
+                "status": {
+                    "label": "ሁኔታ",
+                    "placeholder": "ሁኔታ ይምረጡ"
+                },
+                "capital": {
+                    "label": "ዋና ከተማ",
+                    "placeholder": "ምሳሌ፦ አዳማ"
+                },
+                "area": {
+                    "label": "መሬት (ኪ.ሜ²)",
+                    "placeholder": "ምሳሌ፦ 35363"
+                },
+                "population": {
+                    "label": "ህዝብ",
+                    "placeholder": "ምሳሌ፦ 4800000"
+                },
+                "elevation": {
+                    "label": "ከፍታ (ሜ)",
+                    "placeholder": "ምሳሌ፦ 1325"
+                },
+                "latitude": {
+                    "label": "ኬፍያ (Latitude)",
+                    "placeholder": "ምሳሌ፦ 8.980603"
+                },
+                "longitude": {
+                    "label": "ኬንታ (Longitude)",
+                    "placeholder": "ምሳሌ፦ 38.757761"
+                },
+                "accessibility": {
+                    "label": "የተደራሽነት ሚዛን",
+                    "placeholder": "0 - 100"
+                },
+                "lastSurveyed": {
+                    "label": "የመጨረሻ ጥናት"
+                },
+                "description": {
+                    "label": "መግለጫ",
+                    "placeholder": "የክልሉ አጠቃላይ መረጃ፣ ኢኮኖሚ ትኩረት ወይም ዋና የሎጂስቲክ አጋሮች"
+                },
+                "infrastructureNotes": {
+                    "label": "የመሠረተ ልማት ማስታወሻዎች",
+                    "placeholder": "ግንኙነት፣ ኤሌክትሪክ፣ ቴሌኮም ሽፋን ወይም የሚታወቁ ገደቦች"
+                },
+                "climateProfile": {
+                    "label": "የአየር ንብረት መግለጫ",
+                    "placeholder": "የወቅት ባህሪዎች፣ የሙቀት ክልሎች ወይም የአየር ሁኔታ ማስጠንቀቂያዎች"
+                }
+            },
+            "actions": {
+                "cancel": "ይቅር",
+                "updating": "በመዘመን ላይ...",
+                "update": "ክልል አዘምን"
+            }
+        },
+        "show": {
+            "notAvailable": "የለም",
+            "fallbackTitle": "ክልል {{id}}",
+            "subtitle": "የክልል መገለጫ እና አፈፃፀም",
+            "actions": {
+                "back": "ወደ ክልሎች ተመለስ"
+            },
+            "tabs": {
+                "overview": "አጠቃላይ",
+                "zones": "ዞኖች",
+                "history": "ታሪክ"
+            },
+            "kpi": {
+                "population": {
+                    "label": "ህዝብ",
+                    "helper": "የተመዘገቡ ነዋሪዎች"
+                },
+                "area": {
+                    "label": "መሬት",
+                    "helper": "የመሬት ስፋት"
+                },
+                "accessibility": {
+                    "label": "ተደራሽነት",
+                    "helper": "የእንቅስቃሴ መለኪያ (0-100)"
+                },
+                "activeZones": {
+                    "label": "ንቁ ዞኖች",
+                    "helper": "ከ{{count}} ዞኖች ውስጥ"
+                }
+            },
+            "units": {
+                "km2": "ኪ.ሜ²",
+                "m": "ሜ",
+                "peoplePerKm2": "ሰዎች / ኪ.ሜ²"
+            },
+            "zoneCount": "{{count}} ዞኖች",
+            "capitalLabel": "ዋና ከተማ: {{name}}",
+            "sections": {
+                "overview": {
+                    "title": "የክልል አጠቃላይ",
+                    "description": "ዋና መለያዎች እና አስተዳደር መረጃ"
+                },
+                "environment": {
+                    "title": "የአካባቢ ማስታወሻዎች",
+                    "description": "የመሠረተ ልማት ዝግጅት እና የአየር ንብረት ግምት"
+                },
+                "quickActions": {
+                    "title": "ፈጣን እርምጃዎች",
+                    "description": "የክልል አስተዳደር አቋራጮች"
+                },
+                "recordInfo": {
+                    "title": "የመዝገብ መረጃ",
+                    "description": "የስርዓት ቁጥጥር"
+                },
+                "zones": {
+                    "title": "በ{{name}} ውስጥ ያሉ ዞኖች",
+                    "description": "አስተዳደር ክላስተሮች እና ሁኔታቸው"
+                },
+                "history": {
+                    "title": "የእንቅስቃሴ ታሪክ",
+                    "description": "የሚታወቅ የለውጥ ቅድሚያ"
+                }
+            },
+            "fields": {
+                "code": "የክልል ኮድ",
+                "capital": "ዋና ከተማ",
+                "coordinates": "ኮርድኔቶች",
+                "elevation": "ከፍታ",
+                "lastSurveyed": "የመጨረሻ ጥናት",
+                "populationDensity": "የህዝብ ጥግግት",
+                "infrastructure": "መሠረተ ልማት",
+                "climateProfile": "የአየር ንብረት መግለጫ",
+                "created": "ተፈጠረበት",
+                "updated": "የመጨረሻ ማሻሻያ"
+            },
+            "quickActions": {
+                "edit": "የክልል ዝርዝር አስተካክል",
+                "manageZones": "ዞኖችን አስተዳድር",
+                "addZone": "አዲስ ዞን አክል"
+            },
+            "zones": {
+                "empty": "ለዚህ ክልል ዞኖች አልተመዘገቡም።"
+            },
+            "history": {
+                "empty": "ለዚህ ክልል ምንም እንቅስቃሴ አልተመዘገበም።"
+            }
+        }
+    },
+    "woredas": {
+        "title": "ወረዳዎች",
+        "description": "{{count}} ወረዳዎችን ያስተዳድሩ እና ሽፋኑን ከኦፕሬሽን ፍላጎቶች ጋር ያመጣጥኑ።",
+        "columns": {
+            "name": "ወረዳ",
+            "code": "ኮድ",
+            "status": "ሁኔታ",
+            "zone": "ዞን",
+            "region": "ክልል",
+            "adminCenter": "የአስተዳደር ማዕከል",
+            "population": "ህዝብ",
+            "area": "መሬት (ኪ.ሜ²)",
+            "accessibility": "ተደራሽነት",
+            "places": "ቦታዎች"
+        },
+        "table": {
+            "title": "የወረዳ ዝርዝር",
+            "description": "የአስተዳደር ሽፋን፣ የዝግጅት ምልክቶች እና የቦታ ቁጥርን ይገምግሙ",
+            "actions": "እርምጃዎች"
+        },
+        "actions": {
+            "add": "ወረዳ አክል",
+            "view": "አሳይ",
+            "edit": "አስተካክል",
+            "delete": "ሰርዝ"
+        },
+        "filters": {
+            "searchPlaceholder": "ወረዳዎችን ፈልግ...",
+            "rowsLabel": "ረድፎች",
+            "statusPlaceholder": "ሁኔታ",
+            "allStatuses": "ሁሉም ሁኔታዎች",
+            "perPageOption": "{{value}} / ገጽ"
+        },
+        "stats": {
+            "total": {
+                "label": "ጠቅላላ ወረዳዎች",
+                "description": "{{count}} ንቁ"
+            },
+            "inactive": {
+                "label": "ንቁ ያልሆኑ ወረዳዎች",
+                "description": "ቆመው ያሉ ክልሎች"
+            },
+            "population": {
+                "label": "የህዝብ ሽፋን",
+                "description": "የተሸፈኑ ነዋሪዎች"
+            },
+            "accessibility": {
+                "label": "የተደራሽነት መለኪያ",
+                "description": "{{count}} የመንገድ መረጃ"
+            }
+        },
+        "empty": {
+            "title": "ምንም ወረዳ አልተገኘም።",
+            "createAction": "አንዱን ፍጠር"
+        },
+        "status": {
+            "active": "ንቁ",
+            "inactive": "ንቁ ያልሆነ",
+            "unknown": "ያልታወቀ"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "mobile": {
+            "noZone": "ዞን አልተመደበም",
+            "status": "ሁኔታ",
+            "region": "ክልል",
+            "population": "ህዝብ",
+            "places": "ቦታዎች"
+        },
+        "delete": {
+            "title": "ወረዳ ሰርዝ",
+            "description": "ይህን ወረዳ ለመሰረዝ እርግጠኛ ነዎት? ይህ እርምጃ መልሶ አይመለስም።",
+            "successTitle": "✅ ወረዳ ተሰርዟል",
+            "successDescription": "{{name}} ተሰርዟል።",
+            "failedTitle": "❌ መሰረዝ አልተሳካም",
+            "failedDescription": "ወረዳውን ማስወገድ አልተሳካም። እባክዎ ደግመው ይሞክሩ።"
+        },
+        "form": {
+            "create": {
+                "breadcrumb": "ፍጠር",
+                "title": "አዲስ ወረዳ ይመዝግቡ",
+                "headTitle": "ወረዳ ፍጠር",
+                "description": "የአስተዳደር ወረዳዎችን ከጂኦ መረጃ እና የመሠረተ ልማት ዝግጅት ጋር ይመዝግቡ።",
+                "backToList": "ወደ ወረዳዎች ተመለስ",
+                "badge": "የክትትል ሽፋን",
+                "successTitle": "✅ ወረዳ ተፈጥሯል",
+                "successDescription": "ወረዳው በተሳካ ሁኔታ ተመዝግቧል።",
+                "submit": "ወረዳ ፍጠር"
+            },
+            "edit": {
+                "breadcrumb": "አስተካክል",
+                "title": "ወረዳ አዘምን",
+                "headTitle": "{{name}} አስተካክል",
+                "description": "የወረዳውን መረጃ ከመስክ መረጃ ጋር ያመሳስሉ።",
+                "successTitle": "✅ ወረዳ ተዘምኗል",
+                "successDescription": "{{name}} ተዘምኗል።"
+            },
+            "validation": {
+                "toastTitle": "⚠️ ማረጋገጫ ስህተት",
+                "resolve": "በቀይ የታዩትን መስኮች ያስተካክሉ።",
+                "resolveForm": "ቅጹን ከማስቀመጥ በፊት የታዩትን መስኮች ያስተካክሉ።"
+            },
+            "sections": {
+                "identity": {
+                    "title": "የወረዳ መለያ",
+                    "description": "የወረዳውን አስተዳደር እና መመደብ ዝርዝሮች ያስገቡ።",
+                    "descriptionEdit": "የወረዳውን አስተዳደር እና መመደብ ዝርዝሮች ያረጋግጡ።"
+                },
+                "geography": {
+                    "title": "ጂኦግራፊ ፕሮፋይል",
+                    "description": "የመሬት ስፋት እና የህዝብ መጠን ይግለጹ።",
+                    "descriptionEdit": "የሽፋን መለኪያዎችን ያዘምኑ።"
+                },
+                "infrastructure": {
+                    "title": "መሠረተ ልማት እና ሎጂስቲክ",
+                    "description": "የዝግጅት ምልክቶችን እና የስራ አውድ ይመዝግቡ።",
+                    "descriptionEdit": "የተደራሽነት ምልክቶችን እና የመንገድ ጥራት መረጃ ይዘምኑ።"
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "የወረዳ ስም",
+                    "placeholder": "ምሳሌ፦ አዳባ"
+                },
+                "zone": {
+                    "label": "ዞን",
+                    "placeholder": "ዞን ይምረጡ"
+                },
+                "status": {
+                    "label": "ሁኔታ",
+                    "placeholder": "ሁኔታ ይምረጡ"
+                },
+                "code": {
+                    "label": "የወረዳ ኮድ",
+                    "placeholder": "ምሳሌ፦ AD-01"
+                },
+                "administrativeCenter": {
+                    "label": "የአስተዳደር ማዕከል",
+                    "placeholder": "ዋና የአስተዳደር መማሪያ"
+                },
+                "area": {
+                    "label": "መሬት (ኪ.ሜ²)",
+                    "placeholder": "ምሳሌ፦ 1250",
+                    "placeholderEdit": "ምሳሌ፦ 8450"
+                },
+                "population": {
+                    "label": "ህዝብ",
+                    "placeholder": "ምሳሌ፦ 82000",
+                    "placeholderEdit": "ምሳሌ፦ 120000"
+                },
+                "elevation": {
+                    "label": "ከፍታ (ሜ)",
+                    "placeholder": "ምሳሌ፦ 1325",
+                    "placeholderEdit": "ምሳሌ፦ 1800"
+                },
+                "latitude": {
+                    "label": "ኬፍያ (Latitude)",
+                    "placeholder": "ምሳሌ፦ 7.123456"
+                },
+                "longitude": {
+                    "label": "ኬንታ (Longitude)",
+                    "placeholder": "ምሳሌ፦ 39.987654"
+                },
+                "accessibility": {
+                    "label": "የተደራሽነት ሚዛን",
+                    "placeholder": "0 - 100"
+                },
+                "description": {
+                    "label": "መግለጫ",
+                    "placeholder": "የኢኮኖሚ ትኩረት ወይም የመስመር ሚና",
+                    "placeholderEdit": "የአገልግሎት ሽፋን ወይም የኢኮኖሚ ጠቃሚነት"
+                },
+                "infrastructureNotes": {
+                    "label": "የመሠረተ ልማት ማስታወሻዎች",
+                    "placeholder": "ግንኙነት፣ ኤሌክትሪክ፣ ቴሌኮም ሽፋን ወይም ገደቦች"
+                },
+                "roadQualityNotes": {
+                    "label": "የመንገድ ጥራት ማስታወሻዎች",
+                    "placeholder": "የመንገድ ሁኔታ፣ ወቅታዊ እንቅፋት ወይም ጠገና ጊዜያት"
+                }
+            },
+            "actions": {
+                "cancel": "ይቅር",
+                "updating": "በመዘመን ላይ...",
+                "update": "ወረዳ አዘምን"
+            }
+        },
+        "show": {
+            "notAvailable": "የለም",
+            "fallbackTitle": "ወረዳ {{id}}",
+            "subtitle": "የንክል አስተዳደር እና አገልግሎት እይታ",
+            "actions": {
+                "back": "ወደ ወረዳዎች ተመለስ"
+            },
+            "tabs": {
+                "overview": "አጠቃላይ",
+                "places": "ቦታዎች",
+                "history": "ታሪክ"
+            },
+            "kpi": {
+                "population": {
+                    "label": "ህዝብ",
+                    "helper": "የተመዘገቡ ነዋሪዎች"
+                },
+                "area": {
+                    "label": "መሬት",
+                    "helper": "የመሬት ስፋት"
+                },
+                "accessibility": {
+                    "label": "ተደራሽነት",
+                    "helper": "የሎጂስቲክ ዝግጅት (0-100)"
+                },
+                "places": {
+                    "label": "የተመዘገቡ ቦታዎች",
+                    "helper": "የአገልግሎት መድረኮች"
+                }
+            },
+            "units": {
+                "km2": "ኪ.ሜ²",
+                "m": "ሜ",
+                "peoplePerKm2": "ሰዎች / ኪ.ሜ²"
+            },
+            "zoneLabel": "ዞን: {{name}}",
+            "adminCenterLabel": "የአስተዳደር ማዕከል: {{name}}",
+            "sections": {
+                "overview": {
+                    "title": "የወረዳ አጠቃላይ",
+                    "description": "የአስተዳደር መለያዎች እና ጂኦግራፊ"
+                },
+                "infrastructure": {
+                    "title": "የመሠረተ ልማት ማስታወሻዎች",
+                    "description": "ተደራሽነት እና የመንገድ ሁኔታ"
+                },
+                "recordInfo": {
+                    "title": "የመዝገብ መረጃ",
+                    "description": "የስርዓት ቁጥጥር"
+                },
+                "places": {
+                    "title": "በ{{name}} ውስጥ ያሉ ቦታዎች",
+                    "description": "የአገልግሎት መድረኮች"
+                },
+                "history": {
+                    "title": "የእንቅስቃሴ ታሪክ",
+                    "description": "የሚታወቅ የለውጥ ቅድሚያ"
+                }
+            },
+            "fields": {
+                "code": "የወረዳ ኮድ",
+                "administrativeCenter": "የአስተዳደር ማዕከል",
+                "zone": "ዞን",
+                "elevation": "ከፍታ",
+                "coordinates": "ኮርድኔቶች",
+                "populationDensity": "የህዝብ ጥግግት",
+                "infrastructure": "መሠረተ ልማት",
+                "roadQuality": "የመንገድ ጥራት",
+                "created": "ተፈጠረበት",
+                "updated": "የመጨረሻ ማሻሻያ"
+            },
+            "places": {
+                "logisticsHub": "የሎጂስቲክ ማዕከል",
+                "empty": "ለዚህ ወረዳ ቦታዎች አልተመዘገቡም።"
+            },
+            "history": {
+                "empty": "ለዚህ ወረዳ ምንም እንቅስቃሴ አልተመዘገበም።"
+            }
+        }
+    },
+    "places": {
+        "title": "ቦታዎች",
+        "description": "የ{{count}} ቦታ እና የሎጂስቲክስ ዝግጅታቸውን ክትትል ያድርጉ።",
+        "columns": {
+            "name": "ቦታ",
+            "code": "ኮድ",
+            "status": "ሁኔታ",
+            "location": "አካባቢ",
+            "coordinates": "ኮርድኔቶች",
+            "population": "ህዝብ",
+            "accessibility": "መዳረሻ",
+            "logisticsHub": "ሎጂስቲክስ ማዕከል",
+            "originPerformance": "መነሻ አፈጻጸም",
+            "destinationPerformance": "መዳረሻ አፈጻጸም"
+        },
+        "table": {
+            "title": "የቦታ ዝርዝር",
+            "description": "ቦታዎችን፣ የማዕከል ችሎታዎችን እና የመንገድ አፈጻጸም መረጃን ይከታተሉ",
+            "actions": "እርምጃዎች",
+            "codePrefix": "ኮድ {{code}}"
+        },
+        "actions": {
+            "add": "ቦታ ጨምር",
+            "view": "ይመልከቱ",
+            "edit": "አስተካክል",
+            "delete": "ሰርዝ",
+            "cancel": "ተወው"
+        },
+        "filters": {
+            "searchPlaceholder": "ቦታዎችን ፈልግ...",
+            "rowsLabel": "ረድፎች",
+            "statusPlaceholder": "ሁኔታ",
+            "allStatuses": "ሁሉም ሁኔታዎች",
+            "perPageOption": "{{value}} / ገጽ"
+        },
+        "stats": {
+            "total": {
+                "label": "ጠቅላላ ቦታዎች",
+                "description": "የተከታተሉ አካባቢዎች"
+            },
+            "hubs": {
+                "label": "ሎጂስቲክስ ማዕከሎች",
+                "description": "የስትራቴጂ ማዕከሎች"
+            },
+            "population": {
+                "label": "የህዝብ ሽፋን",
+                "description": "የተሸፈኑ ነዋሪዎች"
+            },
+            "accessibility": {
+                "label": "የመዳረሻ ነጥብ",
+                "description": "የመሠረተ ልማት ዝግጅት"
+            }
+        },
+        "empty": {
+            "title": "ቦታዎች አልተገኙም።",
+            "createAction": "አንዱን ፍጠር"
+        },
+        "status": {
+            "active": "ንቁ",
+            "inactive": "ያልነቃ",
+            "unknown": "ያልታወቀ"
+        },
+        "hub": {
+            "standard": "መደበኛ",
+            "hub": "ማዕከል"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "mobile": {
+            "position": "ቁጥር {{value}}",
+            "noWoreda": "ወረዳ አልተመደበም",
+            "status": "ሁኔታ",
+            "hub": "ማዕከል",
+            "population": "ህዝብ",
+            "accessibility": "መዳረሻ"
+        },
+        "delete": {
+            "title": "ቦታ ሰርዝ",
+            "description": "ይህን ቦታ ለማጥፋት እርግጠኛ ነዎት? ይህ ተግባር መመለስ አይቻልም።",
+            "successTitle": "✅ ቦታ ተሰርዟል",
+            "successDescription": "{{name}} በተሳካ ሁኔታ ተወግዷል።",
+            "failedTitle": "❌ ማጥፋት አልተሳካም",
+            "failedDescription": "ቦታውን ማጥፋት አልተሳካም። እባክዎ ደግሞ ይሞክሩ።"
+        },
+        "form": {
+            "create": {
+                "breadcrumb": "ፍጠር",
+                "title": "አዲስ ቦታ መመዝገብ",
+                "headTitle": "ቦታ ፍጠር",
+                "description": "ለመንገድ እና ለመርሃ ግብር የሚያገለግሉ የመዳረሻ መረጃዎችን ይመዝግቡ።",
+                "backToList": "ወደ ቦታዎች ተመለስ",
+                "badge": "የአካባቢ መረጃ",
+                "successTitle": "✅ ቦታ ተፈጥሯል",
+                "successDescription": "ቦታው በተሳካ ሁኔታ ተመዝግቧል።",
+                "submit": "ቦታ ፍጠር"
+            },
+            "edit": {
+                "breadcrumb": "አስተካክል",
+                "title": "ቦታን አዘምን",
+                "headTitle": "{{name}} አስተካክል",
+                "description": "የቦታ መረጃ እንዲቀጥል ያድርጉ።"
+            },
+            "validation": {
+                "toastTitle": "⚠️ የማረጋገጫ ስህተት",
+                "resolve": "እባክዎ ተገላጭ መስኮችን ከማስረጃ በፊት ያስተካክሉ።",
+                "resolveForm": "እባክዎ ቅጹን ከመላክዎ በፊት የማረጋገጫ ስህተቶችን ያስተካክሉ።",
+                "resolveEdit": "እባክዎ ተገላጭ መስኮችን ይመልከቱ እና ቦታውን ከማስቀመጥዎ በፊት ስህተቶችን ያስተካክሉ።"
+            },
+            "sections": {
+                "identity": {
+                    "title": "የቦታ መለያ",
+                    "description": "ይህ ቦታ በእቅድ እና በአስተዳደር ውስጥ እንዴት እንደሚታይ ይግለፁ።"
+                },
+                "geo": {
+                    "title": "ኮርድኔቶች እና መጠን",
+                    "description": "ለመንገድ እና ለመርሃ ግብር ትክክለኛ ኮርድኔቶችን ይስጡ።"
+                },
+                "operations": {
+                    "title": "የስራ መረጃ",
+                    "description": "ለመላኪያ ቡድኖች የመሠረተ ልማት እና የመንገድ መረጃ ይመዝግቡ።"
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "የቦታ ስም",
+                    "placeholder": "ለምሳሌ፦ ሞጆ ድራይ ፖርት"
+                },
+                "woreda": {
+                    "label": "ወረዳ",
+                    "placeholder": "ወረዳ ይምረጡ"
+                },
+                "status": {
+                    "label": "ሁኔታ",
+                    "placeholder": "ሁኔታ ይምረጡ"
+                },
+                "code": {
+                    "label": "የቦታ ኮድ",
+                    "placeholder": "ለምሳሌ፦ PL-204"
+                },
+                "isLogisticsHub": "ሎጂስቲክስ ማዕከል እንደሆነ ምልክት ያድርጉ (አስፈላጊ ማስተናገድ ወይም ማቀናበሪያ ነጥብ)",
+                "latitude": {
+                    "label": "ስፋት (Latitude)",
+                    "placeholder": "ለምሳሌ፦ 8.980603"
+                },
+                "longitude": {
+                    "label": "ኬክል (Longitude)",
+                    "placeholder": "ለምሳሌ፦ 38.757761"
+                },
+                "elevation": {
+                    "label": "ከፍታ (m)",
+                    "placeholder": "ለምሳሌ፦ 2145"
+                },
+                "population": {
+                    "label": "ህዝብ",
+                    "placeholder": "ለምሳሌ፦ 45000"
+                },
+                "accessibility": {
+                    "label": "የመዳረሻ ነጥብ",
+                    "placeholder": "0 - 100"
+                },
+                "description": {
+                    "label": "መግለጫ",
+                    "placeholder": "የዚህ ቦታ ተግባር፣ የሚገኙ አገልግሎቶች ወይም ልዩ መረጃ"
+                },
+                "infrastructureNotes": {
+                    "label": "የመሠረተ ልማት ማስታወሻዎች",
+                    "placeholder": "መሳሪያዎች፣ የቁሳቁስ ቦታ፣ ደህንነት ወይም የግንኙነት ክብረ አቅም"
+                },
+                "roadQualityNotes": {
+                    "label": "የመንገድ ጥራት ማስታወሻዎች",
+                    "placeholder": "የመንገድ ሁኔታ፣ የወቅት አደጋዎች ወይም አማራጭ መንገዶች"
+                },
+                "boundaryGeojson": {
+                    "label": "የድንበር GeoJSON",
+                    "placeholder": "የቦታውን ድንበር የሚገልጽ GeoJSON ይጫኑ",
+                    "hint": "አማራጭ — ባዶ ተው ኮርድኔቶችን ብቻ ለመጠቀም።"
+                }
+            },
+            "actions": {
+                "updating": "በማዘመን ላይ...",
+                "update": "ቦታ አዘምን"
+            }
+        },
+        "show": {
+            "notAvailable": "የለም",
+            "fallbackTitle": "ቦታ {{id}}",
+            "subtitle": "የአገልግሎት እና የሎጂስቲክስ ማቆያ ቦታ ዝርዝር።",
+            "logisticsHub": "ሎጂስቲክስ ማዕከል",
+            "actions": {
+                "back": "ወደ ቦታዎች ተመለስ"
+            },
+            "kpi": {
+                "population": {
+                    "label": "ህዝብ",
+                    "helper": "የአካባቢ ነዋሪዎች"
+                },
+                "accessibility": {
+                    "label": "መዳረሻ",
+                    "helper": "የሎጂስቲክስ ነጥብ (0-100)"
+                },
+                "elevation": {
+                    "label": "ከፍታ",
+                    "helper": "ከባህር ደረጃ በላይ"
+                },
+                "hubStatus": {
+                    "label": "ማዕከል ሁኔታ",
+                    "helper": "የሎጂስቲክስ ማዕከል መመደብ",
+                    "yes": "አዎ",
+                    "no": "አይ"
+                }
+            },
+            "sections": {
+                "overview": {
+                    "title": "የቦታ አጠቃላይ",
+                    "description": "መለያዎች እና ጂኦግራፊያዊ መረጃ"
+                },
+                "infrastructure": {
+                    "title": "የመሠረተ ልማት ማስታወሻዎች",
+                    "description": "መዳረሻ እና የመንገድ ሁኔታ"
+                },
+                "history": {
+                    "title": "የተግባር ታሪክ",
+                    "description": "ማረጋገጫ ያለው ታይምላይን"
+                },
+                "recordInfo": {
+                    "title": "የመዝገብ መረጃ",
+                    "description": "የስርዓት ቆጣሪ"
+                }
+            },
+            "fields": {
+                "code": "የቦታ ኮድ",
+                "woreda": "ወረዳ",
+                "coordinates": "ኮርድኔቶች",
+                "elevation": "ከፍታ",
+                "infrastructure": "መሠረተ ልማት",
+                "roadQuality": "የመንገድ ጥራት",
+                "created": "ተፈጠረበት",
+                "updated": "መጨረሻ ዝመና"
+            }
+        }
+    },
+    "distances": {
+        "title": "ርቀቶች",
+        "index": {
+            "title": "የመንገድ ርቀቶች",
+            "description": "የ{{count}} መንገድ{{plural}}ን እና የወቅታዊ አደጋ ሁኔታዎችን ይከታተሉ።",
+            "descriptionEmpty": "የኮርሪደር ዝግጅትን፣ የጉዞ ጊዜዎችን እና የወቅታዊ አደጋዎችን ይከታተሉ።"
+        },
+        "columns": {
+            "route": "መንገድ",
+            "status": "ሁኔታ",
+            "distance": "ርቀት (ኪሜ)",
+            "time": "ጊዜ (ሰ)",
+            "routeType": "የመንገድ አይነት",
+            "averageSpeed": "አማካይ ፍጥነት",
+            "roadQuality": "የመንገድ ጥራት",
+            "tollRoad": "ክፍያ መንገድ",
+            "heavyVehicle": "ከባድ መኪና"
+        },
+        "table": {
+            "title": "የርቀት ማትሪክስ",
+            "description": "የመንገድ አፈጻጸምን፣ የመሠረተ ልማት መለኪያዎችን እና የጉዞ ገደቦችን ይታዩ",
+            "actions": "እርምጃዎች"
+        },
+        "actions": {
+            "add": "ርቀት ጨምር",
+            "view": "አሳይ",
+            "edit": "አስተካክል",
+            "delete": "ሰርዝ",
+            "cancel": "ተወው"
+        },
+        "filters": {
+            "searchPlaceholder": "መንገዶችን ወይም ማስታወሻዎችን ፈልግ...",
+            "routeTypePlaceholder": "የመንገድ አይነት",
+            "regionPlaceholder": "በክልል ማጣሪያ",
+            "zonePlaceholder": "በዞን ማጣሪያ",
+            "woredaPlaceholder": "በወረዳ ማጣሪያ"
+        },
+        "routeTypes": {
+            "all": "ሁሉም መንገዶች",
+            "primary": "ዋና",
+            "secondary": "ሁለተኛ",
+            "alternative": "አማራጭ"
+        },
+        "stats": {
+            "total": {
+                "label": "ተከታተሉ መንገዶች",
+                "description": "ንቁ ኮርሪደር መዝገቦች"
+            },
+            "speed": {
+                "label": "አማካይ ፍጥነት (ኪሜ/ሰ)",
+                "description": "አማካይ ፍጥነት"
+            },
+            "quality": {
+                "label": "የመንገድ ጥራት መለኪያ",
+                "description": "የመሠረተ ልማት ዝግጅት"
+            },
+            "seasonal": {
+                "label": "የወቅታዊ ማስጠንቀቂያዎች",
+                "description": "የወቅታዊ አደጋ ያላቸው መንገዶች"
+            }
+        },
+        "status": {
+            "active": "ንቁ",
+            "inactive": "ያልነቃ",
+            "unknown": "ያልታወቀ"
+        },
+        "flags": {
+            "toll": {
+                "true": "ክፍያ",
+                "false": "ክፍያ የለም"
+            },
+            "heavyVehicle": {
+                "true": "የተገደበ",
+                "false": "የተፈቀደ"
+            }
+        },
+        "boolean": {
+            "yes": "አዎ",
+            "no": "አይ"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "unknown": "ያልታወቀ",
+            "origin": "መነሻ",
+            "destination": "መዳረሻ"
+        },
+        "mobile": {
+            "position": "ቁጥር {{value}}",
+            "status": "ሁኔታ",
+            "distance": "ርቀት",
+            "time": "የጉዞ ጊዜ",
+            "routeType": "የመንገድ አይነት"
+        },
+        "loading": {
+            "alt": "ርቀቶች በመጫን ላይ",
+            "message": "ርቀቶችን በመጫን ላይ..."
+        },
+        "empty": {
+            "title": "ምንም ርቀት አልተገኘም።",
+            "createAction": "አንዱን ፍጠር"
+        },
+        "delete": {
+            "title": "ርቀት ሰርዝ",
+            "description": "ይህን ርቀት ለማጥፋት እርግጠኛ ነዎት? ይህ ተግባር መመለስ አይቻልም።",
+            "successTitle": "✅ የርቀት መዝገብ ተሰርዟል",
+            "successDescription": "መንገድ {{route}} በተሳካ ሁኔታ ተወግዷል።",
+            "failedTitle": "❌ ማጥፋት አልተሳካም",
+            "failedDescription": "ርቀቱን ማጥፋት አልተሳካም። እባክዎ ደግሞ ይሞክሩ።"
+        },
+        "form": {
+            "validation": {
+                "toastTitle": "⚠️ የማረጋገጫ ስህተት",
+                "resolve": "እባክዎ ተገላጭ መስኮችን ከመላክዎ በፊት ያስተካክሉ።",
+                "resolveForm": "እባክዎ ቅጹን ከመላክዎ በፊት ስህተቶችን ያስተካክሉ።",
+                "resolveEdit": "እባክዎ ከመላክዎ በፊት የማረጋገጫ ስህተቶችን ያስተካክሉ።",
+                "fromRequired": "መነሻ ቦታ ያስፈልጋል",
+                "toRequired": "መዳረሻ ቦታ ያስፈልጋል",
+                "toDifferent": "መዳረሻ ቦታ ከመነሻ ቦታ ተለያይቶ መሆን አለበት",
+                "distanceRequired": "ርቀት ያስፈልጋል",
+                "distancePositive": "ርቀት አዎንታዊ ቁጥር መሆን አለበት",
+                "timeRequired": "የተጠበቀ ጊዜ ያስፈልጋል",
+                "timePositive": "የተጠበቀ ጊዜ አዎንታዊ ቁጥር መሆን አለበት"
+            },
+            "actions": {
+                "creating": "በመፍጠር ላይ...",
+                "create": "ርቀት ፍጠር",
+                "updating": "በማዘመን ላይ...",
+                "update": "ርቀት አዘምን"
+            },
+            "fields": {
+                "fromPlace": {
+                    "label": "መነሻ ቦታ *",
+                    "placeholder": "መነሻ ቦታ ይምረጡ"
+                },
+                "toPlace": {
+                    "label": "መዳረሻ ቦታ *",
+                    "placeholder": "መዳረሻ ቦታ ይምረጡ"
+                },
+                "distance": {
+                    "label": "ርቀት (ኪሜ) *",
+                    "placeholder": "በካርታ የተሰራ",
+                    "calculated": "✓ ከተሳሳበ መንገድ ተሰርቷል",
+                    "manual": "መንገድ ካልተሳሳበ በእጅ ያስገቡ።"
+                },
+                "time": {
+                    "label": "ተጠባቂ ጊዜ (ሰ) *",
+                    "placeholder": "በመንገድ ላይ የተሰራ",
+                    "calculated": "✓ በፍጥነት ግምት ላይ የተመሰረተ",
+                    "manual": "ካርታ መንገድ ካልተገኘ ግምት ይስጡ።"
+                },
+                "routeType": {
+                    "label": "የመንገድ አይነት",
+                    "primary": "ዋና መንገድ (80 ኪሜ/ሰ)",
+                    "secondary": "ሁለተኛ መንገድ (50 ኪሜ/ሰ)",
+                    "alternative": "አማራጭ መንገድ (40 ኪሜ/ሰ)"
+                },
+                "roadCondition": {
+                    "label": "የመንገድ ሁኔታ መለኪያ",
+                    "placeholder": "1.0 = መደበኛ, 1.5 = መጥፎ ሁኔታ"
+                },
+                "routeDescription": {
+                    "label": "የመንገድ መግለጫ",
+                    "placeholder": "መንገዱን ግለጹ..."
+                },
+                "routeNotes": {
+                    "label": "የመንገድ ማስታወሻዎች",
+                    "placeholder": "ተጨማሪ ማስታወሻዎች..."
+                },
+                "tollRoad": {
+                    "label": "ክፍያ መንገድ",
+                    "costLabel": "የክፍያ ወጪ (ብር)",
+                    "costPlaceholder": "የክፍያ ወጪ ያስገቡ"
+                },
+                "heavyVehicle": {
+                    "label": "ለከባድ መኪና ተገድቧል"
+                }
+            },
+            "create": {
+                "breadcrumb": "ፍጠር",
+                "title": "ርቀት ፍጠር",
+                "headTitle": "ርቀት ፍጠር",
+                "description": "በአስፈላጊ ሎጂስቲክስ ቦታዎች መካከል ርቀትን እና የጉዞ ጊዜን ይመዝግቡ።",
+                "backToList": "ወደ ርቀቶች ተመለስ",
+                "badge": "የመንገድ እቅድ",
+                "successTitle": "✅ የርቀት መዝገብ ተፈጥሯል",
+                "successDescription": "የመንገዱ ርቀት በተሳካ ሁኔታ ተመዝግቧል።",
+                "stats": {
+                    "placesAvailable": "ያሉ ቦታዎች",
+                    "withCoordinates": "{{count}} ካርታ ኮርድኔት አላቸው",
+                    "coverage": "ሽፋን",
+                    "coverageValue": "{{value}}% ጂኦኮድ",
+                    "ready": "ለመንገድ እቅድ ዝግጁ",
+                    "currentDraft": "ያለ ረቂቅ",
+                    "currentDraftFallback": "መንገድ በመጠበቅ ላይ",
+                    "currentDraftValue": "{{value}} ኪሜ",
+                    "currentDraftTime": "{{value}} ሰ ተጠባቂ",
+                    "currentDraftTimeFallback": "ካርታ ላይ መንገድ ሳይሙ"
+                },
+                "tabs": {
+                    "form": "ቅጽ",
+                    "map": "ካርታ",
+                    "preview": "ቅድመ እይታ"
+                },
+                "form": {
+                    "title": "የርቀት መረጃ",
+                    "description": "መነሻና መዳረሻ ይምረጡ እና መለኪያዎቹን ያረጋግጡ።"
+                },
+                "map": {
+                    "title": "የመንገድ እቅድ ካርታ",
+                    "description": "መንገዱን ስለሚለው ርቀትና ጊዜ በራስ-ሰር ይቆጠራል።",
+                    "note": "ሁለት ቦታዎችን ይጫኑ ወይም የራስዎን መንገድ ይሳሱ። ስዕሉን ካጠፉ በእጅ ያስገቡ።"
+                },
+                "preview": {
+                    "title": "የመንገድ ቅድመ እይታ",
+                    "description": "ከማስቀመጥዎ በፊት ማጠቃለያ ይመልከቱ።",
+                    "fromLabel": "ከ:",
+                    "toLabel": "ወደ:",
+                    "notSelected": "አልተመረጠም",
+                    "notAvailable": "የለም",
+                    "routePoints": "የመንገድ ነጥቦች",
+                    "totalDistance": "ጠቅላላ ርቀት",
+                    "estimatedTime": "ተጠባቂ ጊዜ",
+                    "detailsTitle": "የመንገድ ዝርዝር",
+                    "details": {
+                        "routeType": "የመንገድ አይነት",
+                        "roadCondition": "የመንገድ ሁኔታ መለኪያ",
+                        "tollRoad": "ክፍያ መንገድ",
+                        "tollCost": "የክፍያ ወጪ",
+                        "heavyVehicle": "ለከባድ መኪና ገደብ",
+                        "routePoints": "የመንገድ ነጥቦች",
+                        "routePointsSaved": "{{count}} ተቀምጧል"
+                    },
+                    "empty": "መንገድ አልተሳሳበም። በካርታ ትር ይጠቀሙ ወይም መለኪያዎችን በእጅ ያስገቡ።"
+                }
+            },
+            "edit": {
+                "breadcrumb": "አስተካክል",
+                "title": "ርቀት አስተካክል",
+                "headTitle": "ርቀት አስተካክል: {{route}}",
+                "description": "ከ{{from}} ወደ {{to}} የሚሄድ ርቀት መረጃ ያዘምኑ",
+                "successTitle": "✅ ርቀት ተዘምኗል",
+                "successDescription": "የርቀት መዝገብ በተሳካ ሁኔታ ተቀምጧል።",
+                "failedTitle": "❌ ማዘመን አልተሳካም",
+                "failedDescription": "የርቀት መዝገብ ማዘመን አልተሳካም።",
+                "section": {
+                    "title": "የርቀት መረጃ",
+                    "description": "መንገድን እና የጉዞ መለኪያዎችን ይግለጹ"
+                },
+                "fields": {
+                    "distancePlaceholder": "ርቀትን በኪሜ ያስገቡ",
+                    "timePlaceholder": "ተጠባቂ ጊዜን በሰ ያስገቡ"
+                }
+            }
+        },
+        "show": {
+            "subtitle": "የመንገድ ርቀትና የሎጂስቲክስ ኮርሪደር ዝርዝር።",
+            "headTitle": "የርቀት ዝርዝር: {{route}}",
+            "actions": {
+                "back": "ወደ ርቀቶች ተመለስ",
+                "edit": "ርቀት አስተካክል"
+            },
+            "kpi": {
+                "distance": {
+                    "label": "ርቀት",
+                    "helper": "የመንገድ ርዝመት"
+                },
+                "time": {
+                    "label": "ተጠባቂ ጊዜ",
+                    "helper": "የጉዞ ጊዜ"
+                },
+                "speed": {
+                    "label": "አማካይ ፍጥነት",
+                    "helper": "የተቆጠረ ፍጥነት"
+                },
+                "routeType": {
+                    "label": "የመንገድ አይነት",
+                    "helper": "የመንገድ ምድብ",
+                    "default": "መደበኛ"
+                }
+            },
+            "sections": {
+                "map": {
+                    "title": "የመንገድ ካርታ",
+                    "description": "የመንገድ ምስል ትዕይንት"
+                },
+                "info": {
+                    "title": "የርቀት መረጃ",
+                    "description": "የመነሻ እና የመዳረሻ ዝርዝር"
+                },
+                "details": {
+                    "title": "የመንገድ ዝርዝር",
+                    "description": "የመንገድ ሁኔታና ገደቦች"
+                }
+            },
+            "mapUnavailable": "ካርታ የለም - ኮርድኔቶች ጎድለዋል",
+            "fields": {
+                "from": "ከዚህ ቦታ",
+                "to": "ወደ ዚህ ቦታ",
+                "distance": "ርቀት",
+                "time": "ተጠባቂ ጊዜ",
+                "roadCondition": "የመንገድ ሁኔታ መለኪያ",
+                "tollRoad": "ክፍያ መንገድ",
+                "tollCost": "ወጪ: {{value}} ብር",
+                "heavyVehicle": "የከባድ መኪና ገደብ",
+                "routeDescription": "የመንገድ መግለጫ",
+                "routeNotes": "የመንገድ ማስታወሻዎች"
+            }
+        },
+        "units": {
+            "km": "ኪሜ",
+            "hours": "ሰ",
+            "kmh": "ኪሜ/ሰ"
+        }
+    },
+    "outsourcePerformances": {
+        "title": "የአውትሶርስ አፈፃፀሞች",
+        "description": "የአቅራቢ መላኪያ አፈፃፀም ያስተዳድሩ (ጠቅላላ {{count}} መዝገቦች)።",
+        "columns": {
+            "tripNumber": "የጉዞ ቁጥር",
+            "dispatchDate": "የመነሻ ቀን",
+            "vendor": "አቅራቢ",
+            "route": "መንገድ",
+            "distance": "ርቀት (ኪሜ)",
+            "cargo": "ጭነት (MT)",
+            "tonkm": "ቶን-ኪሜ",
+            "cost": "ወጪ",
+            "status": "ሁኔታ"
+        },
+        "table": {
+            "title": "የአውትሶርስ ጉዞ መዝገብ",
+            "description": "በርቀት፣ በመጠን እና በወጪ ላይ የአቅራቢ አፈፃፀም ይመልከቱ",
+            "actions": "እርምጃዎች"
+        },
+        "actions": {
+            "add": "ጉዞ መዝግብ",
+            "view": "አሳይ",
+            "edit": "አስተካክል",
+            "delete": "ሰርዝ",
+            "cancel": "ተወው"
+        },
+        "filters": {
+            "searchPlaceholder": "ጉዞዎችን ወይም አቅራቢዎችን ፈልግ",
+            "rowsLabel": "ረድፎች",
+            "vendorPlaceholder": "አቅራቢ",
+            "allVendors": "ሁሉም አቅራቢዎች",
+            "perPageOption": "{{value}} / ገጽ"
+        },
+        "stats": {
+            "trips": {
+                "label": "የተመዘገቡ ጉዞዎች",
+                "description": "{{count}} ንቁ ጉዞዎች በመንገድ ላይ"
+            },
+            "cargo": {
+                "label": "የተንቀሳቀሰ ጭነት",
+                "description": "በአቅራቢዎች የተያዘ ጠቅላላ ቶናጅ"
+            },
+            "distance": {
+                "label": "የተሸፈነ ርቀት",
+                "description": "በዘመኑ የተመዘገበ ኪሎ ሜትር"
+            },
+            "cost": {
+                "label": "ጠቅላላ ወጪ",
+                "description": "ከአቅራቢዎች ጋር የተደረገ ወጪ"
+            }
+        },
+        "status": {
+            "active": "ንቁ",
+            "completed": "ተጠናቋል",
+            "cancelled": "ተሰርዟል",
+            "unknown": "ያልታወቀ"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "unknown": "ያልታወቀ"
+        },
+        "mobile": {
+            "position": "ቁጥር {{value}}",
+            "vendorUnknown": "አቅራቢ አልታወቀም",
+            "dispatch": "መነሻ",
+            "route": "መንገድ",
+            "distance": "ርቀት",
+            "cost": "ወጪ",
+            "status": "ሁኔታ"
+        },
+        "empty": {
+            "title": "ምንም የአውትሶርስ መዝገብ አልተገኘም።",
+            "createAction": "አንዱን መዝግብ"
+        },
+        "tableFooter": {
+            "distance": "ርቀት: {{value}}",
+            "cargo": "ጭነት: {{value}}",
+            "cost": "ወጪ: {{value}}",
+            "active": "ንቁ: {{count}}"
+        },
+        "delete": {
+            "title": "ጉዞ ሰርዝ",
+            "description": "ይህን የአውትሶርስ መዝገብ ለማጥፋት እርግጠኛ ነዎት? ይህ እርምጃ መመለስ አይቻልም።",
+            "successTitle": "✅ ጉዞ ተሰርዟል",
+            "successDescription": "ጉዞ {{trip}} በተሳካ ሁኔታ ተወግዷል።",
+            "successDescriptionFallback": "የአውትሶርስ መዝገቡ ተወግዷል።",
+            "failedTitle": "❌ ማጥፋት አልተሳካም",
+            "failedDescription": "የአውትሶርስ መዝገብ ማጥፋት አልተሳካም። እባክዎ ደግሞ ይሞክሩ።"
+        },
+        "form": {
+            "validation": {
+                "toastTitle": "የማረጋገጫ ስህተት",
+                "resolve": "እባክዎ ተገላጭ መስኮችን ከመላክዎ በፊት ያስተካክሉ።",
+                "reviewTitle": "ቅጹን ይመልከቱ",
+                "reviewDescription": "አንዳንድ መስኮች ትኩረት ያስፈልጋቸዋል።"
+            },
+            "distanceStatus": {
+                "applied": "ርቀት ከተመዘገበ መንገድ ተሞልቷል ({{value}} ኪሜ).",
+                "missing": "ለዚህ መነሻ እና መዳረሻ ርቀት አልተመዘገበም። ወደ 0 ኪሜ ተመልሷል።",
+                "failed": "ርቀቱን ማረጋገጥ አልተቻለም። ወደ 0 ኪሜ ተመልሷል።",
+                "resolving": "የተመዘገበ ርቀት በመፈለግ ላይ...",
+                "appliedTitle": "ርቀት ተተግብሯል",
+                "missingTitle": "ርቀት የለም"
+            },
+            "sections": {
+                "overview": {
+                    "title": "የጉዞ አጠቃላይ",
+                    "description": "አቅራቢ፣ ኦፕሬሽን እና የጉዞ መለያዎችን ያገናኙ።"
+                },
+                "route": {
+                    "title": "መንገድ እና ርቀት",
+                    "description": "መነሻና መዳረሻ በመምረጥ የተመዘገበ ርቀትን ያዘምኑ።"
+                },
+                "cost": {
+                    "title": "ወጪ እና ማስታወሻ",
+                    "description": "ወጪ እና ተጨማሪ መረጃ ያስገቡ።"
+                }
+            },
+            "fields": {
+                "vendor": {
+                    "label": "አቅራቢ",
+                    "placeholder": "አቅራቢ ይምረጡ"
+                },
+                "operation": {
+                    "label": "ኦፕሬሽን",
+                    "placeholder": "ኦፕሬሽን ፈልግ...",
+                    "searchPlaceholder": "ኦፕሬሽኖችን ፈልግ...",
+                    "loading": "ኦፕሬሽኖችን በመፈለግ ላይ..."
+                },
+                "tripNumber": {
+                    "label": "የጉዞ ቁጥር",
+                    "placeholder": "ለምሳሌ፦ OUT-TRIP-2309"
+                },
+                "dispatchDate": {
+                    "label": "የመነሻ ቀን እና ሰዓት"
+                },
+                "status": {
+                    "label": "የጉዞ ሁኔታ",
+                    "placeholder": "ሁኔታ ይምረጡ"
+                },
+                "origin": {
+                    "label": "መነሻ",
+                    "placeholder": "መነሻ ይምረጡ"
+                },
+                "destination": {
+                    "label": "መዳረሻ",
+                    "placeholder": "መዳረሻ ይምረጡ"
+                },
+                "distance": {
+                    "label": "ርቀት (ኪሜ)",
+                    "placeholder": "ለምሳሌ፦ 540"
+                },
+                "cargo": {
+                    "label": "የጭነት መጠን (MT)",
+                    "placeholder": "ለምሳሌ፦ 32.5"
+                },
+                "tonkm": {
+                    "label": "ቶን-ኪሜ"
+                },
+                "cost": {
+                    "label": "የጉዞ ወጪ",
+                    "placeholder": "ለምሳሌ፦ 125000"
+                },
+                "remarks": {
+                    "label": "ማስታወሻ",
+                    "placeholder": "እንደ ልዩ ሁኔታዎች ወይም የአቅራቢ ማስታወሻዎች"
+                }
+            },
+            "create": {
+                "breadcrumb": "ፍጠር",
+                "title": "የአውትሶርስ ጉዞ መዝግብ",
+                "headTitle": "የአውትሶርስ ጉዞ መዝግብ",
+                "description": "የአቅራቢ መነሻ መለኪያዎችን፣ የመንገድ መረጃ እና የወጪ መረጃዎችን ይያዙ።",
+                "backToList": "ወደ የአውትሶርስ ጉዞዎች ተመለስ",
+                "badge": "የአቅራቢ መዝገብ",
+                "successTitle": "✅ ጉዞ ተመዝግቧል",
+                "successDescription": "የአውትሶርስ መዝገቡ ተቀምጧል።"
+            },
+            "edit": {
+                "breadcrumb": "አስተካክል",
+                "showBreadcrumb": "አሳይ",
+                "title": "የአውትሶርስ ጉዞ አዘምን",
+                "headTitle": "ጉዞ {{trip}} አስተካክል",
+                "description": "የአቅራቢ መነሻ መለኪያዎችን በትክክል ያዘምኑ።",
+                "overviewDescription": "አቅራቢ፣ ኦፕሬሽን እና መርሃ ግብር ዝርዝሮችን ይመልከቱ።",
+                "routeDescription": "መነሻና መዳረሻ በመቀየር የተመዘገበ ርቀትን ይቀይሩ።",
+                "costDescription": "ወጪን እና ማስታወሻዎችን ያዘምኑ።",
+                "reset": "ወደ ነባር መመለስ",
+                "successTitle": "✅ ጉዞ ተዘምኗል",
+                "successDescription": "የአውትሶርስ መዝገቡ ተዘምኗል።",
+                "remarksPlaceholder": "እንደ መንገድ ችግኝ ወይም የአቅራቢ ማስታወሻዎች",
+                "tip": "ማስታወሻ፦ እውነተኛ መረጃ ካልተገኘ የቁጥር መስኮችን ባዶ ይተዉ፣ ከዚያ በኋላ ያዘምኑ።",
+                "deleteTitle": "የአውትሶርስ ጉዞ ሰርዝ?",
+                "deleteDescription": "ይህ መዝገብ ሙሉ በሙሉ ይሰረዛል፣ ታሪካዊ ትንታኔዎች አይቆጠሩበትም።"
+            },
+            "actions": {
+                "save": "ጉዞ አስቀምጥ",
+                "saving": "በማስቀመጥ ላይ...",
+                "saveChanges": "ለውጦችን አስቀምጥ"
+            },
+            "tip": "ማስታወሻ፦ ወጪና ጭነት እስካልተረጋገጠ ባዶ ይተዉ፣ ጉዞው ከተጠናቀቀ በኋላ ያዘምኑ።"
+        },
+        "show": {
+            "title": "ጉዞ {{trip}}",
+            "headTitle": "የአውትሶርስ ጉዞ {{trip}}",
+            "breadcrumbTrip": "ጉዞ {{trip}}",
+            "vendorFallback": "አቅራቢ አልተገናኘም",
+            "operationFallback": "ኦፕሬሽን አልተገናኘም",
+            "routeFallback": "መንገድ አልተገለፀም",
+            "system": "ስርዓት",
+            "actions": {
+                "back": "ተመለስ"
+            },
+            "kpi": {
+                "distance": {
+                    "label": "ርቀት",
+                    "helper": "የተጓዙ ኪሎ ሜትሮች"
+                },
+                "cargo": {
+                    "label": "የጭነት መጠን",
+                    "helper": "የተንቀሳቀሰ ጭነት"
+                },
+                "tonkm": {
+                    "label": "ቶን-ኪሜ",
+                    "helper": "ውጤታማ እርምጃ"
+                },
+                "cost": {
+                    "label": "የጉዞ ወጪ",
+                    "helper": "ጠቅላላ ወጪ"
+                }
+            },
+            "sections": {
+                "snapshot": {
+                    "title": "የጉዞ ማጠቃለያ",
+                    "description": "ዋና የኦፕሬሽን መለኪያዎች"
+                },
+                "vendor": {
+                    "title": "የአቅራቢ መለኪያዎች",
+                    "description": "በአቅራቢ ታሪክ ላይ የአፈፃፀም ግምገማ"
+                },
+                "route": {
+                    "title": "መንገድ እና ዝርዝር",
+                    "description": "የሎጂስቲክስ ዝርዝሮች"
+                },
+                "trends": {
+                    "title": "የቅርብ አቅራቢ አዝማሚያ",
+                    "description": "የወጪ አቅጣጫ"
+                }
+            },
+            "fields": {
+                "distance": "ርቀት",
+                "cargo": "ጭነት",
+                "tonkm": "ቶን-ኪሜ",
+                "cost": "ወጪ",
+                "costPerKm": "በኪሜ ወጪ",
+                "costPerKmHelper": "በኪሜ የተሰፈረ ወጪ",
+                "costPerTonkm": "በቶን-ኪሜ ወጪ",
+                "costPerTonkmHelper": "በቶናጅ ላይ የወጪ ብቃት",
+                "distanceShare": "የርቀት ድርሻ",
+                "distanceShareHelper": "በአቅራቢ ፖርትፎሊዮ ውስጥ ያለው ድርሻ",
+                "cargoShare": "የጭነት ድርሻ",
+                "cargoShareHelper": "የተሸከመው ጭነት ክፍል",
+                "tonkmShare": "የቶን-ኪሜ ድርሻ",
+                "tonkmShareHelper": "የምርታማነት ድርሻ",
+                "costShare": "የወጪ ድርሻ",
+                "costShareHelper": "በአቅራቢ ወጪ ውስጥ ያለው መጠን",
+                "route": "መንገድ",
+                "routeRecorded": "{{value}} ተመዝግቧል",
+                "dispatchDate": "የመነሻ ቀን",
+                "executionWindow": "የእንቅስቃሴ ጊዜ",
+                "operation": "ኦፕሬሽን",
+                "vendor": "አቅራቢ",
+                "capturedBy": "በ{{name}} ተመዝግቧል",
+                "notes": "የጉዞ ማስታወሻዎች"
+            },
+            "vendorMetrics": {
+                "trips": "የአቅራቢ ጉዞዎች"
+            },
+            "trends": {
+                "title": "የቅርብ አቅራቢ አዝማሚያ",
+                "description": "የወጪ አቅጣጫ",
+                "trip": "ጉዞ",
+                "date": "ቀን",
+                "cost": "ወጪ",
+                "empty": "እስካሁን የአዝማሚያ መረጃ የለም።",
+                "emptyTable": "የቅርብ ጉዞዎች አልተመዘገቡም።"
             }
         }
     },
@@ -2242,6 +4839,1117 @@
         },
         "fallbacks": {
             "notAvailable": "አይገኝም"
+        }
+    },
+    "zones": {
+        "title": "ዞኖች",
+        "headTitle": "ዞኖች",
+        "description": "{{formattedCount}} ዞኖችን በማስተዳደር የክልል ስትራቴጂዎችን ተመሳሳይ ያድርጉ።",
+        "columns": {
+            "name": "ዞን",
+            "code": "ኮድ",
+            "status": "ሁኔታ",
+            "region": "ክልል",
+            "administrativeCenter": "የአስተዳደር ማእከል",
+            "population": "ህዝብ",
+            "accessibility": "መዳረሻ",
+            "woredas": "ወረዳዎች"
+        },
+        "table": {
+            "title": "የዞን ማህደር",
+            "description": "የዝግጁነት ምልክቶችን፣ የህዝብ መድረሻን እና የእንቅስቃሴ ሁኔታን ይከታተሉ",
+            "index": "#",
+            "actions": "እርምጃዎች"
+        },
+        "stats": {
+            "total": {
+                "label": "ጠቅላላ ዞኖች",
+                "description": "{{count}} ተመርመሩ"
+            },
+            "active": {
+                "label": "ንቁ ዞኖች",
+                "description": "የተግባር ስፋት"
+            },
+            "inactive": {
+                "label": "ዝግ ዞኖች",
+                "description": "ለእንቅስቃሴ በመጠባበቅ"
+            },
+            "population": {
+                "label": "የህዝብ መድረሻ",
+                "description": "የሚደርሱ ነዋሪዎች"
+            },
+            "accessibility": {
+                "label": "የመዳረሻ መጠን",
+                "description": "የሎጂስቲክስ ዝግጁነት"
+            }
+        },
+        "filters": {
+            "searchPlaceholder": "ዞኖችን ፈልግ...",
+            "rowsLabel": "ረድፎች",
+            "perPageOption": "{{value}} / ገጽ",
+            "statusPlaceholder": "ሁኔታ",
+            "statusAll": "ሁሉም ሁኔታዎች",
+            "statusOptions": {
+                "active": "ንቁ",
+                "inactive": "ዝግ"
+            }
+        },
+        "actions": {
+            "add": "ዞን አክል",
+            "view": "እይ",
+            "edit": "አስተካክል",
+            "delete": "ሰርዝ"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "noRegion": "ክልል አልተመዘገበም",
+            "status": "ሁኔታ",
+            "population": "ህዝብ",
+            "woredas": "ወረዳዎች"
+        },
+        "empty": {
+            "title": "ዞኖች አልተገኙም።",
+            "createAction": "አንዱን ይፍጠሩ"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "status": {
+            "active": "ንቁ",
+            "inactive": "ዝግ",
+            "unknown": "ያልታወቀ"
+        },
+        "delete": {
+            "title": "ዞን ሰርዝ",
+            "description": "ይህን ዞን ለመሰረዝ እርግጠኛ ነዎት? ይህ እርምጃ መመለስ አይችልም።",
+            "successTitle": "✅ ዞን ተሰርዟል",
+            "successDescription": "{{name}} ተሳክቶ ተወግዷል።",
+            "failedTitle": "❌ መሰረዝ አልተሳካም",
+            "failedDescription": "ዞኑን ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።"
+        }
+    },
+    "statusTypes": {
+        "title": "የሁኔታ አይነቶች",
+        "description": "የህይወት ዑደት የሁኔታ ምድቦችን {{count}} ያስተዳድሩ።",
+        "table": {
+            "title": "የሁኔታ አይነት መመዝገቢያ",
+            "description": "በመስመሩ ላይ የሚጠቀሙባቸውን የህይወት ዑደት ምድቦች ይከታተሉ እና ያስተዳድሩ"
+        },
+        "columns": {
+            "index": "#",
+            "name": "ስም",
+            "description": "ማብራሪያ",
+            "statuses": "ሁኔታዎች",
+            "created": "ተፈጥሯል",
+            "actions": "እርምጃዎች"
+        },
+        "stats": {
+            "total": {
+                "label": "ጠቅላላ አይነቶች",
+                "description": "ሁሉም የህይወት ዑደት ምድቦች"
+            },
+            "inUse": {
+                "label": "በጥቅም ላይ",
+                "description": "{{count}} ሁኔታዎች ተያይዘዋል"
+            },
+            "unused": {
+                "label": "ያልተጠቀሙ",
+                "description": "ለመመደብ ዝግጁ"
+            },
+            "average": {
+                "label": "አማካይ ሁኔታዎች",
+                "description": "በእያንዳንዱ አይነት"
+            },
+            "recent": {
+                "label": "ተፈጥሯል ({{days}}ቀ)",
+                "description": "በቅርቡ የታከሉ አይነቶች"
+            },
+            "statuses": {
+                "label": "ሁኔታዎች",
+                "description": "በሁሉም አይነቶች ላይ"
+            }
+        },
+        "filters": {
+            "searchPlaceholder": "የሁኔታ አይነቶችን ፈልግ...",
+            "rowsLabel": "ረድፎች",
+            "usagePlaceholder": "አጠቃቀም",
+            "allUsage": "ሁሉም የአጠቃቀም ሁኔታዎች",
+            "perPageOption": "{{value}} / ገጽ"
+        },
+        "labels": {
+            "statuses": "ሁኔታዎች"
+        },
+        "actions": {
+            "view": "ይመልከቱ",
+            "edit": "አርትዕ",
+            "delete": "ሰርዝ",
+            "export": "CSV ወደውጭ",
+            "add": "የሁኔታ አይነት አክል",
+            "cancel": "ይቅር",
+            "back": "ተመለስ"
+        },
+        "empty": {
+            "title": "ምንም የሁኔታ አይነቶች አልተገኙም።",
+            "action": "አንዱን ፍጠር"
+        },
+        "validation": {
+            "title": "የማረጋገጫ ስህተት",
+            "description": "እባክዎ ስህተቶቹን ያስተካክሉ",
+            "allDescription": "እባክዎ ሁሉንም ስህተቶች ያስተካክሉ",
+            "formDescription": "እባክዎ በቅፅ ውስጥ ያሉትን ሁሉንም ስህተቶች ያስተካክሉ"
+        },
+        "form": {
+            "sections": {
+                "details": {
+                    "title": "የሁኔታ አይነት ዝርዝር",
+                    "description": "ለሁኔታ አይነቱ ስም እና አማራጭ ማብራሪያ ያቅርቡ።",
+                    "editDescription": "የሁኔታ አይነቱን መረጃ ያዘምኑ"
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "ስም",
+                    "placeholder": "የሁኔታ አይነት ስም ያስገቡ"
+                },
+                "description": {
+                    "label": "ማብራሪያ",
+                    "placeholder": "የሁኔታ አይነት ማብራሪያ ያስገቡ"
+                }
+            }
+        },
+        "create": {
+            "title": "የሁኔታ አይነት ፍጠር",
+            "headTitle": "የሁኔታ አይነት ፍጠር",
+            "description": "ሁኔታዎችን ለመመደብ አዲስ የሁኔታ አይነት ይገልጹ።",
+            "submit": "የሁኔታ አይነት ፍጠር"
+        },
+        "edit": {
+            "breadcrumb": "አርትዕ",
+            "title": "የሁኔታ አይነት አርትዕ",
+            "headTitle": "የሁኔታ አይነት አርትዕ",
+            "description": "የሁኔታ አይነት ዝርዝሮችን ያዘምኑ",
+            "submit": "የሁኔታ አይነት ያዘምኑ",
+            "submitting": "በማዘመን ላይ..."
+        },
+        "show": {
+            "subtitleFallback": "ለስራ ክትትል የሁኔታ አይነት ምድብ።",
+            "headTitle": "የሁኔታ አይነት: {{name}}",
+            "sections": {
+                "basic": {
+                    "title": "መሠረታዊ መረጃ",
+                    "description": "ዋና የሁኔታ አይነት ዝርዝሮች"
+                },
+                "record": {
+                    "title": "የመዝገብ መረጃ",
+                    "description": "የስርዓት ክትትል"
+                },
+                "activity": {
+                    "title": "የእንቅስቃሴ መዝገብ",
+                    "description": "ሊመረመር የሚችል የጊዜ መስመር"
+                }
+            },
+            "fields": {
+                "name": "ስም",
+                "id": "የሁኔታ አይነት መለያ",
+                "description": "ማብራሪያ",
+                "created": "ተፈጥሯል",
+                "updated": "የተዘመነው"
+            },
+            "toast": {
+                "successTitle": "ተሳክቷል",
+                "successDescription": "የሁኔታ አይነት በተሳካ ሁኔታ ተሰርዟል",
+                "errorTitle": "ስህተት",
+                "errorDescription": "የሁኔታ አይነቱን ማስወገድ አልተቻለም"
+            }
+        },
+        "delete": {
+            "title": "የሁኔታ አይነት ሰርዝ",
+            "description": "ይህን የሁኔታ አይነት ማስወገድ እርግጠኛ ነዎት? ይህ እርምጃ ወደ ኋላ አይመለስም።",
+            "confirmLabel": "የሁኔታ አይነት ሰርዝ",
+            "successTitle": "የሁኔታ አይነት ተሰርዟል",
+            "successDescription": "የሁኔታ አይነቱ ተወግዷል።",
+            "failedTitle": "ማስወገድ አልተሳካም",
+            "failedDescription": "የሁኔታ አይነቱን ማስወገድ አልተቻለም። እባክዎ መስፈርቶቹን ያረጋግጡና እንደገና ይሞክሩ።",
+            "failedUnknownDescription": "የሁኔታ አይነቱን ሲሰርዙ ያልተጠበቀ ስህተት ተከስቷል። እባክዎ እንደገና ይሞክሩ።"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "noStatuses": "አሁን ሁኔታዎች የሉም",
+            "noDescription": "ማብራሪያ አልተሰጠም።"
+        }
+    },
+    "truckStatusBoard": {
+        "title": "የትራክ ሁኔታ ቦርድ",
+        "header": {
+            "description": "ዕለታዊ የትራክ ኦፕሬሽን ሁኔታን ያስተዳድሩ - {{count}} ትራክ{{suffix}}"
+        },
+        "filters": {
+            "searchPlaceholder": "ትራኮችን በሰሌዳ፣ አይነት ወይም አሽከርካሪ ፈልግ...",
+            "button": "ማጣሪያዎች",
+            "clear": "ማጣሪያዎችን አጥፋ",
+            "dialogTitle": "ትራኮችን አጣራ",
+            "dialogDescription": "በቦርዱ ላይ ማሳየት የሚፈልጉትን አሽከርካሪዎች፣ መሳሪያ እና ሰሌዳዎች ይምረጡ።",
+            "drivers": {
+                "label": "አሽከርካሪዎች",
+                "triggerAll": "ሁሉም አሽከርካሪዎች",
+                "summaryAll": "ሁሉም አሽከርካሪዎች ታይተዋል",
+                "heading": "አሽከርካሪዎች",
+                "searchPlaceholder": "አሽከርካሪ ፈልግ...",
+                "empty": "አሽከርካሪዎች አልተገኙም።"
+            },
+            "equipment": {
+                "label": "መሳሪያ",
+                "triggerAll": "ሁሉም መሳሪያ",
+                "summaryAll": "ሁሉም መሳሪያ ታይተዋል",
+                "heading": "መሳሪያ",
+                "searchPlaceholder": "መሳሪያ ፈልግ...",
+                "empty": "መሳሪያ አልተገኘም።"
+            },
+            "plates": {
+                "label": "ሰሌዳዎች",
+                "triggerAll": "ሁሉም ሰሌዳዎች",
+                "summaryAll": "ሁሉም ሰሌዳዎች ታይተዋል",
+                "heading": "ሰሌዳዎች",
+                "searchPlaceholder": "ሰሌዳ ፈልግ...",
+                "empty": "ሰሌዳዎች አልተገኙም።"
+            },
+            "clearSelections": "ምርጫዎችን አጥፋ",
+            "close": "ዝጋ"
+        },
+        "card": {
+            "notes": "ማስታወሻዎች",
+            "syncing": "በማመሳሰል ላይ",
+            "driver": "አሽከርካሪ፡ {{name}}",
+            "notesTooltipUpdate": "ማስታወሻዎችን ይመልከቱ/ያዘምኑ",
+            "notesTooltipAdd": "ፈጣን ማስታወሻ ያክሉ",
+            "changedBy": "በ {{name}}",
+            "viewDetails": "ዝርዝር ይመልከቱ →"
+        },
+        "column": {
+            "noMatches": "በአሁኑ ማጣሪያዎች ምንም ትራክ አልተገኘም",
+            "dropHere": "ትራኮችን እዚህ ጣሉ"
+        },
+        "board": {
+            "title": "የሁኔታ አጠቃላይ",
+            "description": "ሁኔታን ለማዘመን ትራኮችን በኮሎኖች መካከል ይጎትቱና ይጣሉ",
+            "noResults": "ለአሁኑ ማጣሪያዎች ምንም ትራክ አልተገኘም።"
+        },
+        "comment": {
+            "title": "{{plate}} ላይ አስተያየት ጨምር",
+            "description": "ስለዚህ ትራክ ሁኔታ ማስታወሻ ወይም አስተያየት ያክሉ",
+            "placeholder": "አስተያየትዎን እዚህ ያስገቡ...",
+            "cancel": "ይቅር",
+            "save": "አስተያየት አስቀምጥ"
+        },
+        "toast": {
+            "updateFailedTitle": "የሁኔታ ዝማኔ አልተሳካም",
+            "updateFailedDescription": "ይህን እንቅስቃሴ ማመሳሰል አልተቻለም። ትራኩ ወደ ቀድሞ ኮሎን ተመለሰ።"
+        }
+    },
+    "truckStatusHistory": {
+        "breadcrumbs": {
+            "trucks": "ትራኮች",
+            "history": "ታሪክ {{plate}}"
+        },
+        "headTitle": "የሁኔታ ታሪክ - {{plate}}",
+        "title": "{{plate}} • የሁኔታ ታሪክ",
+        "filters": {
+            "label": "ማጣሪያ"
+        },
+        "labels": {
+            "by": "በ {{name}}"
+        },
+        "empty": "ታሪክ አልተገኘም።"
+    },
+    "truckStatusShow": {
+        "breadcrumbs": {
+            "board": "የትራክ ሁኔታ ቦርድ",
+            "overview": "{{plate}} • የሁኔታ አጠቃላይ"
+        },
+        "headTitle": "የሁኔታ አጠቃላይ - {{plate}}",
+        "title": "{{plate}} • የሁኔታ አጠቃላይ",
+        "labels": {
+            "assignedTo": "ለ {{name}} ተመድቧል",
+            "trackingWindow": "ያለፉት {{days}} ቀናት እየተከታተለ",
+            "to": "እስከ",
+            "by": "በ {{name}}"
+        },
+        "kpi": {
+            "currentStatus": {
+                "title": "የአሁኑ ሁኔታ",
+                "description": "በሁኔታ ቦርድ ላይ የተያዘው የቅርብ ጊዜ ሁኔታ",
+                "updatedOn": "{{date}} ላይ ተዘመነ"
+            },
+            "updatesLogged": {
+                "title": "የተመዘገቡ ዝማኔዎች",
+                "description": "በወሰኑ ጊዜ መስኮት ውስጥ የተመዘገቡ እንቅስቃሴዎች",
+                "daysWithUpdates": "ዝማኔ ያሉት ቀናት፡ {{count}}"
+            },
+            "distinctStatuses": {
+                "title": "የተለያዩ ሁኔታዎች",
+                "description": "በቅርቡ የተመዘገቡ ልዩ ሁኔታዎች"
+            },
+            "boardActions": {
+                "title": "የቦርድ እርምጃዎች",
+                "description": "ፈጣን አሰሳ",
+                "backToBoard": "ወደ ቦርድ ተመለስ",
+                "openTruckProfile": "የትራክ መገለጫ ክፈት"
+            }
+        },
+        "distribution": {
+            "title": "የሁኔታ ስርጭት",
+            "description": "በቅርብ ጊዜ መስኮት ውስጥ እያንዳንዱ ሁኔታ ምን ያህል ጊዜ እንደታየ",
+            "empty": "በዚህ መስኮት ውስጥ የሁኔታ እንቅስቃሴ አልተመዘገበም።"
+        },
+        "timeline": {
+            "title": "የቅርብ ጊዜ ታሪክ",
+            "description": "በቀን ተይዞ የተመዘገቡ የሁኔታ ለውጦች",
+            "updateCount": "{{count}} ዝማኔ{{suffix}}",
+            "empty": "ለዚህ ትራክ የቅርብ ጊዜ የሁኔታ ለውጦች አልተገኙም።"
+        },
+        "fallbacks": {
+            "noStatusRecorded": "ምንም ሁኔታ አልተመዘገበም",
+            "unknownStatus": "ያልታወቀ ሁኔታ",
+            "unknownDate": "ያልታወቀ ቀን",
+            "timeNotCaptured": "ሰዓት አልተመዘገበም"
+        }
+    },
+    "users": {
+        "title": "የተጠቃሚ አስተዳደር",
+        "description": "{{count}} የስርዓት ተጠቃሚ{{suffix}} አስተዳድር",
+        "breadcrumbs": {
+            "management": "የተጠቃሚ አስተዳደር"
+        },
+        "columns": {
+            "index": "#",
+            "name": "ስም",
+            "email": "ኢሜል",
+            "roles": "ሚናዎች",
+            "verified": "ተረጋግጧል",
+            "created_at": "ተፈጥሯል",
+            "actions": "እርምጃዎች"
+        },
+        "labels": {
+            "id": "መለያ #{{id}}"
+        },
+        "table": {
+            "title": "የተጠቃሚ ማውጫ",
+            "description": "በስርዓቱ ውስጥ {{count}} ተጠቃሚ{{suffix}}"
+        },
+        "stats": {
+            "total": {
+                "label": "ጠቅላላ ተጠቃሚዎች",
+                "description": "ሁሉም መለያዎች"
+            },
+            "verified": {
+                "label": "የተረጋገጡ ተጠቃሚዎች",
+                "description": "ኢሜል የተረጋገጠ"
+            },
+            "pending": {
+                "label": "ማረጋገጥ በመጠባበቅ ላይ",
+                "description": "ማረጋገጥ እየተጠበቀ ነው"
+            },
+            "admins": {
+                "label": "አስተዳዳሪዎች",
+                "description": "ሙሉ የመዳረሻ ሚናዎች"
+            },
+            "managers": {
+                "label": "አስተዳዳሪ ሚናዎች",
+                "description": "የአስተዳደር ሚናዎች"
+            }
+        },
+        "status": {
+            "verified": "ተረጋግጧል",
+            "pending": "በመጠባበቅ ላይ",
+            "unverified": "ያልተረጋገጠ"
+        },
+        "filters": {
+            "searchPlaceholder": "በስም ወይም ኢሜል ፈልግ...",
+            "clearSearch": "ፍለጋን አጥፋ",
+            "role": {
+                "placeholder": "ሚና",
+                "all": "ሁሉም ሚናዎች",
+                "chip": "ሚና፡ {{value}}"
+            },
+            "status": {
+                "placeholder": "ሁኔታ",
+                "all": "ሁሉም ሁኔታዎች",
+                "verified": "ተረጋግጧል",
+                "pending": "በመጠባበቅ ላይ",
+                "chip": "ሁኔታ፡ {{value}}"
+            },
+            "rows": {
+                "label": "ረድፎች",
+                "perPageOption": "{{value}} / ገጽ",
+                "chip": "ረድፎች፡ {{value}}"
+            }
+        },
+        "actions": {
+            "view": "ይመልከቱ",
+            "edit": "አርትዕ",
+            "delete": "ሰርዝ",
+            "export": "CSV ወደውጭ",
+            "add": "ተጠቃሚ አክል",
+            "cancel": "ይቅር",
+            "backToList": "ወደ ተጠቃሚዎች ተመለስ",
+            "actions": "እርምጃዎች",
+            "quick": "ፈጣን እርምጃዎች",
+            "resendInvite": "ግብዣ እንደገና ላክ (በመጠባበቅ ላይ)",
+            "sendReset": "የመለያ ቅዳሜ ሊንክ ላክ"
+        },
+        "empty": {
+            "title": "ምንም ተጠቃሚዎች አልተገኙም",
+            "description": "የመጀመሪያ ተጠቃሚዎን በመጨመር ጀምሩ። መዳረሻ እና ፈቃዶችን በቀላሉ ያስተዳድሩ።",
+            "filteredDescription": "\"{{term}}\" የሚመስሉ ተጠቃሚዎች አልተገኙም። ማጣሪያዎችን ወይም ፍለጋዎችን ያስተካክሉ።",
+            "action": "የመጀመሪያውን ተጠቃሚ አክል",
+            "filteredAction": "ማጣሪያዎችን አጥፋ እና ተጠቃሚ አክል",
+            "createOne": "አንዱን ፍጠር"
+        },
+        "mobile": {
+            "roles": "ሚናዎች",
+            "verified": "ተረጋግጧል",
+            "created": "ተፈጥሯል"
+        },
+        "validation": {
+            "title": "የማረጋገጫ ስህተት",
+            "description": "ከመላክ በፊት ምልክት የተደረጉትን መስኮች ያስተካክሉ።",
+            "formDescription": "እባክዎ በቅፅ ውስጥ ያሉትን ሁሉንም ስህተቶች ያስተካክሉ"
+        },
+        "form": {
+            "sections": {
+                "profile": {
+                    "title": "መገለጫ እና ግንኙነት",
+                    "description": "ለአዲሱ ባለቤት ስም እና የግባት ኢሜል።"
+                },
+                "access": {
+                    "title": "መዳረሻ እና ደህንነት",
+                    "description": "ትክክለኛውን ሚና ምረጥ እና ጠንካራ የመጀመሪያ የይለፍ ቃል ያቅርቡ።"
+                },
+                "notifications": {
+                    "title": "የማስታወቂያ ምርጫዎች",
+                    "description": "ለዚህ መለያ የማስታወቂያ መነሻ አማራጮችን ያስተካክሉ።",
+                    "optional": "አማራጭ",
+                    "helper": "ይህ ተጠቃሚ በመነሻ ምን ዓይነት ማስታወቂያዎችን እንዲቀበል ይምረጡ። በኋላ በመገለጫው ውስጥ ቻነሎቹን ማሻሻል ይችላሉ።",
+                    "adminHint": "አስተዳዳሪዎች በሁሉም ቻነሎች ላይ ሁሉንም ማስታወቂያ በአውቶማቲክ ይቀበላሉ።",
+                    "addPlaceholder": "የማስታወቂያ አይነት ጨምር",
+                    "allAssigned": "ሁሉም የማስታወቂያ አይነቶች ተመድበዋል።",
+                    "addAction": "ማስታወቂያ ጨምር",
+                    "assignAll": "ሁሉንም መድብ",
+                    "clear": "አጥፋ",
+                    "overview": {
+                        "title": "የመመደብ አጠቃላይ",
+                        "selected": "{{count}} ከ {{total}} ማስታወቂያዎች ተመርጠዋል",
+                        "coverage": "{{value}}% ሽፋን"
+                    },
+                    "searchPlaceholder": "የተመደቡ ማስታወቂያዎችን ፈልግ",
+                    "empty": "ምንም ማስታወቂያ አልተመረጠም። ተጠቃሚው በፈቃዱ ውስጥ የሚገኙ መደበኛ ማስጠንቀቂያዎችን ብቻ ይቀበላል።",
+                    "noMatches": "ፍለጋዎ ጋር የሚዛመድ ማስታወቂያ የለም።",
+                    "noDescription": "ለዚህ ማስታወቂያ ማብራሪያ አልተሰጠም።",
+                    "remove": "አስወግድ",
+                    "channels": {
+                        "inApp": {
+                            "title": "ውስጥ-መተግበሪያ ማስታወቂያ",
+                            "description": "በዳሽቦርድ ውስጥ በቀጥታ መልዕክቶችን ያቅርቡ።"
+                        },
+                        "email": {
+                            "title": "የኢሜል ማስታወቂያ",
+                            "description": "ይህ ክስተት ሲከሰት የግብዣ ኢሜሎችን ይላኩ።"
+                        }
+                    }
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "ስም",
+                    "placeholder": "የተጠቃሚ ስም ያስገቡ"
+                },
+                "email": {
+                    "label": "ኢሜል",
+                    "placeholder": "የኢሜል አድራሻ ያስገቡ"
+                },
+                "role": {
+                    "label": "ሚና",
+                    "placeholder": "ሚና ይምረጡ"
+                },
+                "password": {
+                    "label": "የይለፍ ቃል",
+                    "placeholder": "የይለፍ ቃል ያስገቡ",
+                    "show": "የይለፍ ቃል አሳይ",
+                    "hide": "የይለፍ ቃል ደብቅ"
+                },
+                "passwordStrength": {
+                    "label": "የይለፍ ቃል ጠንካራነት",
+                    "waiting": "መግቢያን በመጠባበቅ ላይ",
+                    "helper": "የይለፍ ቃሉን ለማስገመት መተየብ ይጀምሩ።"
+                },
+                "passwordConfirmation": {
+                    "label": "የይለፍ ቃል አረጋግጥ",
+                    "placeholder": "የይለፍ ቃልን አረጋግጥ",
+                    "show": "የይለፍ ቃል አረጋግጥ አሳይ",
+                    "hide": "የይለፍ ቃል አረጋግጥ ደብቅ"
+                }
+            }
+        },
+        "create": {
+            "breadcrumb": "ፍጠር",
+            "title": "አዲስ ተጠቃሚ ፍጠር",
+            "headTitle": "ተጠቃሚ ፍጠር",
+            "description": "አዲስ ባለቤት ያክሉ፣ ሚና ይዘምኑ እና የማስታወቂያ ምርጫዎችን ያዘጋጁ።",
+            "submit": "ተጠቃሚ ፍጠር",
+            "submitting": "በመፍጠር ላይ...",
+            "successTitle": "✅ ተጠቃሚ ተፈጥሯል",
+            "successDescription": "አዲሱ ተጠቃሚ በተሳካ ሁኔታ ተጨምሯል።"
+        },
+        "edit": {
+            "breadcrumb": "አርትዕ",
+            "title": "ተጠቃሚ አርትዕ",
+            "description": "መገለጫ ዝርዝሮችን ያዘምኑ፣ መዳረሻን ያስተካክሉ እና ማስጠበቂያዎችን ያረጋግጡ።",
+            "headTitle": "{{name}} አርትዕ",
+            "backToProfile": "ወደ መገለጫ ተመለስ",
+            "fields": {
+                "fullName": {
+                    "label": "ሙሉ ስም",
+                    "placeholder": "ለምሳሌ፡ ጄን ስሚዝ"
+                },
+                "role": {
+                    "helper": "ሚናዎች ይህ ባለቤት ማንኛውን ክፍል መጠቀም እንደሚችል ይወስናሉ።"
+                },
+                "password": {
+                    "label": "አዲስ የይለፍ ቃል",
+                    "helper": "አሁኑን የይለፍ ቃል ለመጠበቅ ባዶ ይተዉ።",
+                    "placeholder": "ጠንካራ ምስጢር ይፍጠሩ"
+                }
+            },
+            "sections": {
+                "profile": {
+                    "description": "ስምና ኢሜልን ከማውጫዎ ጋር ተመሳሳይ አድርጉ።"
+                },
+                "access": {
+                    "description": "ሚናውን ያዘምኑ ወይም ክሬዴንሻሎችን በሚያስፈልግበት ጊዜ ይቀይሩ።"
+                }
+            },
+            "sidebar": {
+                "title": "የመለያ ማጠቃለያ",
+                "description": "ከማስቀመጥ በፊት ዋናዎቹን ፈጣን ያረጋግጡ።",
+                "labels": {
+                    "userId": "የተጠቃሚ መለያ",
+                    "role": "የተመደበ ሚና",
+                    "verification": "ማረጋገጫ",
+                    "memberSince": "አባል ከ"
+                }
+            },
+            "tip": {
+                "title": "ምክር",
+                "description": "ክሬዴንሻል ብትቀይሩ ባለቤቱን ያሳውቁ እንዲያደርጉ እና በተቀየረ የይለፍ ቃል በቅድሚያ እንዲገባ።"
+            },
+            "requiredFields": "አስፈላጊ መስኮች",
+            "saving": "በማስቀመጥ ላይ…",
+            "save": "ለውጦችን አስቀምጥ"
+        },
+        "show": {
+            "subtitle": "#{{id}} · መጨረሻ ተዘመነ {{date}}",
+            "headTitle": "ተጠቃሚ · {{name}}",
+            "kpi": {
+                "emailStatus": {
+                    "label": "የኢሜል ሁኔታ",
+                    "helperUnverified": "እስካሁን አልተረጋገጠም"
+                },
+                "roles": {
+                    "label": "የተመደቡ ሚናዎች",
+                    "helperSingle": "1 ሚና",
+                    "helperMultiple": "{{count}} ሚናዎች"
+                },
+                "activity": {
+                    "label": "የእንቅስቃሴ መዝገቦች",
+                    "helper": "የተመዘገቡ እርምጃዎች ጠቅላላ"
+                },
+                "lastActivity": {
+                    "label": "የመጨረሻ እንቅስቃሴ",
+                    "helper": "በቅርብ የተፈጸመ እርምጃ",
+                    "empty": "እንቅስቃሴ የለም"
+                }
+            },
+            "sections": {
+                "profile": {
+                    "title": "የተጠቃሚ መገለጫ",
+                    "description": "ዋና የመለያ መረጃ"
+                },
+                "roles": {
+                    "title": "ሚናዎች እና ፈቃዶች",
+                    "description": "የተመደቡ የመዳረሻ ደረጃዎች",
+                    "empty": "ምንም ሚና አልተመደበም።"
+                },
+                "activity": {
+                    "title": "የእንቅስቃሴ ታሪክ",
+                    "description": "የተጠቃሚው የቅርብ እርምጃዎች",
+                    "empty": "እስካሁን ምንም እንቅስቃሴ አልተመዘገበም።"
+                }
+            },
+            "fields": {
+                "name": "ሙሉ ስም",
+                "email": "የኢሜል አድራሻ",
+                "emailStatus": "የኢሜል ሁኔታ",
+                "verifiedOn": "በ {{date}} ተረጋግጧል"
+            }
+        },
+        "delete": {
+            "title": "ተጠቃሚ ሰርዝ",
+            "description": "ይህን ተጠቃሚ ማስወገድ እርግጠኛ ነዎት? ይህ እርምጃ ወደ ኋላ አይመለስም።",
+            "successTitle": "✅ ተጠቃሚ ተሰርዟል",
+            "successDescription": "{{name}} በተሳካ ሁኔታ ተወግዷል።",
+            "failedTitle": "❌ መሰረዝ አልተሳካም",
+            "failedDescription": "እባክዎ እንደገና ይሞክሩ ወይም ችግሩ ካልተቀነሰ ድጋፍን ያግኙ።"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "noRoles": "ሚናዎች የሉም",
+            "unassigned": "አልተመደበም"
+        }
+    },
+    "roles": {
+        "title": "የሚና አስተዳደር",
+        "description": "በመስኮቱ ላይ {{count}} ሚና{{suffix}} ያስተዳድሩ",
+        "breadcrumbs": {
+            "management": "የተጠቃሚ አስተዳደር"
+        },
+        "columns": {
+            "index": "#",
+            "name": "ሚና",
+            "permissions": "ፈቃዶች",
+            "created_at": "ተፈጥሯል",
+            "actions": "እርምጃዎች"
+        },
+        "labels": {
+            "guard": "ጋርድ፡ {{value}}",
+            "more": "+{{count}} ተጨማሪ"
+        },
+        "table": {
+            "title": "የሚና ማውጫ",
+            "description": "በስርዓቱ ውስጥ {{count}} ሚና{{suffix}}"
+        },
+        "stats": {
+            "total": {
+                "label": "ጠቅላላ ሚናዎች",
+                "description": "የተገለጹ የመዳረሻ ቡድኖች"
+            },
+            "admins": {
+                "label": "የአስተዳዳሪ አይነቶች",
+                "description": "ከፍተኛ ፈቃድ መገለጫዎች"
+            },
+            "averagePermissions": {
+                "label": "አማካይ ፈቃዶች",
+                "description": "በእያንዳንዱ ሚና ላይ"
+            },
+            "guards": {
+                "label": "የጋርድ አይነቶች",
+                "description": "ልዩ የጋርድ ስሞች"
+            }
+        },
+        "filters": {
+            "searchPlaceholder": "በሚና ስም ፈልግ...",
+            "clearSearch": "ፍለጋን አጥፋ",
+            "permissionGroup": {
+                "placeholder": "የፈቃድ ቡድን",
+                "all": "ሁሉም ቡድኖች",
+                "chip": "ቡድን፡ {{value}}"
+            },
+            "rows": {
+                "label": "ረድፎች",
+                "perPageOption": "{{value}} / ገጽ",
+                "chip": "ረድፎች፡ {{value}}"
+            }
+        },
+        "actions": {
+            "view": "ይመልከቱ",
+            "edit": "አርትዕ",
+            "delete": "ሰርዝ",
+            "export": "CSV ወደውጭ",
+            "add": "ሚና አክል",
+            "cancel": "ይቅር",
+            "backToList": "ወደ ሚናዎች ተመለስ"
+        },
+        "empty": {
+            "title": "ምንም ሚናዎች አልተገኙም",
+            "description": "የመጀመሪያውን ሚና በመፍጠር ጀምሩ፣ የመዳረሻ ደረጃዎችን በቀላሉ ያስተዳድሩ።",
+            "filteredDescription": "\"{{term}}\" የሚመስሉ ሚናዎች አልተገኙም። ማጣሪያዎችን ወይም ፍለጋዎችን ያስተካክሉ።",
+            "action": "የመጀመሪያውን ሚና አክል",
+            "filteredAction": "ማጣሪያዎችን አጥፋ እና ሚና አክል",
+            "createOne": "አንዱን ፍጠር"
+        },
+        "mobile": {
+            "permissions": "ፈቃዶች",
+            "created": "ተፈጥሯል"
+        },
+        "validation": {
+            "title": "የማረጋገጫ ስህተት",
+            "description": "እባክዎ ስህተቶቹን ያስተካክሉ",
+            "allDescription": "እባክዎ ሁሉንም ስህተቶች ያስተካክሉ",
+            "formDescription": "እባክዎ ማመልከቻ ከማስገባት በፊት ስህተቶቹን ያስተካክሉ"
+        },
+        "form": {
+            "sections": {
+                "overview": {
+                    "title": "የሚና አጠቃላይ",
+                    "description": "ለሚናው ግልጽ ስም ያቅርቡ እና ከፈለጉ ለባለሙያዎች ማብራሪያ ያስገቡ።"
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "የሚና ስም",
+                    "placeholder": "ለምሳሌ፡ የማጓጓዣ ተቆጣጣሪ"
+                },
+                "description": {
+                    "label": "የሚና ማብራሪያ",
+                    "helper": "ለሌሎች አስተዳዳሪዎች አማራጭ ማብራሪያ።",
+                    "placeholder": "ይህ ሚና የሚጠቀምበትን ስፍራ እና ዋና ኃላፊነቶችን ይግለጹ።"
+                }
+            }
+        },
+        "permissions": {
+            "title": "የፈቃድ ቤተ-መዝገብ",
+            "description": "በቡድን የተደረደሩ ፈቃዶችን ይመልከቱ፣ በቁልፍ ቃል ያጣሩ እና የሚፈልጉትን ብቻ ይምረጡ።",
+            "searchPlaceholder": "ፈቃዶችን ወይም ሞጁሎችን ፈልግ",
+            "matchingGroups": "{{count}} ተዛማጅ ቡድን{{suffix}}",
+            "showingGroups": "{{count}} የፈቃድ ቡድን{{suffix}} እያሳየ",
+            "moduleMeta": "{{total}} ያሉ · {{selected}} የተመረጡ",
+            "deselect": "አለምረጥ",
+            "selectAll": "ሁሉንም ምረጥ",
+            "dependencyHint": "አስፈላጊ ግንኙነቶች በራስ-ሰር ይመረጣሉ።",
+            "empty": "ፍለጋዎ ጋር የሚመሳሰሉ የፈቃድ ቡድኖች የሉም።",
+            "emptyHint": "ሁሉንም ሞጁሎች ለማየት ማጣሪያውን ያጣሩ ወይም ያጥፉ።",
+            "summary": {
+                "title": "የምርጫ ማጠቃለያ",
+                "description": "ይህ ሚና የሚፈልገውን ትክክለኛ መዳረሻ ላይ ይቆጥቡ።",
+                "coverage": "ሽፋን",
+                "selected": "የተመረጡ",
+                "remaining": "ቀሪ"
+            },
+            "selectEverything": "ሁሉንም ምረጥ",
+            "clearSelection": "ምርጫዎችን አጥፋ",
+            "dependencyCard": {
+                "title": "ግንኙነቶች በራስ-ሰር ይተካሉ",
+                "description": "አንድ ፈቃድ ሌላ ሲፈልግ ሁለቱም በራስ-ሰር ይመረጣሉ። መጨረሻ ከማድረግዎ በፊት ማስታወሻዎቹን ይመልከቱ።"
+            }
+        },
+        "requiredFields": "አስፈላጊ መስኮች",
+        "create": {
+            "breadcrumb": "ፍጠር",
+            "title": "ሚና ፍጠር",
+            "headTitle": "ሚና ፍጠር",
+            "description": "አዲስ ሚና ያስቀምጡ፣ ዓላማውን ያብራሩ እና የሚሸከሙትን ፈቃዶች ይምረጡ።",
+            "submit": "ሚና ፍጠር"
+        },
+        "edit": {
+            "breadcrumb": "አርትዕ",
+            "title": "ሚና አርትዕ",
+            "headTitle": "{{name}} አርትዕ",
+            "description": "የሚና መረጃን ያዘምኑ እና ፈቃዶቹን በትክክል ያስተካክሉ።",
+            "backToRole": "ወደ ሚና ተመለስ",
+            "sections": {
+                "overview": {
+                    "description": "ስም ያዘምኑ እና ማብራሪያው አሁንም ተገቢ መሆኑን ያረጋግጡ።"
+                },
+                "permissions": {
+                    "description": "ፈቃዶቹን ቡድን በማድረግ ይዘርጉ እና የሚያስፈልጉትን ብቻ ይቀይሩ።"
+                }
+            },
+            "fields": {
+                "description": {
+                    "helper": "የዚህን ሚና መግባት እንዲታወቅ አጠቃላይ ማብራሪያ ያክሉ።",
+                    "placeholder": "ስፋት፣ የሪፖርት መስመሮች ወይም የልዩ ኃላፊነቶችን ያብራሩ።"
+                }
+            },
+            "summary": {
+                "description": "በጠቅላላ ቁጥሮች ላይ በመመርመር ሚናውን ቀላል ያድርጉ።"
+            },
+            "dependencyCard": {
+                "description": "አንድ ፈቃድ ሌላ ሲፈልግ ሁለቱም በራስ-ሰር ይቀጥላሉ። ከማስፈጸምዎ በፊት ማስታወሻዎችን ይመልከቱ።"
+            },
+            "submit": "ሚና አዘምን"
+        },
+        "show": {
+            "subtitleFallback": "ለዚህ ሚና ምንም ማብራሪያ አልተሰጠም።",
+            "headTitle": "ሚና · {{name}}",
+            "updatedBadge": "#{{id}} · ተዘመነ {{date}}",
+            "kpi": {
+                "permissions": {
+                    "label": "ፈቃዶች",
+                    "helper": "ጠቅላላ ችሎታዎች"
+                },
+                "users": {
+                    "label": "የተመደቡ ተጠቃሚዎች",
+                    "helper": "የቡድን አባላት"
+                },
+                "modules": {
+                    "label": "ሞጁሎች",
+                    "helper": "የተሸፈኑ ክፍሎች"
+                },
+                "created": {
+                    "label": "ተፈጥሯል",
+                    "helper": "የመጀመሪያ ማስተካከያ"
+                }
+            },
+            "sections": {
+                "permissions": {
+                    "title": "የፈቃድ ቤተ-መዝገብ",
+                    "description": "ለዚህ ሚና የተመደቡ ክህሎቶችን የተደራጀ እይታ",
+                    "moduleCount": "{{count}} ፈቃድ{{suffix}}",
+                    "empty": "ለዚህ ሚና እስካሁን ፈቃዶች አልተመደቡም።",
+                    "assignAction": "ፈቃዶችን መመደብ"
+                },
+                "people": {
+                    "title": "ይህን ሚና ያላቸው ሰዎች",
+                    "description": "ከላይ የተገለጹ ፈቃዶች ማን እንደሚያገኙ ይረዱ",
+                    "empty": "አሁን ከዚህ ሚና ጋር የተጣመሩ ተጠቃሚዎች የሉም።",
+                    "emptyHint": "መዳረሻን ለመስፋት ለባለቤት ይመድቡት።"
+                },
+                "glance": {
+                    "title": "በአንድ እይታ",
+                    "description": "ፈጣን የምርመራ ማጠቃለያ",
+                    "modules": "የተሸፈኑ ሞጁሎች",
+                    "permissions": "ጠቅላላ ፈቃዶች",
+                    "members": "የተመደቡ አባላት"
+                },
+                "activity": {
+                    "title": "የእንቅስቃሴ መዝገብ",
+                    "description": "ለዚህ ሚና የተመዘገቡ ሁሉንም ለውጦች ይመልከቱ"
+                }
+            },
+            "tip": {
+                "title": "ይህን ሚና መሻሻል ይፈልጋሉ?",
+                "description": "የእርምጃ አርትዕን ተጠቅመው ኃላፊነቶችን ያስተካክሉ ወይም ያልፈለጉትን መዳረሻ ያስወግዱ።"
+            }
+        },
+        "delete": {
+            "title": "ሚና ሰርዝ",
+            "description": "ይህን ሚና ማስወገድ እርግጠኛ ነዎት? ይህ እርምጃ ወደ ኋላ አይመለስም።",
+            "successTitle": "ተሳክቷል",
+            "successDescription": "{{name}} ከስርዓቱ ተወግዷል።",
+            "failedTitle": "ስህተት",
+            "failedDescription": "ሚናውን ማስወገድ አልተቻለም"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "noPermissions": "ፈቃዶች የሉም"
+        }
+    },
+    "permissions": {
+        "title": "የፈቃድ አስተዳደር",
+        "description": "በመስኮቱ ላይ {{count}} ፈቃድ{{suffix}} ያስተዳድሩ",
+        "breadcrumbs": {
+            "management": "የተጠቃሚ አስተዳደር"
+        },
+        "columns": {
+            "index": "#",
+            "name": "ፈቃድ",
+            "module": "ሞጁል",
+            "action": "ተግባር",
+            "guard": "ጋርድ",
+            "created_at": "ተፈጥሯል"
+        },
+        "labels": {
+            "id": "መለያ #{{id}}",
+            "guard": "ጋርድ፡ {{value}}"
+        },
+        "table": {
+            "title": "የፈቃድ ማውጫ",
+            "description": "በስርዓቱ ውስጥ {{count}} ፈቃድ{{suffix}}"
+        },
+        "stats": {
+            "total": {
+                "label": "ጠቅላላ ፈቃዶች",
+                "description": "በመስኮቱ ላይ"
+            },
+            "modules": {
+                "label": "ሞጁሎች",
+                "description": "የፈቃድ ቡድኖች"
+            },
+            "guards": {
+                "label": "የጋርድ አይነቶች",
+                "description": "ልዩ የጋርድ ስሞች"
+            }
+        },
+        "filters": {
+            "searchPlaceholder": "ፈቃዶችን ፈልግ...",
+            "clearSearch": "ፍለጋን አጥፋ",
+            "module": {
+                "placeholder": "ሞጁል",
+                "all": "ሁሉም ሞጁሎች",
+                "chip": "ሞጁል፡ {{value}}"
+            },
+            "rows": {
+                "label": "ረድፎች",
+                "perPageOption": "{{value}} / ገጽ",
+                "chip": "ረድፎች፡ {{value}}"
+            }
+        },
+        "mobile": {
+            "module": "ሞጁል",
+            "action": "ተግባር",
+            "created": "ተፈጥሯል"
+        },
+        "actions": {
+            "export": "CSV ወደውጭ"
+        },
+        "empty": {
+            "title": "ምንም ፈቃዶች አልተገኙም",
+            "description": "ፈቃዶች በራስ-ሰር ይተካሉ። የተመደበ መዳረሻ ለማየት ማጣሪያዎችን ወይም ሚናዎችን ያስተካክሉ።",
+            "filteredDescription": "\"{{term}}\" የሚመስሉ ፈቃዶች አልተገኙም። ማጣሪያዎችን ወይም ፍለጋዎችን ያስተካክሉ።"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        }
+    },
+    "notifications": {
+        "title": "ማስታወቂያዎች",
+        "subtitle": "በቡድንዎ ላይ ያለውን ቅርብ እንቅስቃሴ ይከታተሉ።",
+        "inApp": {
+            "title": "ውስጥ-መተግበሪያ ማስታወቂያዎች",
+            "description": "የቅርብ ክስተቶችን ያቆጣጠሩ እና ቡድንዎን ተስማሚ ያድርጉ።",
+            "unreadBadge": "{{count}} ያልተነበቡ",
+            "caughtUp": "ሁሉም ተከታትሏል",
+            "unreadLabel": "ያልተነበቡ ማስታወቂያዎች"
+        },
+        "recent": {
+            "title": "ቅርብ እንቅስቃሴ",
+            "description": "ማስታወቂያዎች ከተቀመጡ ወይም ከ30 ቀናት በላይ ከሆኑ ይጠፋሉ።",
+            "markAll": "ሁሉንም እንደተነበቡ ምልክት አድርግ",
+            "markSingle": "እንደተነበበ ምልክት አድርግ",
+            "marking": "በማስመልከት ላይ…"
+        },
+        "empty": {
+            "title": "ለማረጋገጥ አዲስ ነገር የለም",
+            "description": "ምንም ለውጥ ሲኖር እዚህ እንሳውቅዎታለን።"
+        }
+    },
+    "notificationAssignments": {
+        "title": "የማስታወቂያ መመደቦች",
+        "breadcrumbs": {
+            "management": "የተጠቃሚ አስተዳደር"
+        },
+        "subtitle": "ለቡድን አባላት የማስታወቂያ አይነቶችን ይመድቡ እና መድረሻ ቻነሎቻቸውን ያዘጋጁ። ተጠቃሚዎች በግል ቅንብራቸው ውስጥ ማስተካከል ይችላሉ።",
+        "search": {
+            "placeholder": "ሰዎችን በስም ወይም ኢሜል ፈልግ",
+            "submit": "ፈልግ",
+            "clear": "አጥፋ"
+        },
+        "people": {
+            "title": "ሰዎች",
+            "description": "የማስታወቂያ መዳረሻን ለማስተዳደር ሰው ይምረጡ።",
+            "empty": "ፍለጋዎ መስፈርቶችን የሚያሟሉ ተጠቃሚዎች የሉም።"
+        },
+        "types": {
+            "title": "የማስታወቂያ አይነቶች",
+            "description": "ለተመረጠው ሰው ቻነሎችን አብራ/አጥፋ። ማስታወቂያውን ማስወገድ ሁሉንም ልኬት ያቆማል።"
+        },
+        "filters": {
+            "categories": {
+                "placeholder": "ክፍል ይምረጡ",
+                "all": "ሁሉም ክፍሎች",
+                "empty": "አሁን የማስታወቂያ ክፍሎች የሉም።"
+            },
+            "rows": {
+                "all": "ሁሉም",
+                "active": "ንቁ",
+                "pending": "ለማስወገድ በመጠባበቅ ላይ"
+            }
+        },
+        "typePicker": {
+            "disabled": "በቂ ፈቃድ የለም",
+            "selectCategory": "መጀመሪያ ክፍል ይምረጡ",
+            "allAssigned": "ሁሉም አይነቶች ተመድበዋል",
+            "selectTypes": "የማስታወቂያ አይነቶችን ይምረጡ",
+            "selectedAll": "ሁሉንም ተመርጧል ({{count}})",
+            "selected": "{{count}} ተመርጧል",
+            "searchPlaceholder": "የማስታወቂያ አይነቶችን ፈልግ",
+            "emptyAllAssigned": "በዚህ ክፍል ያሉ ሁሉም ማስታወቂያ አይነቶች ተመድበዋል።",
+            "emptyNoMatch": "ፍለጋዎን የሚመስሉ የማስታወቂያ አይነቶች የሉም።",
+            "selectAll": "ሁሉንም ምረጥ",
+            "clear": "አጥፋ",
+            "addSelected": "የተመረጡትን አክል",
+            "selectedBadge": "{{count}} አይነት{{suffix}} ተመርጧል"
+        },
+        "empty": {
+            "noUser": "በግራ በኩል ሰው ይምረጡ እና የማስታወቂያ መዳረሻውን ይመልከቱ።",
+            "noTypes": "{{name}} አሁን የተመደቡ የማስታወቂያ አይነቶች የሉትም። ላይ ባለው ማሰስ መሣሪያ በመጠቀም መዳረሻ ይስጡ።",
+            "noMatch": "የተመረጠውን ማጣሪያ የሚመስሉ የማስታወቂያ አይነቶች የሉም። ማጣሪያውን ያስተካክሉ።"
+        },
+        "summary": {
+            "fullyEnabled": "{{count}} ሙሉ በሙሉ ንቁ",
+            "pendingRemoval": "{{count}} ለማስወገድ በመጠባበቅ ላይ",
+            "inApp": "{{count}} ውስጥ-መተግበሪያ",
+            "email": "{{count}} ኢሜል",
+            "available": "{{count}} ተዘጋጅ",
+            "unsaved": "ያልተቀመጡ ለውጦች"
+        },
+        "rows": {
+            "noDescription": "ማብራሪያ የለም።",
+            "assignedBy": "በ {{name}} ተሰጠ",
+            "newAssignment": "አዲስ መመደብ",
+            "willRemove": "ይሰረዛል",
+            "deliveryDisabled": "መላኪያ ተዘግቷል",
+            "updatedAt": "ተዘመነ {{date}}",
+            "restore": "መመለስ",
+            "remove": "አስወግድ"
+        },
+        "channels": {
+            "inApp": {
+                "title": "ውስጥ-መተግበሪያ ማስታወቂያ",
+                "description": "በዳሽቦርድ ውስጥ በቀጥታ ማስታወቂያዎችን ይቀበሉ።"
+            },
+            "email": {
+                "title": "የኢሜል ማስታወቂያ",
+                "description": "ይህ ክስተት ሲከሰት የግብዣ ኢሜሎችን ላክ።"
+            }
+        },
+        "sidebar": {
+            "title": "እስካሁን ያልተመደቡ",
+            "description": "{{category}} ውስጥ እንደገና ለመመደብ የሚገኙ ማስታወቂያዎች",
+            "assignAll": "ሁሉንም መድብ",
+            "empty": "በዚህ ክፍል ያሉ ማስታወቂያዎች ሁሉም ተመድበዋል።",
+            "add": "አክል"
+        },
+        "actions": {
+            "saving": "በማስቀመጥ ላይ…",
+            "save": "ለውጦችን አስቀምጥ",
+            "reset": "ዳግም አስጀምር"
+        }
+    },
+    "notificationPreferences": {
+        "title": "የማስታወቂያ ምርጫዎች",
+        "header": {
+            "title": "ማስታወቂያዎችን አስተዳድር",
+            "description": "እንዴት እንደሚታወቁ ይምረጡ። ተጨማሪ አይነቶች ካስፈለጉ አስተዳዳሪዎን ያነጋግሩ።"
+        },
+        "empty": {
+            "title": "እስካሁን ማስታወቂያዎች አልተመደቡም",
+            "description": "አስተዳዳሪዎ ለመለያዎ ማስታወቂያዎችን አልከፈተም። አይነት ሲመደብ እዚህ አማራጮች ይታያሉ።"
+        },
+        "coverage": {
+            "title": "የማስታወቂያ ሽፋን",
+            "description": "{{enabled}} ከ {{total}} ማስታወቂያዎች ሙሉ በሙሉ ንቁ ናቸው (ውስጥ-መተግበሪያ እና ኢሜል).",
+            "enableAll": "ሁሉንም አንቃ",
+            "disableAll": "ሁሉንም አጥፋ"
+        },
+        "rows": {
+            "noDescription": "ተጨማሪ ማብራሪያ የለም።",
+            "enabledBy": "በ {{name}} ተከፍቷል",
+            "updatedAt": "ተዘመነ {{date}}"
+        },
+        "channels": {
+            "inApp": {
+                "title": "ውስጥ-መተግበሪያ ማስታወቂያ",
+                "description": "በመተግበሪያው ውስጥ ማስታወቂያዎችን ይቀበሉ።"
+            },
+            "email": {
+                "title": "የኢሜል ማስታወቂያ",
+                "description": "ይህ ክስተት ሲከሰት ኢሜል እንላካለን።"
+            }
+        },
+        "actions": {
+            "saving": "በማስቀመጥ ላይ…",
+            "save": "ምርጫዎችን አስቀምጥ",
+            "saved": "ተቀምጧል"
         }
     }
 }

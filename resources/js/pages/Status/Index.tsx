@@ -17,13 +17,7 @@ import { DndContext, DragEndEvent, DragStartEvent, PointerSensor, useSensor, use
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { toast } from '@/hooks/use-toast';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Truck Status Board',
-        href: '/truck-status-board',
-    },
-];
+import { useTranslation } from 'react-i18next';
 
 const STATUS_COLOR_PALETTE = [
     'from-sky-500 to-sky-600',
@@ -131,6 +125,8 @@ function TruckCardComponent({
     onViewDetails: (truck: TruckCard) => void;
     isSyncing?: boolean;
 }) {
+    const { t, i18n } = useTranslation();
+    const locale = i18n.language || 'en-US';
     const {
         attributes,
         listeners,
@@ -179,12 +175,12 @@ function TruckCardComponent({
                                 <span className="font-semibold text-sm truncate text-slate-900">{truck.plate}</span>
                                 {hasNotes && (
                                     <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 text-[10px]">
-                                        Notes
+                                        {t('truckStatusBoard.card.notes')}
                                     </Badge>
                                 )}
                                 {isSyncing && (
                                     <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-600 text-[10px] uppercase tracking-wide">
-                                        Syncing
+                                        {t('truckStatusBoard.card.syncing')}
                                     </Badge>
                                 )}
                             </div>
@@ -196,7 +192,7 @@ function TruckCardComponent({
                                 {truck.driver && (
                                     <span className="flex items-center gap-1 truncate">
                                         <span className="text-slate-400">•</span>
-                                        <span>Driver: {truck.driver.name}</span>
+                                        <span>{t('truckStatusBoard.card.driver', { name: truck.driver.name })}</span>
                                     </span>
                                 )}
                             </div>
@@ -216,7 +212,7 @@ function TruckCardComponent({
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent side="left" className="text-xs font-medium">
-                                {hasNotes ? 'View or update notes' : 'Add a quick note'}
+                                {hasNotes ? t('truckStatusBoard.card.notesTooltipUpdate') : t('truckStatusBoard.card.notesTooltipAdd')}
                             </TooltipContent>
                         </Tooltip>
                     </div>
@@ -224,11 +220,11 @@ function TruckCardComponent({
                         {truck.changed_at && (
                             <span className="flex items-center gap-1">
                                 ⏰
-                                {new Date(truck.changed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                {new Date(truck.changed_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                             </span>
                         )}
                         {truck.changed_by && (
-                            <span className="truncate">By {truck.changed_by}</span>
+                            <span className="truncate">{t('truckStatusBoard.card.changedBy', { name: truck.changed_by })}</span>
                         )}
                         <Link
                             href={`/truck-status-board/trucks/${truck.id}`}
@@ -240,7 +236,7 @@ function TruckCardComponent({
                                 event.stopPropagation();
                             }}
                         >
-                            View details →
+                            {t('truckStatusBoard.card.viewDetails')}
                         </Link>
                     </div>
                 </CardContent>
@@ -269,6 +265,7 @@ function StatusColumn({
     isFiltered: boolean;
     pendingTruckIds: Set<number>;
 }) {
+    const { t } = useTranslation();
     const { setNodeRef, isOver } = useDroppable({
         id: `status-${status.id}`,
         data: { statusId: status.id },
@@ -328,7 +325,7 @@ function StatusColumn({
                         ))
                     ) : (
                         <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 py-10 text-center text-sm text-slate-400">
-                            {isFiltered ? 'No trucks match the current filters' : 'Drop trucks here'}
+                            {isFiltered ? t('truckStatusBoard.column.noMatches') : t('truckStatusBoard.column.dropHere')}
                         </div>
                     )}
                 </SortableContext>
@@ -338,6 +335,7 @@ function StatusColumn({
 }
 
 export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDate }: TruckStatusBoardProps) {
+    const { t } = useTranslation();
     const [searchTerm, setSearchTerm] = React.useState('');
     const [, setActiveId] = React.useState<string | null>(null);
     const [overStatusId, setOverStatusId] = React.useState<number | null>(null);
@@ -514,8 +512,8 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                 }
 
                 toast({
-                    title: 'Status update failed',
-                    description: error instanceof Error ? error.message : 'We could not sync this move. The truck was returned to its previous column.',
+                    title: t('truckStatusBoard.toast.updateFailedTitle'),
+                    description: error instanceof Error ? error.message : t('truckStatusBoard.toast.updateFailedDescription'),
                     variant: 'destructive',
                 });
             } finally {
@@ -826,17 +824,30 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
         [filteredTrucksByStatus],
     );
 
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('truckStatusBoard.title'),
+                href: '/truck-status-board',
+            },
+        ],
+        [t],
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Truck Status Board" />
+            <Head title={t('truckStatusBoard.title')} />
 
             <TooltipProvider delayDuration={150}>
                 <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
                 <div className="flex flex-wrap items-center gap-4">
                     <div className="min-w-[220px] flex-1 md:flex-none">
-                        <h1 className="text-3xl font-bold">Truck Status Board</h1>
+                        <h1 className="text-3xl font-bold">{t('truckStatusBoard.title')}</h1>
                         <p className="text-muted-foreground mt-1 text-sm">
-                            Manage daily truck operational status - {totalTrucks} truck{totalTrucks !== 1 ? 's' : ''}
+                            {t('truckStatusBoard.header.description', {
+                                count: totalTrucks,
+                                suffix: totalTrucks !== 1 ? 's' : '',
+                            })}
                         </p>
                     </div>
                     <div className="flex flex-1 flex-wrap items-center justify-end gap-3">
@@ -854,7 +865,7 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                             <Input
                                 type="text"
-                                placeholder="Search trucks by plate, type, or driver..."
+                                placeholder={t('truckStatusBoard.filters.searchPlaceholder')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10 focus:ring-2 focus:ring-blue-500"
@@ -867,7 +878,7 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                             onClick={() => setIsFiltersOpen(true)}
                         >
                             <Filter className="h-4 w-4" />
-                            Filters
+                            {t('truckStatusBoard.filters.button')}
                             {appliedFilterCount > 0 ? (
                                 <Badge variant="secondary" className="ml-1 h-5 min-w-[1.75rem] justify-center px-1 text-xs">
                                     {appliedFilterCount}
@@ -880,7 +891,7 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                                 size="sm"
                                 onClick={handleClearFilters}
                             >
-                                Clear filters
+                                {t('truckStatusBoard.filters.clear')}
                             </Button>
                         )}
                     </div>
@@ -889,44 +900,44 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                     <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
                         <DialogContent className="sm:max-w-lg">
                             <DialogHeader className="text-left">
-                                <DialogTitle>Filter trucks</DialogTitle>
+                                <DialogTitle>{t('truckStatusBoard.filters.dialogTitle')}</DialogTitle>
                                 <DialogDescription>
-                                    Choose the drivers, equipment, and plates you want to display on the board.
+                                    {t('truckStatusBoard.filters.dialogDescription')}
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4">
                                 <ReportMultiSelectFilter
-                                    label="Drivers"
+                                    label={t('truckStatusBoard.filters.drivers.label')}
                                     icon={User}
-                                    triggerLabelWhenAll="All drivers"
-                                    summaryLabelWhenAll="All drivers shown"
-                                    heading="Drivers"
-                                    searchPlaceholder="Search driver..."
-                                    emptyMessage="No drivers found."
+                                    triggerLabelWhenAll={t('truckStatusBoard.filters.drivers.triggerAll')}
+                                    summaryLabelWhenAll={t('truckStatusBoard.filters.drivers.summaryAll')}
+                                    heading={t('truckStatusBoard.filters.drivers.heading')}
+                                    searchPlaceholder={t('truckStatusBoard.filters.drivers.searchPlaceholder')}
+                                    emptyMessage={t('truckStatusBoard.filters.drivers.empty')}
                                     options={driverFilterOptions}
                                     selectedIds={selectedDrivers}
                                     onChange={(ids) => setSelectedDrivers(ids.map((value) => String(value)))}
                                 />
                                 <ReportMultiSelectFilter
-                                    label="Equipment"
+                                    label={t('truckStatusBoard.filters.equipment.label')}
                                     icon={Wrench}
-                                    triggerLabelWhenAll="All equipment"
-                                    summaryLabelWhenAll="All equipment shown"
-                                    heading="Equipment"
-                                    searchPlaceholder="Search equipment..."
-                                    emptyMessage="No equipment found."
+                                    triggerLabelWhenAll={t('truckStatusBoard.filters.equipment.triggerAll')}
+                                    summaryLabelWhenAll={t('truckStatusBoard.filters.equipment.summaryAll')}
+                                    heading={t('truckStatusBoard.filters.equipment.heading')}
+                                    searchPlaceholder={t('truckStatusBoard.filters.equipment.searchPlaceholder')}
+                                    emptyMessage={t('truckStatusBoard.filters.equipment.empty')}
                                     options={equipmentFilterOptions}
                                     selectedIds={selectedEquipment}
                                     onChange={(ids) => setSelectedEquipment(ids.map((value) => String(value)))}
                                 />
                                 <ReportMultiSelectFilter
-                                    label="Plates"
+                                    label={t('truckStatusBoard.filters.plates.label')}
                                     icon={Tag}
-                                    triggerLabelWhenAll="All plates"
-                                    summaryLabelWhenAll="All plates shown"
-                                    heading="Plates"
-                                    searchPlaceholder="Search plate..."
-                                    emptyMessage="No plates found."
+                                    triggerLabelWhenAll={t('truckStatusBoard.filters.plates.triggerAll')}
+                                    summaryLabelWhenAll={t('truckStatusBoard.filters.plates.summaryAll')}
+                                    heading={t('truckStatusBoard.filters.plates.heading')}
+                                    searchPlaceholder={t('truckStatusBoard.filters.plates.searchPlaceholder')}
+                                    emptyMessage={t('truckStatusBoard.filters.plates.empty')}
                                     options={plateFilterOptions}
                                     selectedIds={selectedPlates}
                                     onChange={(ids) => setSelectedPlates(ids.map((value) => String(value)))}
@@ -934,10 +945,10 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                             </div>
                             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <Button type="button" variant="ghost" onClick={clearFilterSelections}>
-                                    Clear selections
+                                    {t('truckStatusBoard.filters.clearSelections')}
                                 </Button>
                                 <Button type="button" onClick={() => setIsFiltersOpen(false)}>
-                                    Close
+                                    {t('truckStatusBoard.filters.close')}
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
@@ -946,9 +957,9 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                 {/* Kanban Board - Full Height Scrollable */}
                 <Card className="flex flex-1 flex-col overflow-hidden">
                     <CardHeader>
-                        <CardTitle>Status Overview</CardTitle>
+                        <CardTitle>{t('truckStatusBoard.board.title')}</CardTitle>
                         <CardDescription>
-                            Drag and drop trucks between columns to update their status
+                            {t('truckStatusBoard.board.description')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex-1 p-4 flex flex-col overflow-hidden">
@@ -978,7 +989,7 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                         </DndContext>
                             {!hasFilteredResults && hasActiveFilters && (
                                 <div className="mt-4 flex flex-1 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-12 text-sm text-slate-500">
-                                    No trucks found for the current filters.
+                                    {t('truckStatusBoard.board.noResults')}
                                 </div>
                             )}
                     </CardContent>
@@ -990,14 +1001,14 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Add Comment for {selectedTruck?.plate}</DialogTitle>
+                        <DialogTitle>{t('truckStatusBoard.comment.title', { plate: selectedTruck?.plate ?? '' })}</DialogTitle>
                         <DialogDescription>
-                            Add notes or comments about this truck's status
+                            {t('truckStatusBoard.comment.description')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <Textarea
-                            placeholder="Enter your comment here..."
+                            placeholder={t('truckStatusBoard.comment.placeholder')}
                             value={commentText}
                             onChange={(e) => setCommentText(e.target.value)}
                             rows={4}
@@ -1005,10 +1016,10 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                            Cancel
+                            {t('truckStatusBoard.comment.cancel')}
                         </Button>
                         <Button onClick={handleSaveComment}>
-                            Save Comment
+                            {t('truckStatusBoard.comment.save')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,6 +16,7 @@ import {
 import { cn } from '@/lib/utils'
 import AppLayout from '@/layouts/app-layout'
 import { type BreadcrumbItem } from '@/types'
+import { useTranslation } from 'react-i18next'
 
 type PageProps = {
   notifications: {
@@ -24,18 +25,22 @@ type PageProps = {
   }
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-        {
-                title: 'Notifications',
-                href: '/notifications',
-        },
-]
-
 export default function NotificationsIndex() {
+    const { t } = useTranslation()
     const page = usePage<PageProps>()
     const { notifications } = page.props
     const [markAllPending, setMarkAllPending] = useState(false)
     const [markingId, setMarkingId] = useState<string | null>(null)
+
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('notifications.title'),
+                href: '/notifications',
+            },
+        ],
+        [t],
+    )
 
     const items = notifications.recent.map((notification) => {
         const timestamp = formatNotificationTimestamp(notification.created_at)
@@ -79,13 +84,13 @@ export default function NotificationsIndex() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Notifications" />
+            <Head title={t('notifications.title')} />
 
             <div className="flex flex-col gap-6 px-4 py-6">
                 <div className="space-y-1">
-                    <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">Notifications</h1>
+                    <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">{t('notifications.title')}</h1>
                     <p className="max-w-3xl text-sm text-neutral-600 dark:text-neutral-400">
-                        Stay up to date with the latest activity across your fleet.
+                        {t('notifications.subtitle')}
                     </p>
                 </div>
 
@@ -95,16 +100,18 @@ export default function NotificationsIndex() {
                             <div>
                                 <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                     <Bell className="size-5" />
-                                    In-app notifications
+                                    {t('notifications.inApp.title')}
                                 </CardTitle>
-                                <CardDescription>Manage recent events and keep your team aligned.</CardDescription>
+                                <CardDescription>{t('notifications.inApp.description')}</CardDescription>
                             </div>
                             <Badge variant={notifications.unread_count > 0 ? 'secondary' : 'outline'} className="w-fit rounded-full px-3 py-1 text-xs uppercase tracking-wide">
-                                {notifications.unread_count > 0 ? `${notifications.unread_count} unread` : 'All caught up'}
+                                {notifications.unread_count > 0
+                                    ? t('notifications.inApp.unreadBadge', { count: notifications.unread_count })
+                                    : t('notifications.inApp.caughtUp')}
                             </Badge>
                         </CardHeader>
                         <CardFooter className="flex items-center justify-between border-t border-neutral-200 bg-neutral-50 px-6 py-3 text-sm leading-none dark:border-neutral-800 dark:bg-neutral-900/60">
-                            <span className="text-neutral-600 dark:text-neutral-400">Unread notifications</span>
+                            <span className="text-neutral-600 dark:text-neutral-400">{t('notifications.inApp.unreadLabel')}</span>
                             <span className="font-semibold text-neutral-900 dark:text-neutral-100">{notifications.unread_count}</span>
                         </CardFooter>
                     </Card>
@@ -112,8 +119,8 @@ export default function NotificationsIndex() {
                     <Card>
                         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <CardTitle className="text-base font-semibold">Recent activity</CardTitle>
-                                <CardDescription>Notifications expire after they are archived or older than 30 days.</CardDescription>
+                                <CardTitle className="text-base font-semibold">{t('notifications.recent.title')}</CardTitle>
+                                <CardDescription>{t('notifications.recent.description')}</CardDescription>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Button
@@ -124,7 +131,7 @@ export default function NotificationsIndex() {
                                     disabled={markAllPending || notifications.unread_count === 0}
                                 >
                                     <Check className="mr-2 size-4" />
-                                    Mark all as read
+                                    {t('notifications.recent.markAll')}
                                 </Button>
                             </div>
                         </CardHeader>
@@ -133,8 +140,8 @@ export default function NotificationsIndex() {
                                 <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-neutral-300 bg-white px-8 py-12 text-left dark:border-neutral-800 dark:bg-neutral-900/40">
                                     <MailOpen className="size-10 text-neutral-300" />
                                     <div className="space-y-1">
-                                        <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Nothing new to review</p>
-                                        <p className="text-sm text-neutral-500">We&apos;ll notify you here as soon as something changes.</p>
+                                        <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">{t('notifications.empty.title')}</p>
+                                        <p className="text-sm text-neutral-500">{t('notifications.empty.description')}</p>
                                     </div>
                                 </div>
                             ) : (
@@ -174,7 +181,7 @@ export default function NotificationsIndex() {
                                                             disabled={markingId === notification.id}
                                                         >
                                                             <Check className="mr-1.5 size-4" />
-                                                            {markingId === notification.id ? 'Marking…' : 'Mark as read'}
+                                                            {markingId === notification.id ? t('notifications.recent.marking') : t('notifications.recent.markSingle')}
                                                         </Button>
                                                     )}
                                                 </div>

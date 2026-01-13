@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { validateWoreda, type ValidationErrors } from '@/lib/validation';
 import { toast } from '@/hooks/use-toast';
 import { AlertCircle, Building2, CheckCircle, FileText, Map } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface ZoneOption {
   id: number;
@@ -62,9 +63,10 @@ interface WoredasEditProps {
 }
 
 export default function WoredasEdit({ woreda, zones }: WoredasEditProps) {
+  const { t } = useTranslation();
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Woredas', href: '/woredas' },
-    { title: 'Edit', href: `/woredas/${woreda.id}/edit` },
+    { title: t('woredas.title'), href: '/woredas' },
+    { title: t('woredas.form.edit.breadcrumb'), href: `/woredas/${woreda.id}/edit` },
   ];
 
   const { data, setData, put, processing, errors } = useForm<WoredaFormData>({
@@ -96,12 +98,12 @@ export default function WoredasEdit({ woreda, zones }: WoredasEditProps) {
 
     if (errorMessages.length > 0) {
       toast({
-        title: '⚠️ Validation Error',
+        title: t('woredas.form.validation.toastTitle'),
         description: errorMessages.join(', '),
         variant: 'destructive',
       });
     }
-  }, [errors]);
+  }, [errors, t]);
 
   const setFieldError = useCallback((field: keyof WoredaFormData, message: string) => {
     setFrontendErrors(prev => {
@@ -139,6 +141,11 @@ export default function WoredasEdit({ woreda, zones }: WoredasEditProps) {
     const validationResults = validateWoreda(data);
     if (Object.keys(validationResults).length > 0) {
       setFrontendErrors(validationResults);
+      toast({
+        title: t('woredas.form.validation.toastTitle'),
+        description: t('woredas.form.validation.resolve'),
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -147,6 +154,10 @@ export default function WoredasEdit({ woreda, zones }: WoredasEditProps) {
       onSuccess: () => {
         setFrontendErrors({});
         setIsDirty(false);
+        toast({
+          title: t('woredas.form.edit.successTitle'),
+          description: t('woredas.form.edit.successDescription', { name: woreda.name }),
+        });
       },
     });
   };
@@ -155,9 +166,9 @@ export default function WoredasEdit({ woreda, zones }: WoredasEditProps) {
 
   return (
     <FormPageLayout
-      title="Update Woreda"
-      headTitle={`Edit ${woreda.name}`}
-      description="Keep district intelligence synchronized with the latest field information."
+      title={t('woredas.form.edit.title')}
+      headTitle={t('woredas.form.edit.headTitle', { name: woreda.name })}
+      description={t('woredas.form.edit.description')}
       breadcrumbs={breadcrumbs}
       icon={<Map className="h-5 w-5" />}
       headerAside={isDirty && <UnsavedChangesBadge />}
@@ -166,20 +177,30 @@ export default function WoredasEdit({ woreda, zones }: WoredasEditProps) {
         {hasErrors && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Review the highlighted fields and correct validation issues before saving the woreda update.</AlertDescription>
+            <AlertDescription>{t('woredas.form.validation.resolveForm')}</AlertDescription>
           </Alert>
         )}
 
-        <FormSection title="Woreda Identity" description="Confirm governance and classification details for the woreda." icon={<Building2 className="h-4 w-4" />}>
+        <FormSection
+          title={t('woredas.form.sections.identity.title')}
+          description={t('woredas.form.sections.identity.descriptionEdit')}
+          icon={<Building2 className="h-4 w-4" />}
+        >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Woreda Name" required error={getFieldError('name')}>
-              <Input id="name" type="text" value={data.name} onChange={event => handleFieldChange('name', event.target.value)} placeholder="e.g., Adaba" />
+            <FormField label={t('woredas.form.fields.name.label')} required error={getFieldError('name')}>
+              <Input
+                id="name"
+                type="text"
+                value={data.name}
+                onChange={event => handleFieldChange('name', event.target.value)}
+                placeholder={t('woredas.form.fields.name.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Zone" required error={getFieldError('zone_id')}>
+            <FormField label={t('woredas.form.fields.zone.label')} required error={getFieldError('zone_id')}>
               <Select value={data.zone_id} onValueChange={value => handleFieldChange('zone_id', value)}>
                 <SelectTrigger className={getFieldError('zone_id') ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select a zone" />
+                  <SelectValue placeholder={t('woredas.form.fields.zone.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {zones.map(zone => (
@@ -191,65 +212,114 @@ export default function WoredasEdit({ woreda, zones }: WoredasEditProps) {
               </Select>
             </FormField>
 
-            <FormField label="Status" required error={getFieldError('status')}>
+            <FormField label={t('woredas.form.fields.status.label')} required error={getFieldError('status')}>
               <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
                 <SelectTrigger className={getFieldError('status') ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('woredas.form.fields.status.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="active">{t('woredas.status.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('woredas.status.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </FormField>
 
-            <FormField label="Woreda Code" error={getFieldError('code')}>
-              <Input id="code" type="text" value={data.code} onChange={event => handleFieldChange('code', event.target.value)} placeholder="e.g., WB-14" />
+            <FormField label={t('woredas.form.fields.code.label')} error={getFieldError('code')}>
+              <Input
+                id="code"
+                type="text"
+                value={data.code}
+                onChange={event => handleFieldChange('code', event.target.value)}
+                placeholder={t('woredas.form.fields.code.placeholder')}
+              />
             </FormField>
 
             <div className="md:col-span-2">
-              <FormField label="Administrative Center" error={getFieldError('administrative_center')}>
+              <FormField label={t('woredas.form.fields.administrativeCenter.label')} error={getFieldError('administrative_center')}>
                 <Input
                   id="administrative_center"
                   type="text"
                   value={data.administrative_center}
                   onChange={event => handleFieldChange('administrative_center', event.target.value)}
-                  placeholder="Primary governance hub"
+                  placeholder={t('woredas.form.fields.administrativeCenter.placeholder')}
                 />
               </FormField>
             </div>
           </div>
         </FormSection>
 
-        <FormSection title="Spatial Footprint" description="Update geographic metrics that drive coverage analytics." icon={<Map className="h-4 w-4" />}>
+        <FormSection
+          title={t('woredas.form.sections.geography.title')}
+          description={t('woredas.form.sections.geography.descriptionEdit')}
+          icon={<Map className="h-4 w-4" />}
+        >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <FormField label="Area (km²)" error={getFieldError('area_km2')}>
-              <Input id="area_km2" type="number" step="0.01" value={data.area_km2} onChange={event => handleFieldChange('area_km2', event.target.value)} placeholder="e.g., 8450" />
+            <FormField label={t('woredas.form.fields.area.label')} error={getFieldError('area_km2')}>
+              <Input
+                id="area_km2"
+                type="number"
+                step="0.01"
+                value={data.area_km2}
+                onChange={event => handleFieldChange('area_km2', event.target.value)}
+                placeholder={t('woredas.form.fields.area.placeholderEdit')}
+              />
             </FormField>
 
-            <FormField label="Population" error={getFieldError('population')}>
-              <Input id="population" type="number" step="1" value={data.population} onChange={event => handleFieldChange('population', event.target.value)} placeholder="e.g., 120000" />
+            <FormField label={t('woredas.form.fields.population.label')} error={getFieldError('population')}>
+              <Input
+                id="population"
+                type="number"
+                step="1"
+                value={data.population}
+                onChange={event => handleFieldChange('population', event.target.value)}
+                placeholder={t('woredas.form.fields.population.placeholderEdit')}
+              />
             </FormField>
 
-            <FormField label="Elevation (m)" error={getFieldError('elevation_m')}>
-              <Input id="elevation_m" type="number" step="0.01" value={data.elevation_m} onChange={event => handleFieldChange('elevation_m', event.target.value)} placeholder="e.g., 1800" />
+            <FormField label={t('woredas.form.fields.elevation.label')} error={getFieldError('elevation_m')}>
+              <Input
+                id="elevation_m"
+                type="number"
+                step="0.01"
+                value={data.elevation_m}
+                onChange={event => handleFieldChange('elevation_m', event.target.value)}
+                placeholder={t('woredas.form.fields.elevation.placeholderEdit')}
+              />
             </FormField>
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Latitude" error={getFieldError('latitude')}>
-              <Input id="latitude" type="number" step="0.000001" value={data.latitude} onChange={event => handleFieldChange('latitude', event.target.value)} placeholder="e.g., 7.123456" />
+            <FormField label={t('woredas.form.fields.latitude.label')} error={getFieldError('latitude')}>
+              <Input
+                id="latitude"
+                type="number"
+                step="0.000001"
+                value={data.latitude}
+                onChange={event => handleFieldChange('latitude', event.target.value)}
+                placeholder={t('woredas.form.fields.latitude.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Longitude" error={getFieldError('longitude')}>
-              <Input id="longitude" type="number" step="0.000001" value={data.longitude} onChange={event => handleFieldChange('longitude', event.target.value)} placeholder="e.g., 39.987654" />
+            <FormField label={t('woredas.form.fields.longitude.label')} error={getFieldError('longitude')}>
+              <Input
+                id="longitude"
+                type="number"
+                step="0.000001"
+                value={data.longitude}
+                onChange={event => handleFieldChange('longitude', event.target.value)}
+                placeholder={t('woredas.form.fields.longitude.placeholder')}
+              />
             </FormField>
           </div>
         </FormSection>
 
-        <FormSection title="Infrastructure Intelligence" description="Capture readiness signals and surface route quality considerations." icon={<FileText className="h-4 w-4" />}>
+        <FormSection
+          title={t('woredas.form.sections.infrastructure.title')}
+          description={t('woredas.form.sections.infrastructure.descriptionEdit')}
+          icon={<FileText className="h-4 w-4" />}
+        >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Accessibility Score" error={getFieldError('accessibility_score')}>
+            <FormField label={t('woredas.form.fields.accessibility.label')} error={getFieldError('accessibility_score')}>
               <Input
                 id="accessibility_score"
                 type="number"
@@ -258,37 +328,37 @@ export default function WoredasEdit({ woreda, zones }: WoredasEditProps) {
                 step="0.01"
                 value={data.accessibility_score}
                 onChange={event => handleFieldChange('accessibility_score', event.target.value)}
-                placeholder="0 - 100"
+                placeholder={t('woredas.form.fields.accessibility.placeholder')}
               />
             </FormField>
 
-            <FormField label="Description">
+            <FormField label={t('woredas.form.fields.description.label')}>
               <Textarea
                 id="description"
                 value={data.description}
                 onChange={event => handleFieldChange('description', event.target.value)}
-                placeholder="Brief narrative on service coverage or economic relevance"
+                placeholder={t('woredas.form.fields.description.placeholderEdit')}
                 className="min-h-[100px]"
               />
             </FormField>
           </div>
 
-          <FormField label="Infrastructure Notes">
+          <FormField label={t('woredas.form.fields.infrastructureNotes.label')}>
             <Textarea
               id="infrastructure_notes"
               value={data.infrastructure_notes}
               onChange={event => handleFieldChange('infrastructure_notes', event.target.value)}
-              placeholder="Connectivity, utilities, telecom coverage, or constraints"
+              placeholder={t('woredas.form.fields.infrastructureNotes.placeholder')}
               className="min-h-[120px]"
             />
           </FormField>
 
-          <FormField label="Road Quality Notes">
+          <FormField label={t('woredas.form.fields.roadQualityNotes.label')}>
             <Textarea
               id="road_quality_notes"
               value={data.road_quality_notes}
               onChange={event => handleFieldChange('road_quality_notes', event.target.value)}
-              placeholder="Surface conditions, seasonal disruptions, or detours"
+              placeholder={t('woredas.form.fields.roadQualityNotes.placeholder')}
               className="min-h-[120px]"
             />
           </FormField>
@@ -297,18 +367,18 @@ export default function WoredasEdit({ woreda, zones }: WoredasEditProps) {
 
       <FormActionsBar>
         <Button type="button" variant="outline" asChild>
-          <Link href="/woredas">Cancel</Link>
+          <Link href="/woredas">{t('woredas.form.actions.cancel')}</Link>
         </Button>
         <Button type="submit" disabled={processing || Object.keys(frontendErrors).length > 0 || Boolean(Object.keys(errors).length > 0)} onClick={submit}>
           {processing ? (
             <>
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-              Updating...
+              {t('woredas.form.actions.updating')}
             </>
           ) : (
             <>
               <CheckCircle className="mr-2 h-4 w-4" />
-              Update Woreda
+              {t('woredas.form.actions.update')}
             </>
           )}
         </Button>

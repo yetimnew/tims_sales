@@ -30,13 +30,7 @@ import { ListingTableShell, type ListingTableColumn } from '@/components/listing
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Outsource Performances',
-        href: '/outsource-performances',
-    },
-];
+import { useTranslation } from 'react-i18next';
 
 interface OutsourceSummary {
     id: number;
@@ -118,103 +112,7 @@ interface ColumnDefinition {
     align?: 'left' | 'center' | 'right';
 }
 
-const COLUMN_DEFINITIONS: ColumnDefinition[] = [
-    { id: 'trip_number', label: 'Trip #', sortKey: 'trip_number' },
-    { id: 'dispatch_date', label: 'Dispatch Date', sortKey: 'dispatch_date' },
-    { id: 'vendor', label: 'Vendor', sortKey: 'vendor' },
-    { id: 'route', label: 'Route', sortable: false },
-    { id: 'distance_km', label: 'Distance (KM)', sortKey: 'distance_km', align: 'right' },
-    { id: 'cargo_volume_mt', label: 'Cargo (MT)', sortKey: 'cargo_volume_mt', align: 'right' },
-    { id: 'tonkm', label: 'Ton-KM', sortKey: 'tonkm', align: 'right' },
-    { id: 'cost', label: 'Cost', sortKey: 'cost', align: 'right' },
-    { id: 'status', label: 'Status', sortKey: 'status', align: 'center' },
-];
-
 const SKELETON_FLAG_KEY = 'outsource-performances.index.shouldShowSkeleton';
-
-const formatNumberValue = (value?: number | string | null, fractionDigits = 2, suffix = ''): string => {
-    if (value === null || value === undefined || value === '') {
-        return '—';
-    }
-
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) {
-        return '—';
-    }
-
-    return `${numeric.toLocaleString('en-US', {
-        minimumFractionDigits: fractionDigits,
-        maximumFractionDigits: fractionDigits,
-    })}${suffix}`;
-};
-
-const formatCurrencyValue = (value?: number | string | null): string => {
-    if (value === null || value === undefined || value === '') {
-        return '—';
-    }
-
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) {
-        return '—';
-    }
-
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'ETB',
-        maximumFractionDigits: 2,
-    }).format(numeric);
-};
-
-const formatDateValue = (value?: string | null): string => {
-    if (!value) {
-        return '—';
-    }
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-        return '—';
-    }
-
-    return parsed.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
-};
-
-const renderStatusBadge = (status: string): ReactNode => {
-    const normalized = status?.toLowerCase();
-
-    if (normalized === 'active' || normalized === 'in_transit') {
-        return (
-            <Badge className="border border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/30 dark:text-blue-200">
-                {status ? status.replace(/_/g, ' ') : 'Active'}
-            </Badge>
-        );
-    }
-
-    if (normalized === 'completed') {
-        return (
-            <Badge className="border border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200">
-                Completed
-            </Badge>
-        );
-    }
-
-    if (normalized === 'cancelled') {
-        return (
-            <Badge className="border border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/30 dark:text-rose-200">
-                Cancelled
-            </Badge>
-        );
-    }
-
-    return (
-        <Badge className="border border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-800/50 dark:bg-slate-900/40 dark:text-slate-200">
-            {status || 'Unknown'}
-        </Badge>
-    );
-};
 
 export default function OutsourcePerformancesIndex({
     outsourcePerformances,
@@ -223,11 +121,136 @@ export default function OutsourcePerformancesIndex({
     outsourceOptions,
     perPageOptions,
 }: OutsourcePerformanceIndexProps) {
+    const { t, i18n } = useTranslation();
     const { hasPermission } = usePermissions();
+    const locale = i18n.language || 'en-US';
+    const notAvailableLabel = t('outsourcePerformances.fallbacks.notAvailable');
+    const unknownLabel = t('outsourcePerformances.fallbacks.unknown');
 
     const canCreate = hasPermission('outsource-performances.create');
     const canEdit = hasPermission('outsource-performances.edit');
     const canDelete = hasPermission('outsource-performances.destroy');
+
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('outsourcePerformances.title'),
+                href: '/outsource-performances',
+            },
+        ],
+        [t],
+    );
+
+    const columnDefinitions: ColumnDefinition[] = useMemo(
+        () => [
+            { id: 'trip_number', label: t('outsourcePerformances.columns.tripNumber'), sortKey: 'trip_number' },
+            { id: 'dispatch_date', label: t('outsourcePerformances.columns.dispatchDate'), sortKey: 'dispatch_date' },
+            { id: 'vendor', label: t('outsourcePerformances.columns.vendor'), sortKey: 'vendor' },
+            { id: 'route', label: t('outsourcePerformances.columns.route'), sortable: false },
+            { id: 'distance_km', label: t('outsourcePerformances.columns.distance'), sortKey: 'distance_km', align: 'right' },
+            { id: 'cargo_volume_mt', label: t('outsourcePerformances.columns.cargo'), sortKey: 'cargo_volume_mt', align: 'right' },
+            { id: 'tonkm', label: t('outsourcePerformances.columns.tonkm'), sortKey: 'tonkm', align: 'right' },
+            { id: 'cost', label: t('outsourcePerformances.columns.cost'), sortKey: 'cost', align: 'right' },
+            { id: 'status', label: t('outsourcePerformances.columns.status'), sortKey: 'status', align: 'center' },
+        ],
+        [t],
+    );
+
+    const formatNumberValue = useCallback(
+        (value?: number | string | null, fractionDigits = 2, suffix = ''): string => {
+            if (value === null || value === undefined || value === '') {
+                return notAvailableLabel;
+            }
+
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) {
+                return notAvailableLabel;
+            }
+
+            return `${numeric.toLocaleString(locale, {
+                minimumFractionDigits: fractionDigits,
+                maximumFractionDigits: fractionDigits,
+            })}${suffix}`;
+        },
+        [locale, notAvailableLabel],
+    );
+
+    const formatCurrencyValue = useCallback(
+        (value?: number | string | null): string => {
+            if (value === null || value === undefined || value === '') {
+                return notAvailableLabel;
+            }
+
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) {
+                return notAvailableLabel;
+            }
+
+            return new Intl.NumberFormat(locale, {
+                style: 'currency',
+                currency: 'ETB',
+                maximumFractionDigits: 2,
+            }).format(numeric);
+        },
+        [locale, notAvailableLabel],
+    );
+
+    const formatDateValue = useCallback(
+        (value?: string | null): string => {
+            if (!value) {
+                return notAvailableLabel;
+            }
+
+            const parsed = new Date(value);
+            if (Number.isNaN(parsed.getTime())) {
+                return notAvailableLabel;
+            }
+
+            return parsed.toLocaleDateString(locale, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            });
+        },
+        [locale, notAvailableLabel],
+    );
+
+    const renderStatusBadge = useCallback(
+        (status: string): ReactNode => {
+            const normalized = status?.toLowerCase();
+
+            if (normalized === 'active' || normalized === 'in_transit') {
+                return (
+                    <Badge className="border border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/30 dark:text-blue-200">
+                        {t('outsourcePerformances.status.active')}
+                    </Badge>
+                );
+            }
+
+            if (normalized === 'completed') {
+                return (
+                    <Badge className="border border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200">
+                        {t('outsourcePerformances.status.completed')}
+                    </Badge>
+                );
+            }
+
+            if (normalized === 'cancelled') {
+                return (
+                    <Badge className="border border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/30 dark:text-rose-200">
+                        {t('outsourcePerformances.status.cancelled')}
+                    </Badge>
+                );
+            }
+
+            return (
+                <Badge className="border border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-800/50 dark:bg-slate-900/40 dark:text-slate-200">
+                    {status || t('outsourcePerformances.status.unknown')}
+                </Badge>
+            );
+        },
+        [t],
+    );
 
     const [searchTerm, setSearchTerm] = useState(filters?.search ?? '');
     const [selectedOutsource, setSelectedOutsource] = useState(
@@ -277,23 +300,23 @@ export default function OutsourcePerformancesIndex({
     });
 
     const perPageSelectOptions = useMemo(
-        () => availablePerPageOptions.map((option) => ({ value: String(option), label: `${option} / page` })),
-        [availablePerPageOptions],
+        () => availablePerPageOptions.map((option) => ({ value: String(option), label: t('outsourcePerformances.filters.perPageOption', { value: option }) })),
+        [availablePerPageOptions, t],
     );
 
     const tableColumns: ListingTableColumn[] = useMemo(
         () => [
             { id: 'index', label: '#', align: 'center' },
-            ...COLUMN_DEFINITIONS.map((column) => ({
+            ...columnDefinitions.map((column) => ({
                 id: column.id,
                 label: column.label,
                 sortable: column.sortable !== false,
                 sortKey: column.sortKey ?? column.id,
                 align: column.align,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' },
+            { id: 'actions', label: t('outsourcePerformances.table.actions'), align: 'center' },
         ],
-        [],
+        [columnDefinitions, t],
     );
 
     const handleNavigate = useCallback((overrides: Partial<{
@@ -363,7 +386,7 @@ export default function OutsourcePerformancesIndex({
     };
 
     const handleSortToggle = useCallback((columnId: string) => {
-        const definition = COLUMN_DEFINITIONS.find((column) => {
+        const definition = columnDefinitions.find((column) => {
             const key = column.sortKey ?? column.id;
             return key === columnId;
         });
@@ -401,15 +424,15 @@ export default function OutsourcePerformancesIndex({
                 setSelectedRecord(null);
                 setIsDeleting(false);
                 toast({
-                    title: '✅ Trip Deleted',
+                    title: t('outsourcePerformances.delete.successTitle'),
                     description: recordToDelete.trip_number
-                        ? `Outsource trip ${recordToDelete.trip_number} was deleted successfully.`
-                        : 'The outsource performance record was removed successfully.',
+                        ? t('outsourcePerformances.delete.successDescription', { trip: recordToDelete.trip_number })
+                        : t('outsourcePerformances.delete.successDescriptionFallback'),
                 });
             },
             onError: (errors) => {
                 setIsDeleting(false);
-                const fallback = 'Failed to delete outsource performance. Please try again.';
+                const fallback = t('outsourcePerformances.delete.failedDescription');
 
                 if (errors && typeof errors === 'object') {
                     const errorMessages = Object.values(errors)
@@ -418,13 +441,13 @@ export default function OutsourcePerformancesIndex({
                         .join('\n');
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('outsourcePerformances.delete.failedTitle'),
                         description: errorMessages || fallback,
                         variant: 'destructive',
                     });
                 } else {
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('outsourcePerformances.delete.failedTitle'),
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -439,7 +462,7 @@ export default function OutsourcePerformancesIndex({
                 <Button asChild>
                     <Link href="/outsource-performances/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Log Trip
+                        {t('outsourcePerformances.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -449,36 +472,36 @@ export default function OutsourcePerformancesIndex({
     const statsDefinitions: ListingStatDefinition[] = [
         {
             id: 'trips',
-            label: 'Trips Logged',
+            label: t('outsourcePerformances.stats.trips.label'),
             icon: <Activity className="h-3.5 w-3.5 text-indigo-600" />,
-            value: isLoading ? <Skeleton className="h-5 w-20" /> : totalRecords.toLocaleString(),
+            value: isLoading ? <Skeleton className="h-5 w-20" /> : totalRecords.toLocaleString(locale),
             description: isLoading
                 ? <Skeleton className="h-3 w-32" />
-                : `${activeRecords.toLocaleString()} active trips underway`,
+                : t('outsourcePerformances.stats.trips.description', { count: activeRecords.toLocaleString(locale) }),
             valueClassName: isLoading ? undefined : 'text-indigo-600',
         },
         {
             id: 'cargo',
-            label: 'Cargo Moved',
+            label: t('outsourcePerformances.stats.cargo.label'),
             icon: <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />,
             value: isLoading ? <Skeleton className="h-5 w-24" /> : formatNumberValue(totalCargo, 0, ' MT'),
-            description: isLoading ? <Skeleton className="h-3 w-28" /> : 'Total tonnage handled by vendors',
+            description: isLoading ? <Skeleton className="h-3 w-28" /> : t('outsourcePerformances.stats.cargo.description'),
             valueClassName: isLoading ? undefined : 'text-emerald-600',
         },
         {
             id: 'distance',
-            label: 'Distance Covered',
+            label: t('outsourcePerformances.stats.distance.label'),
             icon: <MapPin className="h-3.5 w-3.5 text-rose-600" />,
             value: isLoading ? <Skeleton className="h-5 w-24" /> : formatNumberValue(totalDistance, 0, ' km'),
-            description: isLoading ? <Skeleton className="h-3 w-32" /> : 'Kilometres logged across the period',
+            description: isLoading ? <Skeleton className="h-3 w-32" /> : t('outsourcePerformances.stats.distance.description'),
             valueClassName: isLoading ? undefined : 'text-rose-600',
         },
         {
             id: 'cost',
-            label: 'Total Cost',
+            label: t('outsourcePerformances.stats.cost.label'),
             icon: <Coins className="h-3.5 w-3.5 text-amber-600" />,
             value: isLoading ? <Skeleton className="h-5 w-28" /> : formatCurrencyValue(totalCost),
-            description: isLoading ? <Skeleton className="h-3 w-28" /> : 'Aggregate spend with vendors',
+            description: isLoading ? <Skeleton className="h-3 w-28" /> : t('outsourcePerformances.stats.cost.description'),
             valueClassName: isLoading ? undefined : 'text-amber-600',
         },
     ];
@@ -490,10 +513,10 @@ export default function OutsourcePerformancesIndex({
             case 'dispatch_date':
                 return <span className="text-sm text-muted-foreground">{formatDateValue(record.dispatch_date)}</span>;
             case 'vendor':
-                return <span className="text-sm text-muted-foreground">{record.outsource?.name ?? '—'}</span>;
+                return <span className="text-sm text-muted-foreground">{record.outsource?.name ?? notAvailableLabel}</span>;
             case 'route': {
-                const fromPlace = record.from_place?.name ?? record.fromPlace?.name ?? '—';
-                const toPlace = record.to_place?.name ?? record.toPlace?.name ?? '—';
+                const fromPlace = record.from_place?.name ?? record.fromPlace?.name ?? notAvailableLabel;
+                const toPlace = record.to_place?.name ?? record.toPlace?.name ?? notAvailableLabel;
 
                 return (
                     <div className="flex flex-col text-xs text-muted-foreground">
@@ -513,9 +536,9 @@ export default function OutsourcePerformancesIndex({
             case 'status':
                 return renderStatusBadge(record.status ?? '');
             default:
-                return '—';
+                return notAvailableLabel;
         }
-    }, []);
+    }, [formatCurrencyValue, formatDateValue, formatNumberValue, notAvailableLabel, renderStatusBadge]);
 
     const tableRows = useMemo(() => {
         if (isLoading) {
@@ -524,7 +547,7 @@ export default function OutsourcePerformancesIndex({
                     <TableCell className="text-center">
                         <Skeleton className="h-4 w-6 mx-auto" />
                     </TableCell>
-                    {COLUMN_DEFINITIONS.map((column) => (
+                    {columnDefinitions.map((column) => (
                         <TableCell
                             key={column.id}
                             className={
@@ -549,10 +572,10 @@ export default function OutsourcePerformancesIndex({
             return (
                 <TableRow>
                     <TableCell colSpan={tableColumns.length} className="py-10 text-center text-muted-foreground">
-                        No outsource performance records found.
+                        {t('outsourcePerformances.empty.title')}
                         {canCreate && (
                             <Link href="/outsource-performances/create" className="ml-1 text-primary underline">
-                                Log one
+                                {t('outsourcePerformances.empty.createAction')}
                             </Link>
                         )}
                     </TableCell>
@@ -563,7 +586,7 @@ export default function OutsourcePerformancesIndex({
         return outsourcePerformances.data.map((record, index) => (
             <TableRow key={record.id} className="hover:bg-muted/50">
                 <TableCell className="text-center font-medium text-muted-foreground">{rowOffset + index + 1}</TableCell>
-                {COLUMN_DEFINITIONS.map((column) => (
+                {columnDefinitions.map((column) => (
                     <TableCell
                         key={`${record.id}-${column.id}`}
                         className={
@@ -581,17 +604,17 @@ export default function OutsourcePerformancesIndex({
                     <ListingRowActionsMenu
                         actions={[
                             {
-                                label: 'View',
+                                label: t('outsourcePerformances.actions.view'),
                                 icon: <Eye className="h-4 w-4" />,
                                 href: `/outsource-performances/${record.id}`,
                             },
                             canEdit && {
-                                label: 'Edit',
+                                label: t('outsourcePerformances.actions.edit'),
                                 icon: <Edit className="h-4 w-4" />,
                                 href: `/outsource-performances/${record.id}/edit`,
                             },
                             canDelete && {
-                                label: 'Delete',
+                                label: t('outsourcePerformances.actions.delete'),
                                 icon: <Trash2 className="h-4 w-4" />,
                                 danger: true,
                                 disabled: isDeleting && selectedRecord?.id === record.id,
@@ -656,40 +679,52 @@ export default function OutsourcePerformancesIndex({
             getKey={(item) => item.record.id}
             renderTitle={(item) => (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {t('outsourcePerformances.mobile.position', { value: item.position })}
+                    </span>
                     <span className="text-base font-semibold text-foreground">{item.record.trip_number}</span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
-            renderSubtitle={(item) => item.record.outsource?.name ?? 'Vendor unknown'}
+            renderSubtitle={(item) => item.record.outsource?.name ?? t('outsourcePerformances.mobile.vendorUnknown')}
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Dispatch</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('outsourcePerformances.mobile.dispatch')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {formatDateValue(item.record.dispatch_date)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Route</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('outsourcePerformances.mobile.route')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {(item.record.from_place?.name ?? item.record.fromPlace?.name ?? '—')}
+                            {(item.record.from_place?.name ?? item.record.fromPlace?.name ?? notAvailableLabel)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Distance</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('outsourcePerformances.mobile.distance')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {formatNumberValue(item.record.distance_km, 2, ' km')}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Cost</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('outsourcePerformances.mobile.cost')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {formatCurrencyValue(item.record.cost)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('outsourcePerformances.mobile.status')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {renderStatusBadge(item.record.status ?? '')}
                         </span>
@@ -701,14 +736,14 @@ export default function OutsourcePerformancesIndex({
                     <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                         <Link href={`/outsource-performances/${item.record.id}`}>
                             <Eye className="mr-2 h-4 w-4" />
-                            View
+                            {t('outsourcePerformances.actions.view')}
                         </Link>
                     </Button>
                     {canEdit && (
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/outsource-performances/${item.record.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('outsourcePerformances.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -721,17 +756,17 @@ export default function OutsourcePerformancesIndex({
                             disabled={isDeleting && selectedRecord?.id === item.record.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('outsourcePerformances.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={
                 <div className="py-8 text-center text-muted-foreground">
-                    No outsource performance records found.
+                    {t('outsourcePerformances.empty.title')}
                     {canCreate && (
                         <Link href="/outsource-performances/create" className="ml-1 text-primary underline">
-                            Log one
+                            {t('outsourcePerformances.empty.createAction')}
                         </Link>
                     )}
                 </div>
@@ -743,13 +778,13 @@ export default function OutsourcePerformancesIndex({
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search trips or vendors',
+                placeholder: t('outsourcePerformances.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('outsourcePerformances.filters.rowsLabel'),
                 onChange: handlePerPageChange,
                 options: perPageSelectOptions,
             }}
@@ -757,13 +792,13 @@ export default function OutsourcePerformancesIndex({
             <div className="flex flex-wrap items-center gap-2">
                 <Select value={selectedOutsource} onValueChange={handleOutsourceChange}>
                     <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Vendor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All vendors</SelectItem>
-                        {outsourceOptions?.map((option) => (
-                            <SelectItem key={option.value} value={String(option.value)}>
-                                {option.label}
+                    <SelectValue placeholder={t('outsourcePerformances.filters.vendorPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">{t('outsourcePerformances.filters.allVendors')}</SelectItem>
+                    {outsourceOptions?.map((option) => (
+                        <SelectItem key={option.value} value={String(option.value)}>
+                            {option.label}
                             </SelectItem>
                         ))}
                     </SelectContent>
@@ -775,14 +810,14 @@ export default function OutsourcePerformancesIndex({
     return (
         <>
             <ListPageLayout
-                headTitle="Outsource Performances"
-                title="Outsource Performances"
-                description={`Manage vendor delivery performance (${totalRecords.toLocaleString()} records).`}
+                headTitle={t('outsourcePerformances.title')}
+                title={t('outsourcePerformances.title')}
+                description={t('outsourcePerformances.description', { count: totalRecords.toLocaleString(locale) })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={<ListingStatsHeader stats={statsDefinitions} orientation="row" />}
-                tableTitle="Outsource Trip Ledger"
-                tableDescription="Analyse partner performance across distance, volume, and spend"
+                tableTitle={t('outsourcePerformances.table.title')}
+                tableDescription={t('outsourcePerformances.table.description')}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     !isLoading && outsourcePerformances ? (
@@ -795,17 +830,17 @@ export default function OutsourcePerformancesIndex({
                             extra={(
                                 <div className="flex flex-wrap items-center gap-2">
                                     <Badge variant="outline" className="bg-white/80 text-xs text-slate-600 dark:bg-slate-900/80 dark:text-slate-300">
-                                        Distance: {formatNumberValue(totalDistance, 0, ' km')}
+                                        {t('outsourcePerformances.tableFooter.distance', { value: formatNumberValue(totalDistance, 0, ' km') })}
                                     </Badge>
                                     <Badge variant="outline" className="bg-white/80 text-xs text-slate-600 dark:bg-slate-900/80 dark:text-slate-300">
-                                        Cargo: {formatNumberValue(totalCargo, 0, ' MT')}
+                                        {t('outsourcePerformances.tableFooter.cargo', { value: formatNumberValue(totalCargo, 0, ' MT') })}
                                     </Badge>
                                     <Badge variant="outline" className="bg-white/80 text-xs text-slate-600 dark:bg-slate-900/80 dark:text-slate-300">
-                                        Cost: {formatCurrencyValue(totalCost)}
+                                        {t('outsourcePerformances.tableFooter.cost', { value: formatCurrencyValue(totalCost) })}
                                     </Badge>
                                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                                         <ArrowDownRight className="h-3.5 w-3.5 text-emerald-600" />
-                                        Active: {activeRecords.toLocaleString()}
+                                        {t('outsourcePerformances.tableFooter.active', { count: activeRecords.toLocaleString(locale) })}
                                     </span>
                                 </div>
                             )}
@@ -836,8 +871,8 @@ export default function OutsourcePerformancesIndex({
                         setIsDeleting(false);
                     }
                 }}
-                title="Delete Trip"
-                description="Are you sure you want to delete this outsource performance record? This action cannot be undone."
+                title={t('outsourcePerformances.delete.title')}
+                description={t('outsourcePerformances.delete.description')}
                 itemName={selectedRecord?.trip_number ?? undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/trip.dart';
 import '../../services/trip_service.dart';
 
@@ -14,17 +17,32 @@ class TripDetailsScreen extends StatefulWidget {
 
 class _TripDetailsScreenState extends State<TripDetailsScreen> {
   final TripService _tripService = TripService();
+  final ImagePicker _imagePicker = ImagePicker();
   final TextEditingController _commentController = TextEditingController();
   Trip? _trip;
   bool _isLoading = true;
   bool _isUpdating = false;
+  bool _isUploadingPhoto = false;
   String? _error;
   String? _selectedStatus;
+  List<Map<String, dynamic>> _tripDocuments = [];
 
   @override
   void initState() {
     super.initState();
     _loadTripDetails();
+    _loadTripDocuments();
+  }
+
+  Future<void> _loadTripDocuments() async {
+    try {
+      final documents = await _tripService.getTripDocuments(widget.tripId);
+      setState(() {
+        _tripDocuments = documents;
+      });
+    } catch (e) {
+      // Silently fail - documents are optional
+    }
   }
 
   @override
@@ -134,12 +152,18 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
       appBar: AppBar(
         title: const Text('Trip Details'),
         actions: [
-          if (_trip != null && _trip!.status != 'completed' && _trip!.status != 'cancelled')
+          if (_trip != null && _trip!.status != 'completed' && _trip!.status != 'cancelled') ...[
+            IconButton(
+              icon: const Icon(Icons.camera_alt),
+              onPressed: _isUploadingPhoto ? null : _showPhotoOptions,
+              tooltip: 'Add Photo',
+            ),
             IconButton(
               icon: const Icon(Icons.save),
               onPressed: _isUpdating ? null : _updateTripStatus,
               tooltip: 'Save Changes',
             ),
+          ],
         ],
       ),
       body: RefreshIndicator(
@@ -189,6 +213,10 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                               _buildDistanceCard(context, _trip!),
                               const SizedBox(height: 16),
                             ],
+
+                            // Trip Documents/Photos
+                            _buildDocumentsCard(context),
+                            const SizedBox(height: 16),
 
                             // Update Status Section (only for active/open trips)
                             if (_trip!.status != 'completed' && _trip!.status != 'cancelled') ...[
@@ -338,12 +366,29 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Route',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Route',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                ),
+                // Navigation Button
+                if (trip.destination != null)
+                  ElevatedButton.icon(
+                    onPressed: () => _openNavigation(trip.destination!.name),
+                    icon: const Icon(Icons.navigation, size: 18),
+                    label: const Text('Navigate'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
                   ),
+              ],
             ),
             const Divider(height: 24),
             Row(
@@ -355,6 +400,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                     trip.origin?.name ?? 'N/A',
                     Icons.location_on,
                     Colors.blue,
+                    onTap: trip.origin != null ? () => _openNavigation(trip.origin!.name) : null,
                   ),
                 ),
                 const Padding(
@@ -368,6 +414,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                     trip.destination?.name ?? 'N/A',
                     Icons.location_on,
                     Colors.green,
+                    onTap: trip.destination != null ? () => _openNavigation(trip.destination!.name) : null,
                   ),
                 ),
               ],
@@ -378,45 +425,92 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
     );
   }
 
+  Future<void> _openNavigation(String location) async {
+    // Try Google Maps first
+    final googleMapsUrl = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(location)}',
+    );
+
+    // Try to launch Google Maps
+    if (await canLaunchUrl(googleMapsUrl)) {
+      await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+    } else {
+      // Fallback to generic maps search
+      final mapsUrl = Uri.parse('geo:0,0?q=${Uri.encodeComponent(location)}');
+      if (await canLaunchUrl(mapsUrl)) {
+        await launchUrl(mapsUrl, mode: LaunchMode.externalApplication);
+      } else {
+        // Last resort: web search
+        final webUrl = Uri.parse('https://www.google.com/search?q=${Uri.encodeComponent(location)}');
+        if (await canLaunchUrl(webUrl)) {
+          await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+        }
+      }
+    }
+  }
+
   Widget _buildLocationCard(
     BuildContext context,
     String label,
     String value,
     IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withAlpha(25),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withAlpha(76)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 32, color: color),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
+    Color color, {
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withAlpha(25),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withAlpha(76)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 32, color: color),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: color,
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+            if (onTap != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.open_in_new, size: 14, color: color),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Tap to open',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: color,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -735,6 +829,277 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
     );
   }
 
+  Future<void> _showPhotoOptions() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take Photo'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from Gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.cancel),
+              title: const Text('Cancel'),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source != null) {
+      await _captureAndUploadPhoto(source);
+    }
+  }
+
+  Future<void> _captureAndUploadPhoto(ImageSource source) async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
+
+      if (image == null) {
+        return;
+      }
+
+      // Show dialog to select photo type and add description
+      final result = await showDialog<Map<String, String>>(
+        context: context,
+        builder: (context) => _PhotoUploadDialog(),
+      );
+
+      if (result == null) {
+        return;
+      }
+
+      setState(() {
+        _isUploadingPhoto = true;
+      });
+
+      final uploadResult = await _tripService.uploadTripDocument(
+        tripId: widget.tripId,
+        image: image,
+        type: result['type'],
+        description: result['description'],
+      );
+
+      setState(() {
+        _isUploadingPhoto = false;
+      });
+
+      if (uploadResult['success'] == true) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Photo uploaded successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _loadTripDocuments();
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(uploadResult['error'] ?? 'Failed to upload photo'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isUploadingPhoto = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildDocumentsCard(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Trip Documents & Photos',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                ),
+                if (_trip != null && _trip!.status != 'completed' && _trip!.status != 'cancelled')
+                  IconButton(
+                    icon: const Icon(Icons.add_photo_alternate),
+                    onPressed: _isUploadingPhoto ? null : _showPhotoOptions,
+                    tooltip: 'Add Photo',
+                  ),
+              ],
+            ),
+            const Divider(height: 24),
+            if (_isUploadingPhoto)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_tripDocuments.isEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    children: [
+                      Icon(Icons.photo_library_outlined, size: 48, color: Colors.grey[400]),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No photos uploaded yet',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                      if (_trip != null && _trip!.status != 'completed' && _trip!.status != 'cancelled')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: TextButton.icon(
+                            onPressed: _showPhotoOptions,
+                            icon: const Icon(Icons.add_photo_alternate),
+                            label: const Text('Add Photo'),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                ),
+                itemCount: _tripDocuments.length,
+                itemBuilder: (context, index) {
+                  final doc = _tripDocuments[index];
+                  return GestureDetector(
+                    onTap: () {
+                      // Show full image
+                      showDialog(
+                        context: context,
+                        builder: (context) => Dialog(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AppBar(
+                                title: const Text('Photo'),
+                                automaticallyImplyLeading: false,
+                                actions: [
+                                  IconButton(
+                                    icon: const Icon(Icons.close),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ],
+                              ),
+                              Expanded(
+                                child: CachedNetworkImage(
+                                  imageUrl: doc['image_url'] ?? '',
+                                  fit: BoxFit.contain,
+                                  placeholder: (context, url) => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                  errorWidget: (context, url, error) => const Icon(Icons.error),
+                                ),
+                              ),
+                              if (doc['description'] != null)
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Text(
+                                    doc['description'],
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: CachedNetworkImage(
+                            imageUrl: doc['image_url'] ?? '',
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              color: Colors.grey[200],
+                              child: const Center(
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.error),
+                            ),
+                          ),
+                        ),
+                        if (doc['type'] != null)
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withAlpha(180),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                doc['type'].toString().toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildStatusChip(String status, String label, Color color) {
     final isSelected = _selectedStatus == status;
     return FilterChip(
@@ -803,6 +1168,84 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
       default:
         return Colors.grey;
     }
+  }
+}
+
+// Photo Upload Dialog
+class _PhotoUploadDialog extends StatefulWidget {
+  @override
+  State<_PhotoUploadDialog> createState() => _PhotoUploadDialogState();
+}
+
+class _PhotoUploadDialogState extends State<_PhotoUploadDialog> {
+  final TextEditingController _descriptionController = TextEditingController();
+  String _selectedType = 'other';
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Upload Photo'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<String>(
+              value: _selectedType,
+              decoration: const InputDecoration(
+                labelText: 'Photo Type',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'cargo', child: Text('Cargo')),
+                DropdownMenuItem(value: 'delivery', child: Text('Delivery')),
+                DropdownMenuItem(value: 'damage', child: Text('Damage')),
+                DropdownMenuItem(value: 'other', child: Text('Other')),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedType = value;
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description (Optional)',
+                border: OutlineInputBorder(),
+                hintText: 'Add a description...',
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context, {
+              'type': _selectedType,
+              'description': _descriptionController.text.trim().isEmpty
+                  ? null
+                  : _descriptionController.text.trim(),
+            });
+          },
+          child: const Text('Upload'),
+        ),
+      ],
+    );
   }
 }
 

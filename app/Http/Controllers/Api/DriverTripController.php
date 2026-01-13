@@ -8,6 +8,7 @@ use App\Models\DriverTruck;
 use App\Models\Performance;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class DriverTripController extends Controller
@@ -31,7 +32,7 @@ class DriverTripController extends Controller
         $user = $request->user();
         $driver = $this->getDriverForUser($user);
 
-        if (!$driver) {
+        if (! $driver) {
             return response()->json([
                 'success' => false,
                 'message' => 'Driver record not found. Please contact administrator to link your account to a driver record.',
@@ -50,7 +51,7 @@ class DriverTripController extends Controller
             ->latest('date_recived')
             ->first();
 
-        if (!$activeAssignment) {
+        if (! $activeAssignment) {
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -100,7 +101,7 @@ class DriverTripController extends Controller
         $user = $request->user();
         $driver = $this->getDriverForUser($user);
 
-        if (!$driver) {
+        if (! $driver) {
             return response()->json([
                 'success' => false,
                 'message' => 'Driver record not found.',
@@ -115,7 +116,7 @@ class DriverTripController extends Controller
             ->latest('date_recived')
             ->first();
 
-        if (!$activeAssignment) {
+        if (! $activeAssignment) {
             return response()->json([
                 'success' => false,
                 'message' => 'No active truck assignment',
@@ -127,7 +128,7 @@ class DriverTripController extends Controller
             ->with(['origin', 'destination', 'operation', 'cargoType'])
             ->first();
 
-        if (!$trip) {
+        if (! $trip) {
             return response()->json([
                 'success' => false,
                 'message' => 'Trip not found',
@@ -161,7 +162,7 @@ class DriverTripController extends Controller
         $user = $request->user();
         $driver = $this->getDriverForUser($user);
 
-        if (!$driver) {
+        if (! $driver) {
             return response()->json([
                 'success' => false,
                 'message' => 'Driver record not found.',
@@ -176,7 +177,7 @@ class DriverTripController extends Controller
             ->latest('date_recived')
             ->first();
 
-        if (!$activeAssignment) {
+        if (! $activeAssignment) {
             return response()->json([
                 'success' => false,
                 'message' => 'No active truck assignment',
@@ -187,7 +188,7 @@ class DriverTripController extends Controller
             ->where('driver_truck_id', $activeAssignment->id)
             ->first();
 
-        if (!$trip) {
+        if (! $trip) {
             return response()->json([
                 'success' => false,
                 'message' => 'Trip not found',
@@ -260,5 +261,140 @@ class DriverTripController extends Controller
         }
 
         return $data;
+    }
+
+    /**
+     * Upload trip document/photo
+     */
+    public function uploadDocument(Request $request, int $id): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
+            'type' => 'nullable|string|in:cargo,delivery,damage,other',
+            'description' => 'nullable|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = $request->user();
+        $driver = $this->getDriverForUser($user);
+
+        if (! $driver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver record not found.',
+            ], 404);
+        }
+
+        // Verify trip belongs to driver's active assignment
+        $activeAssignment = DriverTruck::where('driver_id', $driver->id)
+            ->where('status', 'active')
+            ->whereNull('date_detach')
+            ->where('is_attached', true)
+            ->latest('date_recived')
+            ->first();
+
+        if (! $activeAssignment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active truck assignment',
+            ], 404);
+        }
+
+        $trip = Performance::where('id', $id)
+            ->where('driver_truck_id', $activeAssignment->id)
+            ->first();
+
+        if (! $trip) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Trip not found',
+            ], 404);
+        }
+
+        try {
+            // Store the image
+            $imagePath = $request->file('image')->store('trip-documents', 'public');
+
+            // Store document metadata in trip's comment or create a separate table
+            // For now, we'll store the path in a JSON field or extend the model
+            // TODO: Create trip_attachments table for better structure
+            // For MVP, we'll return the image URL
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document uploaded successfully',
+                'data' => [
+                    'id' => uniqid('DOC-', true),
+                    'trip_id' => $trip->id,
+                    'image_url' => Storage::disk('public')->url($imagePath),
+                    'type' => $request->input('type', 'other'),
+                    'description' => $request->input('description'),
+                    'uploaded_at' => now()->toIso8601String(),
+                ],
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload document. Please try again.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Get trip documents/photos
+     */
+    public function getDocuments(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+        $driver = $this->getDriverForUser($user);
+
+        if (! $driver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver record not found.',
+            ], 404);
+        }
+
+        // Verify trip belongs to driver's active assignment
+        $activeAssignment = DriverTruck::where('driver_id', $driver->id)
+            ->where('status', 'active')
+            ->whereNull('date_detach')
+            ->where('is_attached', true)
+            ->latest('date_recived')
+            ->first();
+
+        if (! $activeAssignment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active truck assignment',
+            ], 404);
+        }
+
+        $trip = Performance::where('id', $id)
+            ->where('driver_truck_id', $activeAssignment->id)
+            ->first();
+
+        if (! $trip) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Trip not found',
+            ], 404);
+        }
+
+        // TODO: Fetch from trip_attachments table when implemented
+        // For now, return empty array
+        return response()->json([
+            'success' => true,
+            'data' => [],
+            'message' => 'No documents found for this trip',
+        ]);
     }
 }

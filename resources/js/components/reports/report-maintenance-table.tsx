@@ -4,6 +4,7 @@ import { InertiaPagination } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency, formatDecimal, formatInteger, formatPercentage } from './formatters';
+import { useTranslation } from 'react-i18next';
 
 export interface MaintenanceReportRow {
     truck_id: number;
@@ -86,13 +87,14 @@ export function ReportMaintenanceTable({
     rows,
     totals,
     filterBadges,
-    emptyMessage = 'No maintenance records match the selected filters.',
+    emptyMessage,
     paginatorMeta,
     paginationLinks,
     perPageOptions,
     perPage,
     onPerPageChange,
 }: ReportMaintenanceTableProps) {
+    const { t } = useTranslation();
     const safeRows = Array.isArray(rows) ? rows : [];
     const safeTotals = totals ?? {
         records: 0,
@@ -120,8 +122,19 @@ export function ReportMaintenanceTable({
             onPerPageChange(parsed);
         }
     };
+    const resolvedEmptyMessage = emptyMessage ?? t('maintenanceReport.table.empty');
     const showingText = safeMeta
-        ? `Showing ${safeMeta.from ?? 0}–${safeMeta.to ?? (safeMeta.total ?? 0)} of ${safeMeta.total ?? 0}`
+        ? t('maintenanceReport.table.showing', {
+              from: safeMeta.from ?? 0,
+              to: safeMeta.to ?? safeMeta.total ?? 0,
+              total: safeMeta.total ?? 0,
+          })
+        : null;
+    const pageIndicatorText = safeMeta?.current_page && safeMeta?.last_page
+        ? t('maintenanceReport.table.pageIndicator', {
+              current: safeMeta.current_page,
+              last: safeMeta.last_page,
+          })
         : null;
 
     return (
@@ -129,19 +142,19 @@ export function ReportMaintenanceTable({
             <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div className="space-y-1">
-                        <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Maintenance Detail</CardTitle>
-                        <CardDescription className="text-sm">Asset workload, completion outcomes, and spend per truck.</CardDescription>
+                        <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">{t('maintenanceReport.table.detailTitle')}</CardTitle>
+                        <CardDescription className="text-sm">{t('maintenanceReport.table.detailDescription')}</CardDescription>
                     </div>
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        <span>Rows per page</span>
+                        <span>{t('maintenanceReport.table.rowsPerPage')}</span>
                         <Select value={String(currentPerPage)} onValueChange={handlePerPageSelect}>
                             <SelectTrigger className="h-8 w-[150px]" disabled={!allowPerPageChange}>
-                                <SelectValue placeholder={`${currentPerPage} / page`} />
+                                <SelectValue placeholder={t('maintenanceReport.table.perPageOption', { value: currentPerPage })} />
                             </SelectTrigger>
                             <SelectContent>
                                 {safePerPageOptions.map((option) => (
                                     <SelectItem key={option} value={String(option)}>
-                                        {option} / page
+                                        {t('maintenanceReport.table.perPageOption', { value: option })}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -160,41 +173,37 @@ export function ReportMaintenanceTable({
                 {showingText ? (
                     <div className="flex flex-col gap-1 border-b border-slate-200/60 px-4 py-3 text-xs text-muted-foreground dark:border-slate-800/60 sm:flex-row sm:items-center sm:justify-between">
                         <span>{showingText}</span>
-                        {safeMeta?.current_page && safeMeta?.last_page ? (
-                            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                                Page {safeMeta.current_page} of {safeMeta.last_page}
-                            </span>
-                        ) : null}
+                        {pageIndicatorText ? <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{pageIndicatorText}</span> : null}
                     </div>
                 ) : null}
                 <div className="overflow-x-auto">
                     <Table>
                         <TableHeader className="bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
                             <TableRow className="divide-x divide-slate-200/40 dark:divide-slate-800/50">
-                                <TableHead className="whitespace-nowrap">Truck</TableHead>
-                                <TableHead className="whitespace-nowrap">Status</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Tasks</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Completed</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Scheduled</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">In progress</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Overdue</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Completion %</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Overdue %</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Total cost</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Completed cost</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Open cost</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Avg cost</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Avg completion (days)</TableHead>
-                                <TableHead className="whitespace-nowrap">Last completed</TableHead>
-                                <TableHead className="whitespace-nowrap">Next scheduled</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Max overdue (days)</TableHead>
+                                <TableHead className="whitespace-nowrap">{t('maintenanceReport.table.truck')}</TableHead>
+                                <TableHead className="whitespace-nowrap">{t('maintenanceReport.table.status')}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{t('maintenanceReport.table.tasks')}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{t('maintenanceReport.table.completed')}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{t('maintenanceReport.table.scheduled')}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{t('maintenanceReport.table.inProgress')}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{t('maintenanceReport.table.overdue')}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{t('maintenanceReport.table.completionRate')}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{t('maintenanceReport.table.overdueRate')}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{t('maintenanceReport.table.totalCost')}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{t('maintenanceReport.table.completedCost')}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{t('maintenanceReport.table.openCost')}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{t('maintenanceReport.table.averageCost')}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{t('maintenanceReport.table.averageCompletionDays')}</TableHead>
+                                <TableHead className="whitespace-nowrap">{t('maintenanceReport.table.lastCompleted')}</TableHead>
+                                <TableHead className="whitespace-nowrap">{t('maintenanceReport.table.nextScheduled')}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{t('maintenanceReport.table.maxOverdue')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {safeRows.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={17} className="py-6 text-center text-sm text-muted-foreground">
-                                        {emptyMessage}
+                                        {resolvedEmptyMessage}
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -227,7 +236,7 @@ export function ReportMaintenanceTable({
                         <TableFooter>
                             <TableRow className="divide-x divide-slate-200/60 bg-slate-100/80 text-sm font-semibold dark:divide-slate-800/50 dark:bg-slate-900/60">
                                 <TableCell className="whitespace-nowrap" colSpan={2}>
-                                    Totals
+                                    {t('maintenanceReport.table.totals')}
                                 </TableCell>
                                 <TableCell className="whitespace-nowrap text-right">{formatInteger(safeTotals.records ?? 0)}</TableCell>
                                 <TableCell className="whitespace-nowrap text-right">{formatInteger(safeTotals.completed ?? 0)}</TableCell>

@@ -16,6 +16,7 @@ import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import {
     Map,
@@ -31,13 +32,6 @@ import {
     Search,
     ChevronRight,
 } from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Zones',
-        href: '/zones',
-    },
-];
 
 type ColumnKey =
     | 'name'
@@ -103,90 +97,16 @@ interface ZonesIndexProps {
 
 const SKELETON_FLAG_KEY = 'zones.index.shouldShowSkeleton';
 
-const COLUMN_DEFINITIONS: Array<{
-    id: ColumnKey;
-    label: string;
-    sortKey?: string;
-    align?: 'center' | 'right';
-}> = [
-    { id: 'name', label: 'Zone', sortKey: 'name' },
-    { id: 'code', label: 'Code', sortKey: 'code' },
-    { id: 'status', label: 'Status', sortKey: 'status', align: 'center' },
-    { id: 'region', label: 'Region', sortKey: 'region_id' },
-    { id: 'administrative_center', label: 'Admin Center', sortKey: 'administrative_center' },
-    { id: 'population', label: 'Population', sortKey: 'population', align: 'right' },
-    { id: 'accessibility_score', label: 'Accessibility', sortKey: 'accessibility_score', align: 'center' },
-    { id: 'woredas_count', label: 'Woredas', sortKey: 'woredas_count', align: 'center' },
-];
-
-const formatNumberValue = (value?: number | string | null, fractionDigits = 0): string => {
-    if (value === null || value === undefined || value === '') {
-        return '—';
-    }
-
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) {
-        return '—';
-    }
-
-    return numeric.toLocaleString('en-US', {
-        minimumFractionDigits: fractionDigits,
-        maximumFractionDigits: fractionDigits,
-    });
-};
-
-const formatCount = (value?: number | string | null): string => {
-    if (value === null || value === undefined || value === '') {
-        return '0';
-    }
-
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) {
-        return '0';
-    }
-
-    return numeric.toLocaleString();
-};
-
-const getStatusBadge = (status?: string | null): React.ReactNode => {
-    if (!status) {
-        return (
-            <Badge variant="outline" className="bg-muted text-muted-foreground">
-                Unknown
-            </Badge>
-        );
-    }
-
-    const normalized = status.toLowerCase();
-    if (normalized === 'active') {
-        return (
-            <Badge className="flex items-center gap-1 border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:border-emerald-900/50 dark:bg-emerald-900/30 dark:text-emerald-200">
-                <CheckCircle className="h-3 w-3" /> Active
-            </Badge>
-        );
-    }
-
-    if (normalized === 'inactive') {
-        return (
-            <Badge className="flex items-center gap-1 border-slate-300 bg-slate-200 text-slate-700 hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
-                <XCircle className="h-3 w-3" /> Inactive
-            </Badge>
-        );
-    }
-
-    return (
-        <Badge variant="outline" className="capitalize">
-            {status}
-        </Badge>
-    );
-};
-
 export default function ZonesIndex({ zones, metrics, filters, statusOptions, perPageOptions }: ZonesIndexProps) {
+    const { t, i18n } = useTranslation();
     const { hasPermission } = usePermissions();
     const canViewZone = hasPermission('zones.show');
     const canCreateZone = hasPermission('zones.create');
     const canEditZone = hasPermission('zones.edit');
     const canDeleteZone = hasPermission('zones.destroy');
+    const locale = i18n.language || 'en-US';
+    const notAvailableLabel = t('zones.fallbacks.notAvailable');
+    const unknownStatusLabel = t('zones.status.unknown');
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
@@ -205,6 +125,110 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
         return availablePerPageOptions[0] ?? 15;
     }, [filters?.per_page, availablePerPageOptions]);
     const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
+
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('zones.title'),
+                href: '/zones',
+            },
+        ],
+        [t],
+    );
+
+    const columnDefinitions = React.useMemo(
+        () => [
+            { id: 'name', label: t('zones.columns.name'), sortKey: 'name' },
+            { id: 'code', label: t('zones.columns.code'), sortKey: 'code' },
+            { id: 'status', label: t('zones.columns.status'), sortKey: 'status', align: 'center' as const },
+            { id: 'region', label: t('zones.columns.region'), sortKey: 'region_id' },
+            {
+                id: 'administrative_center',
+                label: t('zones.columns.administrativeCenter'),
+                sortKey: 'administrative_center',
+            },
+            { id: 'population', label: t('zones.columns.population'), sortKey: 'population', align: 'right' as const },
+            {
+                id: 'accessibility_score',
+                label: t('zones.columns.accessibility'),
+                sortKey: 'accessibility_score',
+                align: 'center' as const,
+            },
+            { id: 'woredas_count', label: t('zones.columns.woredas'), sortKey: 'woredas_count', align: 'center' as const },
+        ],
+        [t],
+    );
+
+    const formatNumberValue = React.useCallback(
+        (value?: number | string | null, fractionDigits = 0): string => {
+            if (value === null || value === undefined || value === '') {
+                return notAvailableLabel;
+            }
+
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) {
+                return notAvailableLabel;
+            }
+
+            return numeric.toLocaleString(locale, {
+                minimumFractionDigits: fractionDigits,
+                maximumFractionDigits: fractionDigits,
+            });
+        },
+        [locale, notAvailableLabel],
+    );
+
+    const formatCount = React.useCallback(
+        (value?: number | string | null): string => {
+            if (value === null || value === undefined || value === '') {
+                return '0';
+            }
+
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) {
+                return '0';
+            }
+
+            return numeric.toLocaleString(locale);
+        },
+        [locale],
+    );
+
+    const getStatusBadge = React.useCallback(
+        (status?: string | null): React.ReactNode => {
+            if (!status) {
+                return (
+                    <Badge variant="outline" className="bg-muted text-muted-foreground">
+                        {unknownStatusLabel}
+                    </Badge>
+                );
+            }
+
+            const normalized = status.toLowerCase();
+            if (normalized === 'active') {
+                return (
+                    <Badge className="flex items-center gap-1 border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:border-emerald-900/50 dark:bg-emerald-900/30 dark:text-emerald-200">
+                        <CheckCircle className="h-3 w-3" /> {t('zones.status.active')}
+                    </Badge>
+                );
+            }
+
+            if (normalized === 'inactive') {
+                return (
+                    <Badge className="flex items-center gap-1 border-slate-300 bg-slate-200 text-slate-700 hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
+                        <XCircle className="h-3 w-3" /> {t('zones.status.inactive')}
+                    </Badge>
+                );
+            }
+
+            return (
+                <Badge variant="outline" className="capitalize">
+                    {status}
+                </Badge>
+            );
+        },
+        [t, unknownStatusLabel],
+    );
 
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedZone, setSelectedZone] = React.useState<ZoneData | null>(null);
@@ -336,14 +360,14 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
                 setSelectedZone(null);
                 setIsDeleting(false);
                 toast({
-                    title: '✅ Zone Deleted',
-                    description: `${selectedZone.name} has been removed successfully.`,
+                    title: t('zones.delete.successTitle'),
+                    description: t('zones.delete.successDescription', { name: selectedZone?.name ?? '' }),
                 });
             },
             onError: (errors) => {
                 setIsDeleting(false);
 
-                const fallback = 'Failed to delete zone. Please try again.';
+                const fallback = t('zones.delete.failedDescription');
                 if (errors && typeof errors === 'object') {
                     const errorMessages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
@@ -351,13 +375,13 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
                         .join('\n');
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('zones.delete.failedTitle'),
                         description: errorMessages || fallback,
                         variant: 'destructive',
                     });
                 } else {
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('zones.delete.failedTitle'),
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -366,93 +390,107 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
         });
     };
 
-    const statsDefinitions = [
-        {
-            id: 'total-zones',
-            label: 'Total Zones',
-            icon: <Map className="h-3.5 w-3.5 text-blue-600" />,
-            className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
-            ) : (
-                formatCount(totalRecords)
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-32" aria-hidden="true" />
-            ) : (
-                `${formatCount(surveyedCount)} surveyed`
-            ),
-            valueClassName: isLoading ? undefined : 'text-blue-600',
-        },
-        {
-            id: 'active-zones',
-            label: 'Active Zones',
-            icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
-            className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
-            ) : (
-                formatCount(activeCount)
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-24" aria-hidden="true" />
-            ) : (
-                'Operational coverage'
-            ),
-            valueClassName: isLoading ? undefined : 'text-emerald-600',
-        },
-        {
-            id: 'inactive-zones',
-            label: 'Inactive Zones',
-            icon: <XCircle className="h-3.5 w-3.5 text-rose-600" />,
-            className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
-            ) : (
-                formatCount(inactiveCount)
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-28" aria-hidden="true" />
-            ) : (
-                'Awaiting activation'
-            ),
-            valueClassName: isLoading ? undefined : 'text-rose-600',
-        },
-        {
-            id: 'population-reach',
-            label: 'Population Reach',
-            icon: <BarChart3 className="h-3.5 w-3.5 text-indigo-500" />,
-            className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-24" aria-hidden="true" />
-            ) : (
-                formatCount(totalPopulation)
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-28" aria-hidden="true" />
-            ) : (
-                'Residents served'
-            ),
-            valueClassName: isLoading ? undefined : 'text-indigo-600',
-        },
-        {
-            id: 'accessibility-index',
-            label: 'Accessibility Index',
-            icon: <Target className="h-3.5 w-3.5 text-amber-600" />,
-            className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
-            ) : (
-                formatNumberValue(averageAccessibility, 1)
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-28" aria-hidden="true" />
-            ) : (
-                'Logistics readiness'
-            ),
-            valueClassName: isLoading ? undefined : 'text-amber-600',
-        },
-    ];
+    const statsDefinitions = React.useMemo(
+        () => [
+            {
+                id: 'total-zones',
+                label: t('zones.stats.total.label'),
+                icon: <Map className="h-3.5 w-3.5 text-blue-600" />,
+                className: 'min-w-[220px] flex-shrink-0',
+                value: isLoading ? (
+                    <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+                ) : (
+                    formatCount(totalRecords)
+                ),
+                description: isLoading ? (
+                    <Skeleton className="h-3 w-32" aria-hidden="true" />
+                ) : (
+                    t('zones.stats.total.description', { count: formatCount(surveyedCount) })
+                ),
+                valueClassName: isLoading ? undefined : 'text-blue-600',
+            },
+            {
+                id: 'active-zones',
+                label: t('zones.stats.active.label'),
+                icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
+                className: 'min-w-[220px] flex-shrink-0',
+                value: isLoading ? (
+                    <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+                ) : (
+                    formatCount(activeCount)
+                ),
+                description: isLoading ? (
+                    <Skeleton className="h-3 w-24" aria-hidden="true" />
+                ) : (
+                    t('zones.stats.active.description')
+                ),
+                valueClassName: isLoading ? undefined : 'text-emerald-600',
+            },
+            {
+                id: 'inactive-zones',
+                label: t('zones.stats.inactive.label'),
+                icon: <XCircle className="h-3.5 w-3.5 text-rose-600" />,
+                className: 'min-w-[220px] flex-shrink-0',
+                value: isLoading ? (
+                    <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+                ) : (
+                    formatCount(inactiveCount)
+                ),
+                description: isLoading ? (
+                    <Skeleton className="h-3 w-28" aria-hidden="true" />
+                ) : (
+                    t('zones.stats.inactive.description')
+                ),
+                valueClassName: isLoading ? undefined : 'text-rose-600',
+            },
+            {
+                id: 'population-reach',
+                label: t('zones.stats.population.label'),
+                icon: <BarChart3 className="h-3.5 w-3.5 text-indigo-500" />,
+                className: 'min-w-[220px] flex-shrink-0',
+                value: isLoading ? (
+                    <Skeleton className="h-3.5 w-24" aria-hidden="true" />
+                ) : (
+                    formatCount(totalPopulation)
+                ),
+                description: isLoading ? (
+                    <Skeleton className="h-3 w-28" aria-hidden="true" />
+                ) : (
+                    t('zones.stats.population.description')
+                ),
+                valueClassName: isLoading ? undefined : 'text-indigo-600',
+            },
+            {
+                id: 'accessibility-index',
+                label: t('zones.stats.accessibility.label'),
+                icon: <Target className="h-3.5 w-3.5 text-amber-600" />,
+                className: 'min-w-[220px] flex-shrink-0',
+                value: isLoading ? (
+                    <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+                ) : (
+                    formatNumberValue(averageAccessibility, 1)
+                ),
+                description: isLoading ? (
+                    <Skeleton className="h-3 w-28" aria-hidden="true" />
+                ) : (
+                    t('zones.stats.accessibility.description')
+                ),
+                valueClassName: isLoading ? undefined : 'text-amber-600',
+            },
+        ],
+        [
+            activeCount,
+            averageAccessibility,
+            formatCount,
+            formatNumberValue,
+            inactiveCount,
+            isLoading,
+            surveyedCount,
+            t,
+            totalPopulation,
+            totalRecords,
+        ],
+    );
 
     const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
 
@@ -460,60 +498,63 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
         () =>
             availablePerPageOptions.map((option) => ({
                 value: String(option),
-                label: `${option} / page`,
+                label: t('zones.filters.perPageOption', { value: option }),
             })),
-        [availablePerPageOptions],
+        [availablePerPageOptions, t],
     );
 
     const tableColumns = React.useMemo(
         () => [
-            { id: 'index', label: '#', align: 'center' as const },
-            ...COLUMN_DEFINITIONS.map((column) => ({
+            { id: 'index', label: t('zones.table.index'), align: 'center' as const },
+            ...columnDefinitions.map((column) => ({
                 id: column.id,
                 label: column.label,
                 sortable: Boolean(column.sortKey),
                 sortKey: column.sortKey,
                 align: column.align,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
+            { id: 'actions', label: t('zones.table.actions'), align: 'center' as const },
         ],
-        [],
+        [columnDefinitions, t],
     );
 
-    const renderColumnValue = React.useCallback((zone: ZoneData, column: ColumnKey): React.ReactNode => {
-        switch (column) {
-            case 'name':
-                return (
-                    <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-primary" />
-                        <div className="flex flex-col">
-                            <span className="font-medium text-foreground">{zone.name}</span>
-                            {zone.administrative_center && (
-                                <span className="text-xs text-muted-foreground">{zone.administrative_center}</span>
-                            )}
+    const renderColumnValue = React.useCallback(
+        (zone: ZoneData, column: ColumnKey): React.ReactNode => {
+            switch (column) {
+                case 'name':
+                    return (
+                        <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-primary" />
+                            <div className="flex flex-col">
+                                <span className="font-medium text-foreground">{zone.name}</span>
+                                {zone.administrative_center && (
+                                    <span className="text-xs text-muted-foreground">{zone.administrative_center}</span>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                );
-            case 'code':
-                return zone.code || '—';
-            case 'status':
-                return getStatusBadge(zone.status);
-            case 'region':
-                return zone.region?.name || '—';
-            case 'administrative_center':
-                return zone.administrative_center || '—';
-            case 'population':
-                return formatNumberValue(zone.population);
-            case 'accessibility_score':
-                return zone.accessibility_score !== null && zone.accessibility_score !== undefined
-                    ? formatNumberValue(zone.accessibility_score, 1)
-                    : '—';
-            case 'woredas_count':
-                return formatNumberValue(zone.woredas_count ?? 0);
-            default:
-                return '—';
-        }
-    }, []);
+                    );
+                case 'code':
+                    return zone.code || notAvailableLabel;
+                case 'status':
+                    return getStatusBadge(zone.status);
+                case 'region':
+                    return zone.region?.name || notAvailableLabel;
+                case 'administrative_center':
+                    return zone.administrative_center || notAvailableLabel;
+                case 'population':
+                    return formatNumberValue(zone.population);
+                case 'accessibility_score':
+                    return zone.accessibility_score !== null && zone.accessibility_score !== undefined
+                        ? formatNumberValue(zone.accessibility_score, 1)
+                        : notAvailableLabel;
+                case 'woredas_count':
+                    return formatNumberValue(zone.woredas_count ?? 0);
+                default:
+                    return notAvailableLabel;
+            }
+        },
+        [formatNumberValue, getStatusBadge, notAvailableLabel],
+    );
 
     const tableRows = isLoading
         ? Array.from({ length: 8 }).map((_, index) => (
@@ -560,7 +601,7 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
             ? zoneData.map((zone, index) => (
                   <TableRow key={zone.id} className="hover:bg-muted/50">
                       <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                      {COLUMN_DEFINITIONS.map((column) => (
+                      {columnDefinitions.map((column) => (
                           <TableCell
                               key={column.id}
                               className={
@@ -578,17 +619,17 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
                           <ListingRowActionsMenu
                               actions={[
                                   canViewZone && {
-                                      label: 'View',
+                                      label: t('zones.actions.view'),
                                       icon: <Eye className="h-4 w-4" />,
                                       href: `/zones/${zone.id}`,
                                   },
                                   canEditZone && {
-                                      label: 'Edit',
+                                      label: t('zones.actions.edit'),
                                       icon: <Edit className="h-4 w-4" />,
                                       href: `/zones/${zone.id}/edit`,
                                   },
                                   canDeleteZone && {
-                                      label: 'Delete',
+                                      label: t('zones.actions.delete'),
                                       icon: <Trash2 className="h-4 w-4" />,
                                       danger: true,
                                       disabled: isDeleting && selectedZone?.id === zone.id,
@@ -602,10 +643,10 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
             : (
                 <TableRow>
                     <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No zones found.
+                        {t('zones.empty.title')}
                         {canCreateZone && (
                             <Link href="/zones/create" className="ml-1 text-primary underline">
-                                Create one
+                                {t('zones.empty.createAction')}
                             </Link>
                         )}
                     </TableCell>
@@ -662,28 +703,36 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
             getKey={(item) => item.record.id}
             renderTitle={(item) => (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {t('zones.mobile.position', { value: item.position })}
+                    </span>
                     <span className="text-base font-semibold text-foreground">{item.record.name}</span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
-            renderSubtitle={(item) => item.record.region?.name || 'No region assigned'}
+            renderSubtitle={(item) => item.record.region?.name || t('zones.mobile.noRegion')}
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.status || 'Unknown'}
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('zones.mobile.status')}
                         </span>
+                        <div className="text-right text-slate-900 dark:text-slate-100">
+                            {getStatusBadge(item.record.status)}
+                        </div>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Population</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('zones.mobile.population')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {formatNumberValue(item.record.population)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Woredas</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('zones.mobile.woredas')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {formatNumberValue(item.record.woredas_count ?? 0)}
                         </span>
@@ -696,7 +745,7 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
                         <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                             <Link href={`/zones/${item.record.id}`}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t('zones.actions.view')}
                             </Link>
                         </Button>
                     )}
@@ -704,7 +753,7 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/zones/${item.record.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('zones.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -717,17 +766,17 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
                             disabled={isDeleting && selectedZone?.id === item.record.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('zones.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No zones found.
+                    {t('zones.empty.title')}
                     {canCreateZone && (
                         <Link href="/zones/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('zones.empty.createAction')}
                         </Link>
                     )}
                 </div>
@@ -738,35 +787,38 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
     const statusFilterOptions = React.useMemo(
         () =>
             (statusOptions?.length
-                ? statusOptions
+                ? statusOptions.map((option) => ({
+                      value: option.value,
+                      label: t(`zones.filters.statusOptions.${option.value}`, { defaultValue: option.label }),
+                  }))
                 : [
-                      { label: 'Active', value: 'active' },
-                      { label: 'Inactive', value: 'inactive' },
+                      { label: t('zones.filters.statusOptions.active'), value: 'active' },
+                      { label: t('zones.filters.statusOptions.inactive'), value: 'inactive' },
                   ]) || [],
-        [statusOptions],
+        [statusOptions, t],
     );
 
     const tableHeaderExtras = (
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search zones...',
+                placeholder: t('zones.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('zones.filters.rowsLabel'),
                 onChange: handlePerPageChange,
                 options: perPageSelectOptions,
             }}
         >
             <Select value={selectedStatus} onValueChange={handleStatusChange}>
                 <SelectTrigger className="w-full min-w-[160px] sm:w-auto">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t('zones.filters.statusPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="all">{t('zones.filters.statusAll')}</SelectItem>
                     {statusFilterOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -777,13 +829,15 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
         </ListingFilterBar>
     );
 
+    const formattedTotalRecords = React.useMemo(() => formatCount(totalRecords), [formatCount, totalRecords]);
+
     const headerActions = (
         <>
             {canCreateZone && (
                 <Button asChild>
                     <Link href="/zones/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Zone
+                        {t('zones.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -793,14 +847,17 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
     return (
         <>
             <ListPageLayout
-                headTitle="Zones"
-                title="Zones"
-                description={`Manage ${formatCount(totalRecords)} zone${totalRecords === 1 ? '' : 's'} and keep coverage aligned with regional strategy.`}
+                headTitle={t('zones.headTitle')}
+                title={t('zones.title')}
+                description={t('zones.description', {
+                    count: totalRecords,
+                    formattedCount: formattedTotalRecords,
+                })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
-                tableTitle="Zone Inventory"
-                tableDescription="Monitor readiness signals, demographic reach, and operational status by zone"
+                tableTitle={t('zones.table.title')}
+                tableDescription={t('zones.table.description')}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     !isLoading && zones?.links ? (
@@ -837,8 +894,8 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
                         setIsDeleting(false);
                     }
                 }}
-                title="Delete Zone"
-                description="Are you sure you want to delete this zone? This action cannot be undone."
+                title={t('zones.delete.title')}
+                description={t('zones.delete.description')}
                 itemName={selectedZone ? selectedZone.name : undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}

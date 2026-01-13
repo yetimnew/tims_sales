@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { validateRegion, type ValidationErrors } from '@/lib/validation';
 import { toast } from '@/hooks/use-toast';
 import { AlertCircle, CheckCircle, Compass, Globe2, Layers, Map } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Region {
   id: number;
@@ -56,9 +57,10 @@ type RegionFormData = {
 };
 
 export default function RegionsEdit({ region }: RegionEditProps) {
+  const { t } = useTranslation();
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Regions', href: '/regions' },
-    { title: 'Edit', href: `/regions/${region.id}/edit` },
+    { title: t('regions.title'), href: '/regions' },
+    { title: t('regions.form.edit.breadcrumb'), href: `/regions/${region.id}/edit` },
   ];
 
   const { data, setData, put, processing, errors } = useForm<RegionFormData>({
@@ -91,12 +93,12 @@ export default function RegionsEdit({ region }: RegionEditProps) {
 
     if (errorMessages.length > 0) {
       toast({
-        title: '⚠️ Validation Error',
+        title: t('regions.form.validation.toastTitle'),
         description: errorMessages.join(', '),
         variant: 'destructive',
       });
     }
-  }, [errors]);
+  }, [errors, t]);
 
   const setFieldError = useCallback((field: keyof RegionFormData, message: string) => {
     setFrontendErrors(prev => {
@@ -134,6 +136,11 @@ export default function RegionsEdit({ region }: RegionEditProps) {
     const validationResults = validateRegion(data);
     if (Object.keys(validationResults).length > 0) {
       setFrontendErrors(validationResults);
+      toast({
+        title: t('regions.form.validation.toastTitle'),
+        description: t('regions.form.validation.resolve'),
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -142,6 +149,10 @@ export default function RegionsEdit({ region }: RegionEditProps) {
       onSuccess: () => {
         setFrontendErrors({});
         setIsDirty(false);
+        toast({
+          title: t('regions.form.edit.successTitle'),
+          description: t('regions.form.edit.successDescription', { name: region.name }),
+        });
       },
     });
   };
@@ -150,9 +161,9 @@ export default function RegionsEdit({ region }: RegionEditProps) {
 
   return (
     <FormPageLayout
-      title="Update Region"
-      headTitle={`Edit ${region.name}`}
-      description="Refine administrative data and geospatial insights to keep logistics planning current."
+      title={t('regions.form.edit.title')}
+      headTitle={t('regions.form.edit.headTitle', { name: region.name })}
+      description={t('regions.form.edit.description')}
       breadcrumbs={breadcrumbs}
       icon={<Map className="h-5 w-5" />}
       headerAside={isDirty && <UnsavedChangesBadge />}
@@ -161,67 +172,132 @@ export default function RegionsEdit({ region }: RegionEditProps) {
         {hasErrors && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Review the highlighted fields and correct validation issues before saving the region update.</AlertDescription>
+            <AlertDescription>{t('regions.form.validation.resolveForm')}</AlertDescription>
           </Alert>
         )}
 
-        <FormSection title="Region Identity" description="Ensure naming and governance metadata stays aligned with the latest records." icon={<Globe2 className="h-4 w-4" />}>
+        <FormSection
+          title={t('regions.form.sections.identity.title')}
+          description={t('regions.form.sections.identity.descriptionEdit')}
+          icon={<Globe2 className="h-4 w-4" />}
+        >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Region Name" required error={getFieldError('name')}>
-              <Input id="name" type="text" value={data.name} onChange={event => handleFieldChange('name', event.target.value)} placeholder="e.g., Oromia" />
+            <FormField label={t('regions.form.fields.name.label')} required error={getFieldError('name')}>
+              <Input
+                id="name"
+                type="text"
+                value={data.name}
+                onChange={event => handleFieldChange('name', event.target.value)}
+                placeholder={t('regions.form.fields.name.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Region Code" error={getFieldError('code')}>
-              <Input id="code" type="text" value={data.code} onChange={event => handleFieldChange('code', event.target.value)} placeholder="e.g., OR-01" />
+            <FormField label={t('regions.form.fields.code.label')} error={getFieldError('code')}>
+              <Input
+                id="code"
+                type="text"
+                value={data.code}
+                onChange={event => handleFieldChange('code', event.target.value)}
+                placeholder={t('regions.form.fields.code.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Status" required error={getFieldError('status')}>
+            <FormField label={t('regions.form.fields.status.label')} required error={getFieldError('status')}>
               <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
                 <SelectTrigger className={getFieldError('status') ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('regions.form.fields.status.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="active">{t('regions.status.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('regions.status.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </FormField>
 
-            <FormField label="Capital City" error={getFieldError('capital')}>
-              <Input id="capital" type="text" value={data.capital} onChange={event => handleFieldChange('capital', event.target.value)} placeholder="e.g., Adama" />
+            <FormField label={t('regions.form.fields.capital.label')} error={getFieldError('capital')}>
+              <Input
+                id="capital"
+                type="text"
+                value={data.capital}
+                onChange={event => handleFieldChange('capital', event.target.value)}
+                placeholder={t('regions.form.fields.capital.placeholder')}
+              />
             </FormField>
           </div>
         </FormSection>
 
-        <FormSection title="Geographic Profile" description="Update the region footprint, demographics, and positioning for analytics." icon={<Compass className="h-4 w-4" />}>
+        <FormSection
+          title={t('regions.form.sections.geography.title')}
+          description={t('regions.form.sections.geography.descriptionEdit')}
+          icon={<Compass className="h-4 w-4" />}
+        >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <FormField label="Area (km²)" error={getFieldError('area_km2')}>
-              <Input id="area_km2" type="number" step="0.01" value={data.area_km2} onChange={event => handleFieldChange('area_km2', event.target.value)} placeholder="e.g., 35363" />
+            <FormField label={t('regions.form.fields.area.label')} error={getFieldError('area_km2')}>
+              <Input
+                id="area_km2"
+                type="number"
+                step="0.01"
+                value={data.area_km2}
+                onChange={event => handleFieldChange('area_km2', event.target.value)}
+                placeholder={t('regions.form.fields.area.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Population" error={getFieldError('population')}>
-              <Input id="population" type="number" step="1" value={data.population} onChange={event => handleFieldChange('population', event.target.value)} placeholder="e.g., 4800000" />
+            <FormField label={t('regions.form.fields.population.label')} error={getFieldError('population')}>
+              <Input
+                id="population"
+                type="number"
+                step="1"
+                value={data.population}
+                onChange={event => handleFieldChange('population', event.target.value)}
+                placeholder={t('regions.form.fields.population.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Elevation (m)" error={getFieldError('elevation_m')}>
-              <Input id="elevation_m" type="number" step="0.01" value={data.elevation_m} onChange={event => handleFieldChange('elevation_m', event.target.value)} placeholder="e.g., 1325" />
+            <FormField label={t('regions.form.fields.elevation.label')} error={getFieldError('elevation_m')}>
+              <Input
+                id="elevation_m"
+                type="number"
+                step="0.01"
+                value={data.elevation_m}
+                onChange={event => handleFieldChange('elevation_m', event.target.value)}
+                placeholder={t('regions.form.fields.elevation.placeholder')}
+              />
             </FormField>
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Latitude" error={getFieldError('latitude')}>
-              <Input id="latitude" type="number" step="0.000001" value={data.latitude} onChange={event => handleFieldChange('latitude', event.target.value)} placeholder="e.g., 8.980603" />
+            <FormField label={t('regions.form.fields.latitude.label')} error={getFieldError('latitude')}>
+              <Input
+                id="latitude"
+                type="number"
+                step="0.000001"
+                value={data.latitude}
+                onChange={event => handleFieldChange('latitude', event.target.value)}
+                placeholder={t('regions.form.fields.latitude.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Longitude" error={getFieldError('longitude')}>
-              <Input id="longitude" type="number" step="0.000001" value={data.longitude} onChange={event => handleFieldChange('longitude', event.target.value)} placeholder="e.g., 38.757761" />
+            <FormField label={t('regions.form.fields.longitude.label')} error={getFieldError('longitude')}>
+              <Input
+                id="longitude"
+                type="number"
+                step="0.000001"
+                value={data.longitude}
+                onChange={event => handleFieldChange('longitude', event.target.value)}
+                placeholder={t('regions.form.fields.longitude.placeholder')}
+              />
             </FormField>
           </div>
         </FormSection>
 
-        <FormSection title="Infrastructure & Climate" description="Capture readiness signals, climate context, and operational notes." icon={<Layers className="h-4 w-4" />}>
+        <FormSection
+          title={t('regions.form.sections.infrastructure.title')}
+          description={t('regions.form.sections.infrastructure.descriptionEdit')}
+          icon={<Layers className="h-4 w-4" />}
+        >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Accessibility Score" error={getFieldError('accessibility_score')}>
+            <FormField label={t('regions.form.fields.accessibility.label')} error={getFieldError('accessibility_score')}>
               <Input
                 id="accessibility_score"
                 type="number"
@@ -230,41 +306,41 @@ export default function RegionsEdit({ region }: RegionEditProps) {
                 max="100"
                 value={data.accessibility_score}
                 onChange={event => handleFieldChange('accessibility_score', event.target.value)}
-                placeholder="0 - 100"
+                placeholder={t('regions.form.fields.accessibility.placeholder')}
               />
             </FormField>
 
-            <FormField label="Last Surveyed" error={getFieldError('last_surveyed_at')}>
+            <FormField label={t('regions.form.fields.lastSurveyed.label')} error={getFieldError('last_surveyed_at')}>
               <Input id="last_surveyed_at" type="date" value={data.last_surveyed_at} onChange={event => handleFieldChange('last_surveyed_at', event.target.value)} />
             </FormField>
           </div>
 
-          <FormField label="Description">
+          <FormField label={t('regions.form.fields.description.label')}>
             <Textarea
               id="description"
               value={data.description}
               onChange={event => handleFieldChange('description', event.target.value)}
-              placeholder="Regional overview, economic focus, or key logistics partners"
+              placeholder={t('regions.form.fields.description.placeholder')}
               className="min-h-[100px]"
             />
           </FormField>
 
-          <FormField label="Infrastructure Notes">
+          <FormField label={t('regions.form.fields.infrastructureNotes.label')}>
             <Textarea
               id="infrastructure_notes"
               value={data.infrastructure_notes}
               onChange={event => handleFieldChange('infrastructure_notes', event.target.value)}
-              placeholder="Connectivity, utilities, telecom coverage, or known constraints"
+              placeholder={t('regions.form.fields.infrastructureNotes.placeholder')}
               className="min-h-[120px]"
             />
           </FormField>
 
-          <FormField label="Climate Profile">
+          <FormField label={t('regions.form.fields.climateProfile.label')}>
             <Textarea
               id="climate_profile"
               value={data.climate_profile}
               onChange={event => handleFieldChange('climate_profile', event.target.value)}
-              placeholder="Seasonal patterns, temperature ranges, or weather alerts"
+              placeholder={t('regions.form.fields.climateProfile.placeholder')}
               className="min-h-[120px]"
             />
           </FormField>
@@ -273,18 +349,18 @@ export default function RegionsEdit({ region }: RegionEditProps) {
 
       <FormActionsBar>
         <Button type="button" variant="outline" asChild>
-          <Link href="/regions">Cancel</Link>
+          <Link href="/regions">{t('regions.form.actions.cancel')}</Link>
         </Button>
         <Button type="submit" disabled={processing || Object.keys(frontendErrors).length > 0 || Boolean(Object.keys(errors).length > 0)} onClick={submit}>
           {processing ? (
             <>
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-              Updating...
+              {t('regions.form.actions.updating')}
             </>
           ) : (
             <>
               <CheckCircle className="mr-2 h-4 w-4" />
-              Update Region
+              {t('regions.form.actions.update')}
             </>
           )}
         </Button>

@@ -15,6 +15,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
 import { AlertCircle, ArrowLeft, Building2, Flag, Layers, MapPin } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface RegionOption {
   id: number;
@@ -42,12 +43,8 @@ interface ZonesCreateProps {
   regions: RegionOption[];
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Zones', href: '/zones' },
-  { title: 'Create', href: '/zones/create' },
-];
-
 export default function ZonesCreate({ regions }: ZonesCreateProps) {
+  const { t } = useTranslation();
   const { data, setData, post, processing, errors, reset, clearErrors } = useForm<ZoneFormData>({
     name: '',
     status: 'active',
@@ -70,6 +67,14 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const scrollContainerRef = useRef<HTMLFormElement | null>(null);
 
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('zones.title'), href: '/zones' },
+      { title: t('zones.form.create.breadcrumb'), href: '/zones/create' },
+    ],
+    [t],
+  );
+
   useEffect(() => {
     const errorMessages = Object.values(errors)
       .flatMap(message => (Array.isArray(message) ? message : message ? [message] : []))
@@ -77,12 +82,12 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
 
     if (errorMessages.length > 0) {
       toast({
-        title: '⚠️ Validation Error',
+        title: t('zones.form.validation.title'),
         description: errorMessages.join(', '),
         variant: 'destructive',
       });
     }
-  }, [errors]);
+  }, [errors, t]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -133,8 +138,8 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
     if (Object.keys(validationResults).length > 0) {
       setFrontendErrors(validationResults);
       toast({
-        title: '⚠️ Validation Error',
-        description: 'Please resolve the highlighted fields before submitting.',
+        title: t('zones.form.validation.title'),
+        description: t('zones.form.validation.resolve'),
         variant: 'destructive',
       });
       return;
@@ -147,8 +152,8 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
         setIsDirty(false);
         reset();
         toast({
-          title: '✅ Zone Created',
-          description: 'The zone has been registered successfully.',
+          title: t('zones.form.create.successTitle'),
+          description: t('zones.form.create.successDescription'),
         });
       },
     });
@@ -176,9 +181,9 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
 
   return (
     <FormPageLayout
-      title="Register New Zone"
-      headTitle="Create Zone"
-      description="Define sub-regional coverage, readiness signals, and logistics context for planning."
+      title={t('zones.form.create.title')}
+      headTitle={t('zones.form.create.headTitle')}
+      description={t('zones.form.create.description')}
       breadcrumbs={breadcrumbs}
       icon={<Layers className="h-5 w-5" />}
       headerAside={
@@ -186,13 +191,13 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
           <Button variant="ghost" size="sm" asChild>
             <Link href="/zones">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Zones
+              {t('zones.form.create.backToList')}
             </Link>
           </Button>
           {isDirty && <UnsavedChangesBadge />}
           <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
             <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-            Coverage Mapping
+            {t('zones.form.badge')}
           </div>
         </>
       }
@@ -206,15 +211,13 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
         {hasErrors && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Please correct the validation errors before submitting the form.
-            </AlertDescription>
+            <AlertDescription>{t('zones.form.validation.inlineCreate')}</AlertDescription>
           </Alert>
         )}
 
         <FormSection
-          title="Zone Identity"
-          description="Capture the core identification and governance details for this zone."
+          title={t('zones.form.sections.identity.title')}
+          description={t('zones.form.sections.identity.descriptionCreate')}
           icon={
             <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
               <Building2 className="h-4 w-4" />
@@ -222,20 +225,20 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
           }
           contentClassName="gap-6 md:grid-cols-2"
         >
-          <FormField id="name" label="Zone Name" required error={getFieldError('name')}>
+          <FormField id="name" label={t('zones.form.fields.name.label')} required error={getFieldError('name')}>
             <Input
               id="name"
               value={data.name}
               onChange={event => handleFieldChange('name', event.target.value)}
-              placeholder="e.g., East Arsi"
+              placeholder={t('zones.form.fields.name.placeholder')}
               className={getFieldError('name') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
 
-          <FormField id="region_id" label="Region" required error={getFieldError('region_id')}>
+          <FormField id="region_id" label={t('zones.form.fields.region.label')} required error={getFieldError('region_id')}>
             <Select value={data.region_id} onValueChange={value => handleFieldChange('region_id', value)}>
               <SelectTrigger className={getFieldError('region_id') ? 'border-red-500 focus:ring-red-500/20' : ''}>
-                <SelectValue placeholder="Select a region" />
+                <SelectValue placeholder={t('zones.form.fields.region.placeholder')} />
               </SelectTrigger>
               <SelectContent>
                 {regions.map(region => (
@@ -247,42 +250,42 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
             </Select>
           </FormField>
 
-          <FormField id="status" label="Status" required error={getFieldError('status')}>
+          <FormField id="status" label={t('zones.form.fields.status.label')} required error={getFieldError('status')}>
             <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
               <SelectTrigger className={getFieldError('status') ? 'border-red-500 focus:ring-red-500/20' : ''}>
-                <SelectValue placeholder="Select status" />
+                <SelectValue placeholder={t('zones.form.fields.status.placeholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="active">{t('zones.status.active')}</SelectItem>
+                <SelectItem value="inactive">{t('zones.status.inactive')}</SelectItem>
               </SelectContent>
             </Select>
           </FormField>
 
-          <FormField id="code" label="Zone Code" error={getFieldError('code')}>
+          <FormField id="code" label={t('zones.form.fields.code.label')} error={getFieldError('code')}>
             <Input
               id="code"
               value={data.code}
               onChange={event => handleFieldChange('code', event.target.value)}
-              placeholder="e.g., EA-02"
+              placeholder={t('zones.form.fields.code.placeholder')}
               className={getFieldError('code') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
 
-          <FormField id="administrative_center" label="Administrative Center" error={getFieldError('administrative_center')} className="md:col-span-2">
+          <FormField id="administrative_center" label={t('zones.form.fields.administrativeCenter.label')} error={getFieldError('administrative_center')} className="md:col-span-2">
             <Input
               id="administrative_center"
               value={data.administrative_center}
               onChange={event => handleFieldChange('administrative_center', event.target.value)}
-              placeholder="Primary governance hub"
+              placeholder={t('zones.form.fields.administrativeCenter.placeholder')}
               className={getFieldError('administrative_center') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
         </FormSection>
 
         <FormSection
-          title="Geographic Profile"
-          description="Outline the spatial footprint and demographic scale for this zone."
+          title={t('zones.form.sections.geography.title')}
+          description={t('zones.form.sections.geography.descriptionCreate')}
           icon={
             <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
               <MapPin className="h-4 w-4" />
@@ -290,70 +293,70 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
           }
           contentClassName="gap-6 md:grid-cols-3"
         >
-          <FormField id="area_km2" label="Area (km²)" error={getFieldError('area_km2')}>
+          <FormField id="area_km2" label={t('zones.form.fields.area.label')} error={getFieldError('area_km2')}>
             <Input
               id="area_km2"
               type="number"
               step="0.01"
               value={data.area_km2}
               onChange={event => handleFieldChange('area_km2', event.target.value)}
-              placeholder="e.g., 12450"
+              placeholder={t('zones.form.fields.area.placeholder')}
               className={getFieldError('area_km2') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
 
-          <FormField id="population" label="Population" error={getFieldError('population')}>
+          <FormField id="population" label={t('zones.form.fields.population.label')} error={getFieldError('population')}>
             <Input
               id="population"
               type="number"
               step="1"
               value={data.population}
               onChange={event => handleFieldChange('population', event.target.value)}
-              placeholder="e.g., 820000"
+              placeholder={t('zones.form.fields.population.placeholder')}
               className={getFieldError('population') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
 
-          <FormField id="elevation_m" label="Elevation (m)" error={getFieldError('elevation_m')}>
+          <FormField id="elevation_m" label={t('zones.form.fields.elevation.label')} error={getFieldError('elevation_m')}>
             <Input
               id="elevation_m"
               type="number"
               step="0.01"
               value={data.elevation_m}
               onChange={event => handleFieldChange('elevation_m', event.target.value)}
-              placeholder="e.g., 1325"
+              placeholder={t('zones.form.fields.elevation.placeholder')}
               className={getFieldError('elevation_m') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
 
-          <FormField id="latitude" label="Latitude" error={getFieldError('latitude')} className="md:col-span-1">
+          <FormField id="latitude" label={t('zones.form.fields.latitude.label')} error={getFieldError('latitude')} className="md:col-span-1">
             <Input
               id="latitude"
               type="number"
               step="0.000001"
               value={data.latitude}
               onChange={event => handleFieldChange('latitude', event.target.value)}
-              placeholder="e.g., 7.123456"
+              placeholder={t('zones.form.fields.latitude.placeholder')}
               className={getFieldError('latitude') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
 
-          <FormField id="longitude" label="Longitude" error={getFieldError('longitude')} className="md:col-span-1">
+          <FormField id="longitude" label={t('zones.form.fields.longitude.label')} error={getFieldError('longitude')} className="md:col-span-1">
             <Input
               id="longitude"
               type="number"
               step="0.000001"
               value={data.longitude}
               onChange={event => handleFieldChange('longitude', event.target.value)}
-              placeholder="e.g., 39.987654"
+              placeholder={t('zones.form.fields.longitude.placeholder')}
               className={getFieldError('longitude') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
         </FormSection>
 
         <FormSection
-          title="Infrastructure & Climate"
-          description="Record the signals that drive logistics readiness across the zone."
+          title={t('zones.form.sections.infrastructure.title')}
+          description={t('zones.form.sections.infrastructure.descriptionCreate')}
           icon={
             <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
               <Flag className="h-4 w-4" />
@@ -361,7 +364,7 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
           }
           contentClassName="gap-6 md:grid-cols-2"
         >
-          <FormField id="accessibility_score" label="Accessibility Score" error={getFieldError('accessibility_score')}>
+          <FormField id="accessibility_score" label={t('zones.form.fields.accessibility.label')} error={getFieldError('accessibility_score')}>
             <Input
               id="accessibility_score"
               type="number"
@@ -370,37 +373,37 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
               step="0.01"
               value={data.accessibility_score}
               onChange={event => handleFieldChange('accessibility_score', event.target.value)}
-              placeholder="0 - 100"
+              placeholder={t('zones.form.fields.accessibility.placeholder')}
               className={getFieldError('accessibility_score') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             />
           </FormField>
 
-          <FormField id="description" label="Description" error={getFieldError('description')}>
+          <FormField id="description" label={t('zones.form.fields.description.label')} error={getFieldError('description')}>
             <Textarea
               id="description"
               value={data.description}
               onChange={event => handleFieldChange('description', event.target.value)}
-              placeholder="Brief narrative on economic focus or network role"
+              placeholder={t('zones.form.fields.description.placeholder')}
               className={`min-h-[100px] ${getFieldError('description') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
             />
           </FormField>
 
-          <FormField id="infrastructure_notes" label="Infrastructure Notes" error={getFieldError('infrastructure_notes')} className="md:col-span-2">
+          <FormField id="infrastructure_notes" label={t('zones.form.fields.infrastructureNotes.label')} error={getFieldError('infrastructure_notes')} className="md:col-span-2">
             <Textarea
               id="infrastructure_notes"
               value={data.infrastructure_notes}
               onChange={event => handleFieldChange('infrastructure_notes', event.target.value)}
-              placeholder="Connectivity, utilities, telecom coverage, or constraints"
+              placeholder={t('zones.form.fields.infrastructureNotes.placeholder')}
               className={`min-h-[120px] ${getFieldError('infrastructure_notes') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
             />
           </FormField>
 
-          <FormField id="climate_profile" label="Climate Profile" error={getFieldError('climate_profile')} className="md:col-span-2">
+          <FormField id="climate_profile" label={t('zones.form.fields.climateProfile.label')} error={getFieldError('climate_profile')} className="md:col-span-2">
             <Textarea
               id="climate_profile"
               value={data.climate_profile}
               onChange={event => handleFieldChange('climate_profile', event.target.value)}
-              placeholder="Seasonal patterns, weather alerts, or climate risks"
+              placeholder={t('zones.form.fields.climateProfile.placeholder')}
               className={`min-h-[120px] ${getFieldError('climate_profile') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
             />
           </FormField>
@@ -410,8 +413,10 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
           processing={processing}
           disabled={processing || Object.keys(frontendErrors).length > 0}
           cancelHref="/zones"
-          submitLabel="Create Zone"
+          cancelLabel={t('zones.actions.cancel')}
+          submitLabel={processing ? t('zones.form.create.submitting') : t('zones.form.create.submit')}
           isDirty={isDirty}
+          dirtyLabel={t('zones.form.unsaved')}
         />
       </form>
 

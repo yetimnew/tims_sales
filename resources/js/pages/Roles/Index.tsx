@@ -17,6 +17,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Shield,
     CheckCircle,
@@ -77,28 +78,16 @@ interface RolesIndexProps {
     };
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'User management',
-        href: usersIndexRoute().url,
-    },
-    {
-        title: 'Roles',
-        href: '#',
-    },
-];
-
 const SKELETON_FLAG_KEY = 'roles.index.shouldShowSkeleton';
 
 const COLUMN_DEFINITIONS: Array<{
     id: ColumnKey;
-    label: string;
     sortKey?: string;
     align?: 'center' | 'right';
 }> = [
-    { id: 'name', label: 'Role', sortKey: 'name' },
-    { id: 'permissions', label: 'Permissions' },
-    { id: 'created_at', label: 'Created', sortKey: 'created_at' },
+    { id: 'name', sortKey: 'name' },
+    { id: 'permissions' },
+    { id: 'created_at', sortKey: 'created_at' },
 ];
 
 const formatCount = (value?: number | string | null): string => {
@@ -114,17 +103,17 @@ const formatCount = (value?: number | string | null): string => {
     return numeric.toLocaleString();
 };
 
-const formatDateValue = (value?: string | null): string => {
+const formatDateValue = (value: string | null | undefined, locale: string, emptyLabel: string): string => {
     if (!value) {
-        return '—';
+        return emptyLabel;
     }
 
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) {
-        return '—';
+        return emptyLabel;
     }
 
-    return parsed.toLocaleDateString('en-US', {
+    return parsed.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -145,6 +134,9 @@ const getRoleBadgeClass = (roleName: string): string => {
 };
 
 export default function RolesIndex({ roles, filters, permissionGroupOptions, perPageOptions, stats }: RolesIndexProps) {
+    const { t, i18n } = useTranslation();
+    const locale = i18n.language || 'en-US';
+    const notAvailableLabel = t('roles.fallbacks.notAvailable');
     const { hasPermission } = usePermissions();
     const canViewRole = hasPermission('roles.show');
     const canCreateRole = hasPermission('roles.create');
@@ -152,6 +144,19 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
     const canDeleteRole = hasPermission('roles.destroy');
     const canExportRoles = hasPermission('roles.export');
 
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('roles.breadcrumbs.management'),
+                href: usersIndexRoute().url,
+            },
+            {
+                title: t('roles.title'),
+                href: '#',
+            },
+        ],
+        [t],
+    );
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedPermissionGroup, setSelectedPermissionGroup] = React.useState(() => {
         const group = filters?.permission_group ?? null;
@@ -314,15 +319,15 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
                 setSelectedRole(null);
                 setIsDeleting(false);
                 toast({
-                    title: '✅ Role Deleted',
-                    description: `${name} has been removed from the system successfully.`,
+                    title: t('roles.delete.successTitle'),
+                    description: t('roles.delete.successDescription', { name }),
                 });
             },
             onError: () => {
                 setIsDeleting(false);
                 toast({
-                    title: '❌ Delete Failed',
-                    description: 'Please try again or contact support if the issue persists.',
+                    title: t('roles.delete.failedTitle'),
+                    description: t('roles.delete.failedDescription'),
                     variant: 'destructive',
                 });
             },
@@ -341,13 +346,13 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
         () =>
             [
                 selectedPermissionGroupLabel
-                    ? { key: 'permissionGroup' as FilterChipKey, label: `Group: ${selectedPermissionGroupLabel}` }
+                    ? { key: 'permissionGroup' as FilterChipKey, label: t('roles.filters.permissionGroup.chip', { value: selectedPermissionGroupLabel }) }
                     : null,
                 perPage !== String(resolvedPerPage)
-                    ? { key: 'perPage' as FilterChipKey, label: `Rows: ${perPage}` }
+                    ? { key: 'perPage' as FilterChipKey, label: t('roles.filters.rows.chip', { value: perPage }) }
                     : null,
             ].filter(Boolean) as Array<{ key: FilterChipKey; label: string }>,
-        [perPage, resolvedPerPage, selectedPermissionGroupLabel],
+        [perPage, resolvedPerPage, selectedPermissionGroupLabel, t],
     );
 
     const clearFilter = React.useCallback(
@@ -371,49 +376,49 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
     const statsDefinitions = [
         {
             id: 'total-roles',
-            label: 'Total Roles',
+            label: t('roles.stats.total.label'),
             icon: <Shield className="h-3.5 w-3.5 text-indigo-500" />,
             value: isLoading ? <Skeleton className="h-3.5 w-16" aria-hidden="true" /> : formatCount(totalRoles),
             description: isLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Defined access groups'
+                t('roles.stats.total.description')
             ),
             valueClassName: isLoading ? undefined : 'text-indigo-600',
         },
         {
             id: 'admin-roles',
-            label: 'Admin Variants',
+            label: t('roles.stats.admins.label'),
             icon: <Shield className="h-3.5 w-3.5 text-rose-500" />,
             value: isLoading ? <Skeleton className="h-3.5 w-14" aria-hidden="true" /> : formatCount(adminRoles),
             description: isLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                'High privilege profiles'
+                t('roles.stats.admins.description')
             ),
             valueClassName: isLoading ? undefined : 'text-rose-600',
         },
         {
             id: 'average-permissions',
-            label: 'Avg Permissions',
+            label: t('roles.stats.averagePermissions.label'),
             icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />,
             value: isLoading ? <Skeleton className="h-3.5 w-12" aria-hidden="true" /> : String(averagePermissions),
             description: isLoading ? (
                 <Skeleton className="h-3 w-32" aria-hidden="true" />
             ) : (
-                'Per role on average'
+                t('roles.stats.averagePermissions.description')
             ),
             valueClassName: isLoading ? undefined : 'text-emerald-600',
         },
         {
             id: 'guards-tracked',
-            label: 'Guard Types',
+            label: t('roles.stats.guards.label'),
             icon: <ListChecks className="h-3.5 w-3.5 text-sky-500" />,
             value: isLoading ? <Skeleton className="h-3.5 w-10" aria-hidden="true" /> : formatCount(distinctGuards),
             description: isLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                'Unique guard names'
+                t('roles.stats.guards.description')
             ),
             valueClassName: isLoading ? undefined : 'text-sky-600',
         },
@@ -423,17 +428,17 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
 
     const tableColumns = React.useMemo(
         () => [
-            { id: 'index', label: '#', align: 'center' as const },
+            { id: 'index', label: t('roles.columns.index'), align: 'center' as const },
             ...COLUMN_DEFINITIONS.map((column) => ({
                 id: column.id,
-                label: column.label,
+                label: t(`roles.columns.${column.id}`),
                 sortable: Boolean(column.sortKey),
                 sortKey: column.sortKey,
                 align: column.align,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
+            { id: 'actions', label: t('roles.columns.actions'), align: 'center' as const },
         ],
-        [],
+        [t],
     );
 
     const renderColumnValue = React.useCallback((role: RoleRecord, column: ColumnKey): React.ReactNode => {
@@ -446,13 +451,13 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
                             {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
                         </Badge>
                         {role.guard_name && (
-                            <span className="text-xs text-muted-foreground">Guard: {role.guard_name}</span>
+                            <span className="text-xs text-muted-foreground">{t('roles.labels.guard', { value: role.guard_name })}</span>
                         )}
                     </div>
                 );
             case 'permissions':
                 if (!role.permissions?.length) {
-                    return <span className="text-sm text-muted-foreground">No permissions</span>;
+                    return <span className="text-sm text-muted-foreground">{t('roles.fallbacks.noPermissions')}</span>;
                 }
 
                 const preview = role.permissions.slice(0, 3);
@@ -470,17 +475,17 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
                         ))}
                         {remaining > 0 && (
                             <Badge className="border-slate-200 bg-transparent text-xs text-muted-foreground dark:border-slate-700">
-                                +{remaining} more
+                                {t('roles.labels.more', { count: remaining })}
                             </Badge>
                         )}
                     </div>
                 );
             case 'created_at':
-                return <span className="text-sm text-muted-foreground">{formatDateValue(role.created_at)}</span>;
+                return <span className="text-sm text-muted-foreground">{formatDateValue(role.created_at, locale, notAvailableLabel)}</span>;
             default:
-                return '—';
+                return notAvailableLabel;
         }
-    }, []);
+    }, [locale, notAvailableLabel, t]);
 
     const tableRows = isLoading
         ? Array.from({ length: 8 }).map((_, index) => (
@@ -524,17 +529,17 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
                           <ListingRowActionsMenu
                               actions={[
                                   canViewRole && {
-                                      label: 'View',
+                                      label: t('roles.actions.view'),
                                       icon: <Eye className="h-4 w-4" />,
                                       href: `/roles/${role.id}`,
                                   },
                                   canEditRole && {
-                                      label: 'Edit',
+                                      label: t('roles.actions.edit'),
                                       icon: <Edit className="h-4 w-4" />,
                                       href: `/roles/${role.id}/edit`,
                                   },
                                   canDeleteRole && {
-                                      label: 'Delete',
+                                      label: t('roles.actions.delete'),
                                       icon: <Trash2 className="h-4 w-4" />,
                                       danger: true,
                                       disabled: isDeleting && selectedRole?.id === role.id,
@@ -552,17 +557,17 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
                             <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
                                 <Shield className="h-10 w-10 text-muted-foreground" />
                             </div>
-                            <h3 className="mb-2 text-lg font-semibold">No roles found</h3>
+                            <h3 className="mb-2 text-lg font-semibold">{t('roles.empty.title')}</h3>
                             <p className="mb-6 max-w-md text-sm text-muted-foreground">
                                 {searchTerm
-                                    ? `No roles match "${searchTerm}". Try adjusting your filters or search terms.`
-                                    : 'Start by creating your first role to manage access levels effectively.'}
+                                    ? t('roles.empty.filteredDescription', { term: searchTerm })
+                                    : t('roles.empty.description')}
                             </p>
                             {canCreateRole && (
                                 <Button asChild size="sm" className="shadow-sm">
                                     <Link href="/roles/create">
                                         <Plus className="mr-2 h-4 w-4" />
-                                        {searchTerm ? 'Clear Filters & Add Role' : 'Add First Role'}
+                                        {searchTerm ? t('roles.empty.filteredAction') : t('roles.empty.action')}
                                     </Link>
                                 </Button>
                             )}
@@ -622,18 +627,22 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
-            renderSubtitle={(item) => (item.record.guard_name ? `Guard: ${item.record.guard_name}` : undefined)}
+            renderSubtitle={(item) =>
+                item.record.guard_name ? t('roles.labels.guard', { value: item.record.guard_name }) : undefined
+            }
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Permissions</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('roles.mobile.permissions')}</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {item.record.permissions?.length ?? 0}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Created</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">{formatDateValue(item.record.created_at)}</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('roles.mobile.created')}</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatDateValue(item.record.created_at, locale, notAvailableLabel)}
+                        </span>
                     </div>
                 </div>
             )}
@@ -643,7 +652,7 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
                         <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                             <Link href={`/roles/${item.record.id}`}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t('roles.actions.view')}
                             </Link>
                         </Button>
                     )}
@@ -651,7 +660,7 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/roles/${item.record.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('roles.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -664,17 +673,17 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
                             disabled={isDeleting && selectedRole?.id === item.record.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('roles.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No roles found.
+                    {t('roles.empty.title')}
                     {canCreateRole && (
                         <Link href="/roles/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('roles.empty.createOne')}
                         </Link>
                     )}
                 </div>
@@ -704,7 +713,7 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
                         }}
                         className="text-xs text-primary underline"
                     >
-                        Clear search
+                        {t('roles.filters.clearSearch')}
                     </button>
                 )}
             </div>
@@ -714,27 +723,27 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search by role name...',
+                placeholder: t('roles.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('roles.filters.rows.label'),
                 onChange: handlePerPageChange,
                 options: availablePerPageOptions.map((option) => ({
                     value: String(option),
-                    label: `${option} / page`,
+                    label: t('roles.filters.rows.perPageOption', { value: option }),
                 })),
             }}
             trailing={filterChips}
         >
             <Select value={selectedPermissionGroup} onValueChange={handlePermissionGroupChange}>
                 <SelectTrigger className="w-full min-w-[170px] sm:w-auto">
-                    <SelectValue placeholder="Permission group" />
+                    <SelectValue placeholder={t('roles.filters.permissionGroup.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All groups</SelectItem>
+                    <SelectItem value="all">{t('roles.filters.permissionGroup.all')}</SelectItem>
                     {(permissionGroupOptions ?? []).map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -769,14 +778,14 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
                         window.location.href = query ? `/roles/export/csv?${query}` : '/roles/export/csv';
                     }}
                 >
-                    Export CSV
+                    {t('roles.actions.export')}
                 </Button>
             )}
             {canCreateRole && (
                 <Button asChild>
                     <Link href="/roles/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Role
+                        {t('roles.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -786,14 +795,14 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
     return (
         <>
             <ListPageLayout
-                headTitle="Roles"
-                title="Role Management"
-                description={`Manage ${formatCount(totalRoles)} role${totalRoles === 1 ? '' : 's'} across the platform`}
+                headTitle={t('roles.title')}
+                title={t('roles.title')}
+                description={t('roles.description', { count: formatCount(totalRoles), suffix: totalRoles === 1 ? '' : 's' })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
-                tableTitle="Role Directory"
-                tableDescription={`${formatCount(totalRoles)} total role${totalRoles === 1 ? '' : 's'} in system`}
+                tableTitle={t('roles.table.title')}
+                tableDescription={t('roles.table.description', { count: formatCount(totalRoles), suffix: totalRoles === 1 ? '' : 's' })}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     !isLoading && roles?.links ? (
@@ -830,8 +839,8 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
                         setIsDeleting(false);
                     }
                 }}
-                title="Delete Role"
-                description="Are you sure you want to delete this role? This action cannot be undone."
+                title={t('roles.delete.title')}
+                description={t('roles.delete.description')}
                 itemName={selectedRole?.name ?? undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}

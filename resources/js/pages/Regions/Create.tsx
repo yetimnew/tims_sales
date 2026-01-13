@@ -14,6 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
 import { AlertCircle, ArrowLeft, Compass, Globe2, Layers, Map } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react';
 
 type RegionFormData = {
@@ -33,12 +34,8 @@ type RegionFormData = {
     climate_profile: string;
 };
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Regions', href: '/regions' },
-    { title: 'Create', href: '/regions/create' },
-];
-
 export default function RegionsCreate() {
+    const { t } = useTranslation();
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm<RegionFormData>({
         name: '',
         status: 'active',
@@ -68,12 +65,12 @@ export default function RegionsCreate() {
 
         if (errorMessages.length > 0) {
             toast({
-                title: '⚠️ Validation Error',
+                title: t('regions.form.validation.toastTitle'),
                 description: errorMessages.join(', '),
                 variant: 'destructive',
             });
         }
-    }, [errors]);
+    }, [errors, t]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -124,8 +121,8 @@ export default function RegionsCreate() {
         if (Object.keys(validationResults).length > 0) {
             setFrontendErrors(validationResults);
             toast({
-                title: '⚠️ Validation Error',
-                description: 'Please resolve the highlighted fields before submitting.',
+                title: t('regions.form.validation.toastTitle'),
+                description: t('regions.form.validation.resolve'),
                 variant: 'destructive',
             });
             return;
@@ -138,8 +135,8 @@ export default function RegionsCreate() {
                 setIsDirty(false);
                 reset();
                 toast({
-                    title: '✅ Region Created',
-                    description: 'The region has been registered successfully.',
+                    title: t('regions.form.create.successTitle'),
+                    description: t('regions.form.create.successDescription'),
                 });
             },
         });
@@ -165,11 +162,19 @@ export default function RegionsCreate() {
         [errors, frontendErrors]
     );
 
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(
+        () => [
+            { title: t('regions.title'), href: '/regions' },
+            { title: t('regions.form.create.breadcrumb'), href: '/regions/create' },
+        ],
+        [t],
+    );
+
     return (
         <FormPageLayout
-            title="Register New Region"
-            headTitle="Create Region"
-            description="Capture administrative details, geospatial context, and logistics readiness for accurate planning."
+            title={t('regions.form.create.title')}
+            headTitle={t('regions.form.create.headTitle')}
+            description={t('regions.form.create.description')}
             breadcrumbs={breadcrumbs}
             icon={<Map className="h-5 w-5" />}
             headerAside={
@@ -177,13 +182,13 @@ export default function RegionsCreate() {
                     <Button variant="ghost" size="sm" asChild>
                         <Link href="/regions">
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Regions
+                            {t('regions.form.create.backToList')}
                         </Link>
                     </Button>
                     {isDirty && <UnsavedChangesBadge />}
                     <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                         <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-                        Regional Planning
+                        {t('regions.form.create.badge')}
                     </div>
                 </>
             }
@@ -198,14 +203,14 @@ export default function RegionsCreate() {
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
-                            Please correct the validation errors before submitting the form.
+                            {t('regions.form.validation.resolveForm')}
                         </AlertDescription>
                     </Alert>
                 )}
 
                 <FormSection
-                    title="Region Identity"
-                    description="Define how the region should appear across the platform."
+                    title={t('regions.form.sections.identity.title')}
+                    description={t('regions.form.sections.identity.description')}
                     icon={
                         <div className="rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
                             <Globe2 className="h-4 w-4" />
@@ -215,7 +220,7 @@ export default function RegionsCreate() {
                 >
                     <FormField
                         id="name"
-                        label="Region Name"
+                        label={t('regions.form.fields.name.label')}
                         required
                         error={getFieldError('name')}
                     >
@@ -223,28 +228,28 @@ export default function RegionsCreate() {
                             id="name"
                             value={data.name}
                             onChange={event => handleFieldChange('name', event.target.value)}
-                            placeholder="e.g., Oromia"
+                            placeholder={t('regions.form.fields.name.placeholder')}
                             className={getFieldError('name') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
                         />
                     </FormField>
 
                     <FormField
                         id="code"
-                        label="Region Code"
+                        label={t('regions.form.fields.code.label')}
                         error={getFieldError('code')}
                     >
                         <Input
                             id="code"
                             value={data.code}
                             onChange={event => handleFieldChange('code', event.target.value)}
-                            placeholder="e.g., OR-01"
+                            placeholder={t('regions.form.fields.code.placeholder')}
                             className={getFieldError('code') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
                         />
                     </FormField>
 
                     <FormField
                         id="status"
-                        label="Status"
+                        label={t('regions.form.fields.status.label')}
                         required
                         error={getFieldError('status')}
                     >
@@ -253,33 +258,33 @@ export default function RegionsCreate() {
                             onValueChange={value => handleFieldChange('status', value)}
                         >
                             <SelectTrigger className={getFieldError('status') ? 'border-red-500 focus:ring-red-500/20' : ''}>
-                                <SelectValue placeholder="Select status" />
+                                <SelectValue placeholder={t('regions.form.fields.status.placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
+                                <SelectItem value="active">{t('regions.status.active')}</SelectItem>
+                                <SelectItem value="inactive">{t('regions.status.inactive')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </FormField>
 
                     <FormField
                         id="capital"
-                        label="Capital City"
+                        label={t('regions.form.fields.capital.label')}
                         error={getFieldError('capital')}
                     >
                         <Input
                             id="capital"
                             value={data.capital}
                             onChange={event => handleFieldChange('capital', event.target.value)}
-                            placeholder="e.g., Adama"
+                            placeholder={t('regions.form.fields.capital.placeholder')}
                             className={getFieldError('capital') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
                         />
                     </FormField>
                 </FormSection>
 
                 <FormSection
-                    title="Geographic Profile"
-                    description="Provide the spatial footprint and demographics for analytics."
+                    title={t('regions.form.sections.geography.title')}
+                    description={t('regions.form.sections.geography.description')}
                     icon={
                         <div className="rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
                             <Compass className="h-4 w-4" />
@@ -289,7 +294,7 @@ export default function RegionsCreate() {
                 >
                     <FormField
                         id="area_km2"
-                        label="Area (km²)"
+                        label={t('regions.form.fields.area.label')}
                         error={getFieldError('area_km2')}
                     >
                         <Input
@@ -298,14 +303,14 @@ export default function RegionsCreate() {
                             step="0.01"
                             value={data.area_km2}
                             onChange={event => handleFieldChange('area_km2', event.target.value)}
-                            placeholder="e.g., 35363"
+                            placeholder={t('regions.form.fields.area.placeholder')}
                             className={getFieldError('area_km2') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
                         />
                     </FormField>
 
                     <FormField
                         id="population"
-                        label="Population"
+                        label={t('regions.form.fields.population.label')}
                         error={getFieldError('population')}
                     >
                         <Input
@@ -314,14 +319,14 @@ export default function RegionsCreate() {
                             step="1"
                             value={data.population}
                             onChange={event => handleFieldChange('population', event.target.value)}
-                            placeholder="e.g., 4800000"
+                            placeholder={t('regions.form.fields.population.placeholder')}
                             className={getFieldError('population') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
                         />
                     </FormField>
 
                     <FormField
                         id="elevation_m"
-                        label="Elevation (m)"
+                        label={t('regions.form.fields.elevation.label')}
                         error={getFieldError('elevation_m')}
                     >
                         <Input
@@ -330,14 +335,14 @@ export default function RegionsCreate() {
                             step="0.01"
                             value={data.elevation_m}
                             onChange={event => handleFieldChange('elevation_m', event.target.value)}
-                            placeholder="e.g., 1325"
+                            placeholder={t('regions.form.fields.elevation.placeholder')}
                             className={getFieldError('elevation_m') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
                         />
                     </FormField>
 
                     <FormField
                         id="latitude"
-                        label="Latitude"
+                        label={t('regions.form.fields.latitude.label')}
                         error={getFieldError('latitude')}
                         className="md:col-span-1"
                     >
@@ -347,14 +352,14 @@ export default function RegionsCreate() {
                             step="0.000001"
                             value={data.latitude}
                             onChange={event => handleFieldChange('latitude', event.target.value)}
-                            placeholder="e.g., 8.980603"
+                            placeholder={t('regions.form.fields.latitude.placeholder')}
                             className={getFieldError('latitude') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
                         />
                     </FormField>
 
                     <FormField
                         id="longitude"
-                        label="Longitude"
+                        label={t('regions.form.fields.longitude.label')}
                         error={getFieldError('longitude')}
                         className="md:col-span-1"
                     >
@@ -364,15 +369,15 @@ export default function RegionsCreate() {
                             step="0.000001"
                             value={data.longitude}
                             onChange={event => handleFieldChange('longitude', event.target.value)}
-                            placeholder="e.g., 38.757761"
+                            placeholder={t('regions.form.fields.longitude.placeholder')}
                             className={getFieldError('longitude') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
                         />
                     </FormField>
                 </FormSection>
 
                 <FormSection
-                    title="Infrastructure & Climate"
-                    description="Document readiness signals for logistics and service deployment."
+                    title={t('regions.form.sections.infrastructure.title')}
+                    description={t('regions.form.sections.infrastructure.description')}
                     icon={
                         <div className="rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
                             <Layers className="h-4 w-4" />
@@ -382,7 +387,7 @@ export default function RegionsCreate() {
                 >
                     <FormField
                         id="accessibility_score"
-                        label="Accessibility Score"
+                        label={t('regions.form.fields.accessibility.label')}
                         error={getFieldError('accessibility_score')}
                     >
                         <Input
@@ -393,14 +398,14 @@ export default function RegionsCreate() {
                             max="100"
                             value={data.accessibility_score}
                             onChange={event => handleFieldChange('accessibility_score', event.target.value)}
-                            placeholder="0 - 100"
+                            placeholder={t('regions.form.fields.accessibility.placeholder')}
                             className={getFieldError('accessibility_score') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
                         />
                     </FormField>
 
                     <FormField
                         id="last_surveyed_at"
-                        label="Last Surveyed"
+                        label={t('regions.form.fields.lastSurveyed.label')}
                         error={getFieldError('last_surveyed_at')}
                     >
                         <Input
@@ -414,7 +419,7 @@ export default function RegionsCreate() {
 
                     <FormField
                         id="description"
-                        label="Description"
+                        label={t('regions.form.fields.description.label')}
                         error={getFieldError('description')}
                         className="md:col-span-2"
                     >
@@ -422,14 +427,14 @@ export default function RegionsCreate() {
                             id="description"
                             value={data.description}
                             onChange={event => handleFieldChange('description', event.target.value)}
-                            placeholder="Regional overview, economic focus, or key logistics partners"
+                            placeholder={t('regions.form.fields.description.placeholder')}
                             className={`min-h-[100px] ${getFieldError('description') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                         />
                     </FormField>
 
                     <FormField
                         id="infrastructure_notes"
-                        label="Infrastructure Notes"
+                        label={t('regions.form.fields.infrastructureNotes.label')}
                         error={getFieldError('infrastructure_notes')}
                         className="md:col-span-2"
                     >
@@ -437,14 +442,14 @@ export default function RegionsCreate() {
                             id="infrastructure_notes"
                             value={data.infrastructure_notes}
                             onChange={event => handleFieldChange('infrastructure_notes', event.target.value)}
-                            placeholder="Connectivity, utilities, telecom coverage, or known constraints"
+                            placeholder={t('regions.form.fields.infrastructureNotes.placeholder')}
                             className={`min-h-[120px] ${getFieldError('infrastructure_notes') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                         />
                     </FormField>
 
                     <FormField
                         id="climate_profile"
-                        label="Climate Profile"
+                        label={t('regions.form.fields.climateProfile.label')}
                         error={getFieldError('climate_profile')}
                         className="md:col-span-2"
                     >
@@ -452,7 +457,7 @@ export default function RegionsCreate() {
                             id="climate_profile"
                             value={data.climate_profile}
                             onChange={event => handleFieldChange('climate_profile', event.target.value)}
-                            placeholder="Seasonal patterns, temperature ranges, or weather alerts"
+                            placeholder={t('regions.form.fields.climateProfile.placeholder')}
                             className={`min-h-[120px] ${getFieldError('climate_profile') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                         />
                     </FormField>
@@ -462,7 +467,7 @@ export default function RegionsCreate() {
                     processing={processing}
                     disabled={processing || Object.keys(frontendErrors).length > 0}
                     cancelHref="/regions"
-                    submitLabel="Create Region"
+                    submitLabel={t('regions.form.create.submit')}
                     isDirty={isDirty}
                 />
             </form>

@@ -17,6 +17,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { validatePlace, type ValidationErrors } from '@/lib/validation';
 import { toast } from '@/hooks/use-toast';
 import { AlertCircle, CheckCircle, Compass, FileText, MapPin, Navigation } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface WoredaOption {
   id: number;
@@ -64,10 +65,14 @@ interface PlacesEditProps {
 }
 
 export default function PlacesEdit({ place, woredas }: PlacesEditProps) {
-  const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Places', href: '/places' },
-    { title: 'Edit', href: `/places/${place.id}/edit` },
-  ];
+  const { t } = useTranslation();
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('places.title'), href: '/places' },
+      { title: t('places.form.edit.breadcrumb'), href: `/places/${place.id}/edit` },
+    ],
+    [place.id, t],
+  );
 
   const { data, setData, put, processing, errors } = useForm<PlaceFormData>({
     name: place.name ?? '',
@@ -98,12 +103,12 @@ export default function PlacesEdit({ place, woredas }: PlacesEditProps) {
 
     if (errorMessages.length > 0) {
       toast({
-        title: '⚠️ Validation Error',
+        title: t('places.form.validation.toastTitle'),
         description: errorMessages.join(', '),
         variant: 'destructive',
       });
     }
-  }, [errors]);
+  }, [errors, t]);
 
   const setFieldError = useCallback((field: keyof PlaceFormData, message: string) => {
     setFrontendErrors(prev => {
@@ -165,9 +170,9 @@ export default function PlacesEdit({ place, woredas }: PlacesEditProps) {
 
   return (
     <FormPageLayout
-      title="Update Place"
-      headTitle={`Edit ${place.name}`}
-      description="Ensure location intelligence stays accurate for planning and dispatch workflows."
+      title={t('places.form.edit.title')}
+      headTitle={t('places.form.edit.headTitle', { name: place.name })}
+      description={t('places.form.edit.description')}
       breadcrumbs={breadcrumbs}
       icon={<Navigation className="h-5 w-5" />}
       headerAside={isDirty && <UnsavedChangesBadge />}
@@ -176,20 +181,30 @@ export default function PlacesEdit({ place, woredas }: PlacesEditProps) {
         {hasErrors && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Please review the highlighted fields and correct the validation errors before saving the place record.</AlertDescription>
+            <AlertDescription>{t('places.form.validation.resolveEdit')}</AlertDescription>
           </Alert>
         )}
 
-        <FormSection title="Place Identity" description="Maintain the core identity shown across operations and reporting." icon={<MapPin className="h-4 w-4" />}>
+        <FormSection
+          title={t('places.form.sections.identity.title')}
+          description={t('places.form.sections.identity.description')}
+          icon={<MapPin className="h-4 w-4" />}
+        >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Place Name" required error={getFieldError('name')}>
-              <Input id="name" type="text" value={data.name} onChange={event => handleFieldChange('name', event.target.value)} placeholder="e.g., Modjo Dry Port" />
+            <FormField label={t('places.form.fields.name.label')} required error={getFieldError('name')}>
+              <Input
+                id="name"
+                type="text"
+                value={data.name}
+                onChange={event => handleFieldChange('name', event.target.value)}
+                placeholder={t('places.form.fields.name.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Woreda" required error={getFieldError('woreda_id')}>
+            <FormField label={t('places.form.fields.woreda.label')} required error={getFieldError('woreda_id')}>
               <Select value={data.woreda_id} onValueChange={value => handleFieldChange('woreda_id', value)}>
                 <SelectTrigger className={getFieldError('woreda_id') ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select a woreda" />
+                  <SelectValue placeholder={t('places.form.fields.woreda.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {woredas.map(woreda => (
@@ -201,54 +216,92 @@ export default function PlacesEdit({ place, woredas }: PlacesEditProps) {
               </Select>
             </FormField>
 
-            <FormField label="Status" required error={getFieldError('status')}>
+            <FormField label={t('places.form.fields.status.label')} required error={getFieldError('status')}>
               <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
                 <SelectTrigger className={getFieldError('status') ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('places.form.fields.status.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="active">{t('places.status.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('places.status.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </FormField>
 
-            <FormField label="Place Code" error={getFieldError('code')}>
-              <Input id="code" type="text" value={data.code} onChange={event => handleFieldChange('code', event.target.value)} placeholder="e.g., PL-204" />
+            <FormField label={t('places.form.fields.code.label')} error={getFieldError('code')}>
+              <Input
+                id="code"
+                type="text"
+                value={data.code}
+                onChange={event => handleFieldChange('code', event.target.value)}
+                placeholder={t('places.form.fields.code.placeholder')}
+              />
             </FormField>
 
             <div className="md:col-span-2">
               <div className="flex items-center gap-3 rounded-md border border-slate-200/70 bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:border-slate-800/60 dark:bg-slate-900/30 dark:text-slate-300">
                 <Checkbox id="is_logistics_hub" checked={data.is_logistics_hub} onCheckedChange={value => handleCheckboxChange(Boolean(value))} />
                 <Label htmlFor="is_logistics_hub" className="cursor-pointer">
-                  Mark as logistics hub (key fulfillment or consolidation point)
+                  {t('places.form.fields.isLogisticsHub')}
                 </Label>
               </div>
             </div>
           </div>
         </FormSection>
 
-        <FormSection title="Geo Coordinates & Scale" description="Keep coordinates and scale precise for routing accuracy." icon={<Compass className="h-4 w-4" />}>
+        <FormSection
+          title={t('places.form.sections.geo.title')}
+          description={t('places.form.sections.geo.description')}
+          icon={<Compass className="h-4 w-4" />}
+        >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <FormField label="Latitude" error={getFieldError('latitude')}>
-              <Input id="latitude" type="number" step="0.000001" value={data.latitude} onChange={event => handleFieldChange('latitude', event.target.value)} placeholder="e.g., 8.980603" />
+            <FormField label={t('places.form.fields.latitude.label')} error={getFieldError('latitude')}>
+              <Input
+                id="latitude"
+                type="number"
+                step="0.000001"
+                value={data.latitude}
+                onChange={event => handleFieldChange('latitude', event.target.value)}
+                placeholder={t('places.form.fields.latitude.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Longitude" error={getFieldError('longitude')}>
-              <Input id="longitude" type="number" step="0.000001" value={data.longitude} onChange={event => handleFieldChange('longitude', event.target.value)} placeholder="e.g., 38.757761" />
+            <FormField label={t('places.form.fields.longitude.label')} error={getFieldError('longitude')}>
+              <Input
+                id="longitude"
+                type="number"
+                step="0.000001"
+                value={data.longitude}
+                onChange={event => handleFieldChange('longitude', event.target.value)}
+                placeholder={t('places.form.fields.longitude.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Elevation (m)" error={getFieldError('elevation_m')}>
-              <Input id="elevation_m" type="number" step="0.01" value={data.elevation_m} onChange={event => handleFieldChange('elevation_m', event.target.value)} placeholder="e.g., 2145" />
+            <FormField label={t('places.form.fields.elevation.label')} error={getFieldError('elevation_m')}>
+              <Input
+                id="elevation_m"
+                type="number"
+                step="0.01"
+                value={data.elevation_m}
+                onChange={event => handleFieldChange('elevation_m', event.target.value)}
+                placeholder={t('places.form.fields.elevation.placeholder')}
+              />
             </FormField>
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Population" error={getFieldError('population')}>
-              <Input id="population" type="number" step="1" value={data.population} onChange={event => handleFieldChange('population', event.target.value)} placeholder="e.g., 45000" />
+            <FormField label={t('places.form.fields.population.label')} error={getFieldError('population')}>
+              <Input
+                id="population"
+                type="number"
+                step="1"
+                value={data.population}
+                onChange={event => handleFieldChange('population', event.target.value)}
+                placeholder={t('places.form.fields.population.placeholder')}
+              />
             </FormField>
 
-            <FormField label="Accessibility Score" error={getFieldError('accessibility_score')}>
+            <FormField label={t('places.form.fields.accessibility.label')} error={getFieldError('accessibility_score')}>
               <Input
                 id="accessibility_score"
                 type="number"
@@ -257,49 +310,53 @@ export default function PlacesEdit({ place, woredas }: PlacesEditProps) {
                 step="0.01"
                 value={data.accessibility_score}
                 onChange={event => handleFieldChange('accessibility_score', event.target.value)}
-                placeholder="0 - 100"
+                placeholder={t('places.form.fields.accessibility.placeholder')}
               />
             </FormField>
           </div>
 
-          <FormField label="Boundary GeoJSON" hint="Optional — leave blank to rely on coordinates only.">
+          <FormField label={t('places.form.fields.boundaryGeojson.label')} hint={t('places.form.fields.boundaryGeojson.hint')}>
             <Textarea
               id="boundary_geojson"
               value={data.boundary_geojson}
               onChange={event => handleFieldChange('boundary_geojson', event.target.value)}
-              placeholder="Paste GeoJSON Feature or FeatureCollection describing the place boundary"
+              placeholder={t('places.form.fields.boundaryGeojson.placeholder')}
               className="min-h-[160px] font-mono text-xs"
             />
           </FormField>
         </FormSection>
 
-        <FormSection title="Operational Insights" description="Document infrastructure readiness and road intelligence." icon={<FileText className="h-4 w-4" />}>
-          <FormField label="Description">
+        <FormSection
+          title={t('places.form.sections.operations.title')}
+          description={t('places.form.sections.operations.description')}
+          icon={<FileText className="h-4 w-4" />}
+        >
+          <FormField label={t('places.form.fields.description.label')}>
             <Textarea
               id="description"
               value={data.description}
               onChange={event => handleFieldChange('description', event.target.value)}
-              placeholder="Purpose, services available, or notable details about this location"
+              placeholder={t('places.form.fields.description.placeholder')}
               className="min-h-[100px]"
             />
           </FormField>
 
-          <FormField label="Infrastructure Notes">
+          <FormField label={t('places.form.fields.infrastructureNotes.label')}>
             <Textarea
               id="infrastructure_notes"
               value={data.infrastructure_notes}
               onChange={event => handleFieldChange('infrastructure_notes', event.target.value)}
-              placeholder="Utilities, storage capacity, security, or communication coverage"
+              placeholder={t('places.form.fields.infrastructureNotes.placeholder')}
               className="min-h-[120px]"
             />
           </FormField>
 
-          <FormField label="Road Quality Notes">
+          <FormField label={t('places.form.fields.roadQualityNotes.label')}>
             <Textarea
               id="road_quality_notes"
               value={data.road_quality_notes}
               onChange={event => handleFieldChange('road_quality_notes', event.target.value)}
-              placeholder="Surface conditions, seasonal risks, or alternate routes"
+              placeholder={t('places.form.fields.roadQualityNotes.placeholder')}
               className="min-h-[120px]"
             />
           </FormField>
@@ -308,18 +365,18 @@ export default function PlacesEdit({ place, woredas }: PlacesEditProps) {
 
       <FormActionsBar>
         <Button type="button" variant="outline" asChild>
-          <Link href="/places">Cancel</Link>
+          <Link href="/places">{t('places.actions.cancel')}</Link>
         </Button>
         <Button type="submit" disabled={processing || Object.keys(frontendErrors).length > 0 || Boolean(Object.keys(errors).length > 0)} onClick={submit}>
           {processing ? (
             <>
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-              Updating...
+              {t('places.form.actions.updating')}
             </>
           ) : (
             <>
               <CheckCircle className="mr-2 h-4 w-4" />
-              Update Place
+              {t('places.form.actions.update')}
             </>
           )}
         </Button>

@@ -15,19 +15,23 @@ import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
 import { AlertCircle, ArrowLeft, Building2, CheckCircle, Info, Mail, Phone, Save, UserCircle } from 'lucide-react';
 import { type FormEventHandler, useEffect, useMemo, useRef, useState } from 'react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Customers',
-        href: '/customers',
-    },
-    {
-        title: 'Create',
-        href: '/customers/create',
-    },
-];
+import { useTranslation } from 'react-i18next';
 
 export default function CustomersCreate() {
+    const { t } = useTranslation();
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('customers.breadcrumb'),
+                href: '/customers',
+            },
+            {
+                title: t('customers.form.create.breadcrumb'),
+                href: '/customers/create',
+            },
+        ],
+        [t],
+    );
     const { data, setData, post, processing, errors, clearErrors } = useForm<CustomerFormData>({
         name: '',
         contact_person: '',
@@ -71,12 +75,12 @@ export default function CustomersCreate() {
 
         if (normalizedMessages.length > 0) {
             toast({
-                title: '⚠️ Validation Error',
+                title: t('customers.form.validation.title'),
                 description: normalizedMessages.join(', '),
                 variant: 'destructive',
             });
         }
-    }, [errors]);
+    }, [errors, t]);
 
     const handleScrollToTop = () => {
         scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -99,9 +103,9 @@ export default function CustomersCreate() {
                     break;
                 case 'status':
                     if (!value) {
-                        message = 'Status is required';
+                        message = t('customers.form.validation.statusRequired');
                     } else if (!['active', 'inactive'].includes(value)) {
-                        message = 'Invalid status';
+                        message = t('customers.form.validation.statusInvalid');
                     }
                     break;
                 default:
@@ -133,17 +137,17 @@ export default function CustomersCreate() {
         const nextErrors: Partial<Record<CustomerFormField, string>> = { ...validationResult };
 
         if (!data.status) {
-            nextErrors.status = 'Status is required';
+            nextErrors.status = t('customers.form.validation.statusRequired');
         } else if (!['active', 'inactive'].includes(data.status)) {
-            nextErrors.status = 'Invalid status';
+            nextErrors.status = t('customers.form.validation.statusInvalid');
         }
 
         setFrontendErrors(nextErrors);
 
         if (Object.keys(nextErrors).length > 0) {
             toast({
-                title: '⚠️ Validation Error',
-                description: 'Please resolve the highlighted fields before submitting.',
+                title: t('customers.form.validation.title'),
+                description: t('customers.form.validation.resolve'),
                 variant: 'destructive',
             });
             return;
@@ -156,8 +160,8 @@ export default function CustomersCreate() {
                 setIsDirty(false);
                 clearErrors();
                 toast({
-                    title: '✅ Customer Created',
-                    description: 'The customer has been registered successfully.',
+                    title: t('customers.form.create.successTitle'),
+                    description: t('customers.form.create.successDescription'),
                 });
             },
         });
@@ -182,9 +186,9 @@ export default function CustomersCreate() {
 
     return (
         <FormPageLayout
-            title="Register New Customer"
-            headTitle="Create Customer"
-            description="Capture the relationship profile, primary contacts, and operating status."
+            title={t('customers.form.create.title')}
+            headTitle={t('customers.form.create.headTitle')}
+            description={t('customers.form.create.description')}
             breadcrumbs={breadcrumbs}
             icon={<UserCircle className="h-5 w-5" />}
             headerAside={
@@ -192,13 +196,13 @@ export default function CustomersCreate() {
                     <Button variant="ghost" size="sm" asChild>
                         <Link href="/customers">
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Customers
+                            {t('customers.form.create.backToList')}
                         </Link>
                     </Button>
                     {isDirty && <UnsavedChangesBadge />}
                     <div className="flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                         <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
-                        CRM Intake
+                        {t('customers.form.create.badge')}
                     </div>
                 </>
             }
@@ -213,13 +217,13 @@ export default function CustomersCreate() {
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
-                            Please correct the validation errors before submitting the form.
+                            {t('customers.form.validation.resolveForm')}
                         </AlertDescription>
                     </Alert>
                 )}
                 <FormSection
-                    title="Relationship Profile"
-                    description="Core identifiers and client health metadata."
+                    title={t('customers.form.sections.profile.title')}
+                    description={t('customers.form.sections.profile.description')}
                     icon={
                         <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                             <Info className="h-4 w-4" />
@@ -229,9 +233,9 @@ export default function CustomersCreate() {
                 >
                     <FormField
                         id="name"
-                        label="Customer Name"
+                        label={t('customers.form.fields.name.label')}
                         required
-                        tooltip="Provide the registered business or trading name."
+                        tooltip={t('customers.form.fields.name.tooltip')}
                         error={nameError}
                     >
                         <div className="relative">
@@ -240,7 +244,7 @@ export default function CustomersCreate() {
                                 id="name"
                                 value={data.name}
                                 onChange={(event) => handleFieldChange('name', event.target.value)}
-                                placeholder="e.g., Horizon Logistics PLC"
+                                placeholder={t('customers.form.fields.name.placeholder')}
                                 className={`pl-9 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${nameError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:border-blue-500 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500'}`}
                                 autoComplete="off"
                             />
@@ -249,23 +253,23 @@ export default function CustomersCreate() {
 
                     <FormField
                         id="status"
-                        label="Status"
+                        label={t('customers.form.fields.status.label')}
                         required
-                        tooltip="Active customers appear in operational workflows."
+                        tooltip={t('customers.form.fields.status.tooltip')}
                         error={statusError}
                     >
                         <Select value={data.status} onValueChange={(value) => handleFieldChange('status', value)}>
                             <SelectTrigger
                                 className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:border-blue-500 focus:ring-blue-500/20 ${statusError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                             >
-                                <SelectValue placeholder="Select status" />
+                                <SelectValue placeholder={t('customers.form.fields.status.placeholder')} />
                             </SelectTrigger>
                             <SelectContent className="z-50 bg-white shadow-lg dark:bg-slate-800">
                                 <SelectItem value="active" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
-                                    Active
+                                    {t('customers.status.active')}
                                 </SelectItem>
                                 <SelectItem value="inactive" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
-                                    Inactive
+                                    {t('customers.status.inactive')}
                                 </SelectItem>
                             </SelectContent>
                         </Select>
@@ -273,8 +277,8 @@ export default function CustomersCreate() {
 
                     <FormField
                         id="address"
-                        label="Headquarters / Billing Address"
-                        helperText="Optional. Street, city, and any billing instructions."
+                        label={t('customers.form.fields.address.label')}
+                        helperText={t('customers.form.fields.address.helper')}
                         error={addressError}
                         className="md:col-span-2"
                     >
@@ -282,7 +286,7 @@ export default function CustomersCreate() {
                             id="address"
                             value={data.address}
                             onChange={(event) => handleFieldChange('address', event.target.value)}
-                            placeholder="Street, city, and any billing instructions"
+                            placeholder={t('customers.form.fields.address.placeholder')}
                             rows={4}
                             className="min-h-[96px] resize-y transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
                         />
@@ -290,8 +294,8 @@ export default function CustomersCreate() {
                 </FormSection>
 
                 <FormSection
-                    title="Primary Contacts"
-                    description="Maintain outreach routing and channel hygiene."
+                    title={t('customers.form.sections.contacts.title')}
+                    description={t('customers.form.sections.contacts.description')}
                     icon={
                         <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
                             <Phone className="h-4 w-4" />
@@ -301,8 +305,8 @@ export default function CustomersCreate() {
                 >
                     <FormField
                         id="contact_person"
-                        label="Relationship Owner"
-                        helperText="Optional. Primary point of contact on the customer side."
+                        label={t('customers.form.fields.contactPerson.label')}
+                        helperText={t('customers.form.fields.contactPerson.helper')}
                         error={contactPersonError}
                     >
                         <div className="relative">
@@ -311,13 +315,13 @@ export default function CustomersCreate() {
                                 id="contact_person"
                                 value={data.contact_person}
                                 onChange={(event) => handleFieldChange('contact_person', event.target.value)}
-                                placeholder="e.g., Selam Tesfaye"
+                                placeholder={t('customers.form.fields.contactPerson.placeholder')}
                                 className="pl-9 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500"
                             />
                         </div>
                     </FormField>
 
-                    <FormField id="phone" label="Phone Number" helperText="Optional. Include country code." error={phoneError}>
+                    <FormField id="phone" label={t('customers.form.fields.phone.label')} helperText={t('customers.form.fields.phone.helper')} error={phoneError}>
                         <div className="relative">
                             <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <Input
@@ -325,13 +329,13 @@ export default function CustomersCreate() {
                                 type="tel"
                                 value={data.phone}
                                 onChange={(event) => handleFieldChange('phone', event.target.value)}
-                                placeholder="e.g., +251 91 123 4567"
+                                placeholder={t('customers.form.fields.phone.placeholder')}
                                 className={`pl-9 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${phoneError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:border-blue-500 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500'}`}
                             />
                         </div>
                     </FormField>
 
-                    <FormField id="email" label="Email Address" helperText="Optional. Used for notifications." error={emailError}>
+                    <FormField id="email" label={t('customers.form.fields.email.label')} helperText={t('customers.form.fields.email.helper')} error={emailError}>
                         <div className="relative">
                             <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <Input
@@ -339,7 +343,7 @@ export default function CustomersCreate() {
                                 type="email"
                                 value={data.email}
                                 onChange={(event) => handleFieldChange('email', event.target.value)}
-                                placeholder="e.g., partnerships@horizon-logistics.com"
+                                placeholder={t('customers.form.fields.email.placeholder')}
                                 className={`pl-9 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:border-blue-500 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500'}`}
                                 autoComplete="off"
                             />
@@ -352,12 +356,12 @@ export default function CustomersCreate() {
                         <>
                             <span className="flex items-center gap-2">
                                 <span className="text-red-500">*</span>
-                                Required fields for onboarding
+                                {t('customers.form.requiredNote')}
                             </span>
                             {isDirty && (
                                 <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                                     <Save className="h-3 w-3" />
-                                    Unsaved changes detected
+                                    {t('customers.form.unsavedNote')}
                                 </span>
                             )}
                         </>
@@ -365,7 +369,7 @@ export default function CustomersCreate() {
                     right={
                         <>
                             <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                <Link href="/customers">Cancel</Link>
+                                <Link href="/customers">{t('customers.actions.cancel')}</Link>
                             </Button>
                             <Button
                                 type="submit"
@@ -375,12 +379,12 @@ export default function CustomersCreate() {
                                 {processing ? (
                                     <>
                                         <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                                        Saving...
+                                        {t('customers.form.create.submitting')}
                                     </>
                                 ) : (
                                     <>
                                         <CheckCircle className="mr-2 h-4 w-4" />
-                                        Create Customer
+                                        {t('customers.form.create.submit')}
                                     </>
                                 )}
                             </Button>
@@ -403,4 +407,3 @@ type CustomerFormData = {
 };
 
 type CustomerFormField = keyof CustomerFormData;
-

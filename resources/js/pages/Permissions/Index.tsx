@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
 import { ArrowUpDown, FileDown, Layers, Search, Shield } from 'lucide-react';
 import { index as usersIndexRoute } from '@/routes/users';
+import { useTranslation } from 'react-i18next';
 
 type ColumnKey = 'name' | 'module' | 'action' | 'guard' | 'created_at';
 
@@ -59,30 +60,18 @@ interface PermissionsIndexProps {
     };
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'User management',
-        href: usersIndexRoute().url,
-    },
-    {
-        title: 'Permissions',
-        href: '#',
-    },
-];
-
 const SKELETON_FLAG_KEY = 'permissions.index.shouldShowSkeleton';
 
 const COLUMN_DEFINITIONS: Array<{
     id: ColumnKey;
-    label: string;
     sortKey?: string;
     align?: 'center' | 'right';
 }> = [
-    { id: 'name', label: 'Permission', sortKey: 'name' },
-    { id: 'module', label: 'Module' },
-    { id: 'action', label: 'Action' },
-    { id: 'guard', label: 'Guard', sortKey: 'guard_name' },
-    { id: 'created_at', label: 'Created', sortKey: 'created_at' },
+    { id: 'name', sortKey: 'name' },
+    { id: 'module' },
+    { id: 'action' },
+    { id: 'guard', sortKey: 'guard_name' },
+    { id: 'created_at', sortKey: 'created_at' },
 ];
 
 const formatCount = (value?: number | string | null): string => {
@@ -98,17 +87,17 @@ const formatCount = (value?: number | string | null): string => {
     return numeric.toLocaleString();
 };
 
-const formatDateValue = (value?: string | null): string => {
+const formatDateValue = (value: string | null | undefined, locale: string, emptyLabel: string): string => {
     if (!value) {
-        return '—';
+        return emptyLabel;
     }
 
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) {
-        return '—';
+        return emptyLabel;
     }
 
-    return parsed.toLocaleDateString('en-US', {
+    return parsed.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -171,6 +160,9 @@ const getActionBadgeClass = (action: string): string => {
 };
 
 export default function PermissionsIndex({ permissions, filters, moduleOptions, perPageOptions, stats }: PermissionsIndexProps) {
+    const { t, i18n } = useTranslation();
+    const locale = i18n.language || 'en-US';
+    const notAvailableLabel = t('permissions.fallbacks.notAvailable');
     const { hasPermission } = usePermissionChecker();
     const canExportPermissions = hasPermission('permissions.export');
 
@@ -181,6 +173,20 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
     });
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'name');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
+
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('permissions.breadcrumbs.management'),
+                href: usersIndexRoute().url,
+            },
+            {
+                title: t('permissions.title'),
+                href: '#',
+            },
+        ],
+        [t],
+    );
 
     const availablePerPageOptions = React.useMemo(
         () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
@@ -323,12 +329,12 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
     const activeFilterChips = React.useMemo(
         () =>
             [
-                activeModuleLabel ? { key: 'module' as FilterChipKey, label: `Module: ${activeModuleLabel}` } : null,
+                activeModuleLabel ? { key: 'module' as FilterChipKey, label: t('permissions.filters.module.chip', { value: activeModuleLabel }) } : null,
                 perPage !== String(resolvedPerPage)
-                    ? { key: 'perPage' as FilterChipKey, label: `Rows: ${perPage}` }
+                    ? { key: 'perPage' as FilterChipKey, label: t('permissions.filters.rows.chip', { value: perPage }) }
                     : null,
             ].filter(Boolean) as Array<{ key: FilterChipKey; label: string }>,
-        [activeModuleLabel, perPage, resolvedPerPage],
+        [activeModuleLabel, perPage, resolvedPerPage, t],
     );
 
     const clearFilter = React.useCallback(
@@ -352,37 +358,37 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
     const statsDefinitions = [
         {
             id: 'total-permissions',
-            label: 'Total Permissions',
+            label: t('permissions.stats.total.label'),
             icon: <Shield className="h-3.5 w-3.5 text-indigo-500" />,
             value: isLoading ? <Skeleton className="h-3.5 w-16" aria-hidden="true" /> : formatCount(totalPermissions),
             description: isLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Across the platform'
+                t('permissions.stats.total.description')
             ),
             valueClassName: isLoading ? undefined : 'text-indigo-600',
         },
         {
             id: 'module-count',
-            label: 'Modules',
+            label: t('permissions.stats.modules.label'),
             icon: <Layers className="h-3.5 w-3.5 text-amber-500" />,
             value: isLoading ? <Skeleton className="h-3.5 w-12" aria-hidden="true" /> : formatCount(moduleCount),
             description: isLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                'Permission groups'
+                t('permissions.stats.modules.description')
             ),
             valueClassName: isLoading ? undefined : 'text-amber-600',
         },
         {
             id: 'guard-count',
-            label: 'Guard Types',
+            label: t('permissions.stats.guards.label'),
             icon: <ArrowUpDown className="h-3.5 w-3.5 text-slate-500" />,
             value: isLoading ? <Skeleton className="h-3.5 w-10" aria-hidden="true" /> : formatCount(guardCount),
             description: isLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                'Distinct guard names'
+                t('permissions.stats.guards.description')
             ),
             valueClassName: isLoading ? undefined : 'text-slate-600',
         },
@@ -392,16 +398,16 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
 
     const tableColumns = React.useMemo(
         () => [
-            { id: 'index', label: '#', align: 'center' as const },
+            { id: 'index', label: t('permissions.columns.index'), align: 'center' as const },
             ...COLUMN_DEFINITIONS.map((column) => ({
                 id: column.id,
-                label: column.label,
+                label: t(`permissions.columns.${column.id}`),
                 sortable: Boolean(column.sortKey),
                 sortKey: column.sortKey,
                 align: column.align,
             })),
         ],
-        [],
+        [t],
     );
 
     const renderColumnValue = React.useCallback((permission: PermissionRecord, column: ColumnKey): React.ReactNode => {
@@ -412,7 +418,7 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
                 return (
                     <div className="flex flex-col">
                         <span className="font-medium text-foreground">{permission.name}</span>
-                        <span className="text-xs text-muted-foreground">ID #{permission.id}</span>
+                        <span className="text-xs text-muted-foreground">{t('permissions.labels.id', { id: permission.id })}</span>
                     </div>
                 );
             case 'module':
@@ -430,11 +436,11 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
             case 'guard':
                 return <span className="text-sm text-muted-foreground">{permission.guard_name}</span>;
             case 'created_at':
-                return <span className="text-sm text-muted-foreground">{formatDateValue(permission.created_at)}</span>;
+                return <span className="text-sm text-muted-foreground">{formatDateValue(permission.created_at, locale, notAvailableLabel)}</span>;
             default:
-                return '—';
+                return notAvailableLabel;
         }
-    }, []);
+    }, [locale, notAvailableLabel, t]);
 
     const tableRows = isLoading
         ? Array.from({ length: 8 }).map((_, index) => (
@@ -489,11 +495,11 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
                             <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
                                 <Shield className="h-10 w-10 text-muted-foreground" />
                             </div>
-                            <h3 className="mb-2 text-lg font-semibold">No permissions found</h3>
+                            <h3 className="mb-2 text-lg font-semibold">{t('permissions.empty.title')}</h3>
                             <p className="mb-6 max-w-md text-sm text-muted-foreground">
                                 {searchTerm
-                                    ? `No permissions match "${searchTerm}". Try adjusting your filters or search terms.`
-                                    : 'Permissions are managed automatically. Adjust filters or roles to view assigned access.'}
+                                    ? t('permissions.empty.filteredDescription', { term: searchTerm })
+                                    : t('permissions.empty.description')}
                             </p>
                         </div>
                     </TableCell>
@@ -549,30 +555,32 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
                     <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
-            renderSubtitle={(item) => `Guard: ${item.record.guard_name}`}
+            renderSubtitle={(item) => t('permissions.labels.guard', { value: item.record.guard_name })}
             renderContent={(item) => {
                 const { module, action } = resolveModuleAndAction(item.record.name);
 
                 return (
                     <div className="space-y-3 text-sm text-muted-foreground">
                         <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Module</span>
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{t('permissions.mobile.module')}</span>
                             <span className="text-right text-slate-900 dark:text-slate-100">{module}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Action</span>
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{t('permissions.mobile.action')}</span>
                             <span className="text-right text-slate-900 dark:text-slate-100">{action}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Created</span>
-                            <span className="text-right text-slate-900 dark:text-slate-100">{formatDateValue(item.record.created_at)}</span>
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{t('permissions.mobile.created')}</span>
+                            <span className="text-right text-slate-900 dark:text-slate-100">
+                                {formatDateValue(item.record.created_at, locale, notAvailableLabel)}
+                            </span>
                         </div>
                     </div>
                 );
             }}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No permissions found.
+                    {t('permissions.empty.title')}
                 </div>
             )}
         />
@@ -600,7 +608,7 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
                         }}
                         className="text-xs text-primary underline"
                     >
-                        Clear search
+                        {t('permissions.filters.clearSearch')}
                     </button>
                 )}
             </div>
@@ -610,27 +618,27 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search permissions...',
+                placeholder: t('permissions.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('permissions.filters.rows.label'),
                 onChange: handlePerPageChange,
                 options: availablePerPageOptions.map((option) => ({
                     value: String(option),
-                    label: `${option} / page`,
+                    label: t('permissions.filters.rows.perPageOption', { value: option }),
                 })),
             }}
             trailing={filterChips}
         >
             <Select value={selectedModule} onValueChange={handleModuleChange}>
                 <SelectTrigger className="w-full min-w-[170px] sm:w-auto">
-                    <SelectValue placeholder="Module" />
+                    <SelectValue placeholder={t('permissions.filters.module.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All modules</SelectItem>
+                    <SelectItem value="all">{t('permissions.filters.module.all')}</SelectItem>
                     {(moduleOptions ?? []).map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -666,7 +674,7 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
                     }}
                 >
                     <FileDown className="mr-2 h-4 w-4" />
-                    Export CSV
+                    {t('permissions.actions.export')}
                 </Button>
             )}
         </>
@@ -674,14 +682,14 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
 
     return (
         <ListPageLayout
-            headTitle="Permissions"
-            title="Permission Management"
-            description={`Manage ${formatCount(totalPermissions)} permission${totalPermissions === 1 ? '' : 's'} across the platform`}
+            headTitle={t('permissions.title')}
+            title={t('permissions.title')}
+            description={t('permissions.description', { count: formatCount(totalPermissions), suffix: totalPermissions === 1 ? '' : 's' })}
             breadcrumbs={breadcrumbs}
             actions={headerActions}
             stats={statsSection}
-            tableTitle="Permission Directory"
-            tableDescription={`${formatCount(totalPermissions)} total permission${totalPermissions === 1 ? '' : 's'} in system`}
+            tableTitle={t('permissions.table.title')}
+            tableDescription={t('permissions.table.description', { count: formatCount(totalPermissions), suffix: totalPermissions === 1 ? '' : 's' })}
             tableHeaderExtras={tableHeaderExtras}
             pagination={
                 !isLoading && permissions?.links ? (

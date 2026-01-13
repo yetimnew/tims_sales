@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DatePicker } from '@/components/ui/date-picker'
 import { ArrowLeft, Clock, Tag } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface TimelineItem {
   id: number
@@ -28,6 +29,7 @@ interface Paginated<T> {
 type TruckSummary = { id: number; plate: string }
 
 export default function StatusHistory({ truck, history, filters }: { truck: TruckSummary; history: Paginated<TimelineItem>; filters: { from?: string; to?: string } }) {
+  const { t } = useTranslation()
   const handleDateChange = (key: 'from' | 'to') => (next: string | null) => {
     const params: Record<string, string> = {}
 
@@ -49,15 +51,20 @@ export default function StatusHistory({ truck, history, filters }: { truck: Truc
   }
 
   return (
-    <AppLayout breadcrumbs={[{ title: 'Trucks', href: '/trucks' }, { title: `History ${truck?.plate}`, href: '#' }]}>
-      <Head title={`Status History - ${truck?.plate}`} />
+    <AppLayout
+      breadcrumbs={[
+        { title: t('truckStatusHistory.breadcrumbs.trucks'), href: '/trucks' },
+        { title: t('truckStatusHistory.breadcrumbs.history', { plate: truck?.plate ?? '' }), href: '#' },
+      ]}
+    >
+      <Head title={t('truckStatusHistory.headTitle', { plate: truck?.plate ?? '' })} />
       <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/trucks">
               <Button variant="outline" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
             </Link>
-            <h1 className="text-2xl font-bold">{truck?.plate} • Status History</h1>
+            <h1 className="text-2xl font-bold">{t('truckStatusHistory.title', { plate: truck?.plate ?? '' })}</h1>
           </div>
         </div>
 
@@ -65,7 +72,7 @@ export default function StatusHistory({ truck, history, filters }: { truck: Truc
           <CardHeader>
             <CardTitle className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Filter</span>
+                <span className="text-sm text-muted-foreground">{t('truckStatusHistory.filters.label')}</span>
                 <DatePicker
                   className="w-40 h-10 justify-start text-left"
                   value={filters?.from ?? ''}
@@ -88,7 +95,7 @@ export default function StatusHistory({ truck, history, filters }: { truck: Truc
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Badge className="bg-blue-500 text-white"><Tag className="h-3 w-3 mr-1" /> {item.status?.name}</Badge>
-                          {item.changed_by?.name && <span className="text-sm text-muted-foreground">by {item.changed_by.name}</span>}
+                          {item.changed_by?.name && <span className="text-sm text-muted-foreground">{t('truckStatusHistory.labels.by', { name: item.changed_by.name })}</span>}
                         </div>
                         <div className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {item.status_date}</div>
                       </div>
@@ -97,7 +104,7 @@ export default function StatusHistory({ truck, history, filters }: { truck: Truc
                   ))}
                 </ul>
               ) : (
-                <div className="p-8 text-center text-muted-foreground">No history found.</div>
+                <div className="p-8 text-center text-muted-foreground">{t('truckStatusHistory.empty')}</div>
               )}
             </div>
           </CardContent>
@@ -108,5 +115,4 @@ export default function StatusHistory({ truck, history, filters }: { truck: Truc
 }
 
 StatusHistory.layout = (page: React.ReactNode) => <AppLayout children={page} />
-
 

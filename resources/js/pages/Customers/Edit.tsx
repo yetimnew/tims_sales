@@ -10,8 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Building2, CheckCircle, Phone, UserCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Customer {
   id: number;
@@ -24,10 +25,14 @@ interface Customer {
 }
 
 export default function CustomersEdit({ customer }: { customer: Customer }) {
-  const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Customers', href: '/customers' },
-    { title: 'Edit', href: '#' },
-  ];
+  const { t } = useTranslation();
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('customers.breadcrumb'), href: '/customers' },
+      { title: t('customers.form.edit.breadcrumb'), href: '#' },
+    ],
+    [t],
+  );
 
   const { data, setData, put, processing, errors } = useForm({
     name: customer.name,
@@ -75,47 +80,47 @@ export default function CustomersEdit({ customer }: { customer: Customer }) {
 
   return (
     <FormPageLayout
-      title="Edit Customer"
-      headTitle={`Edit Customer: ${customer.name}`}
-      description={`Update ${customer.name}`}
+      title={t('customers.form.edit.title')}
+      headTitle={t('customers.form.edit.headTitle', { name: customer.name })}
+      description={t('customers.form.edit.description', { name: customer.name })}
       breadcrumbs={breadcrumbs}
       icon={<Building2 className="h-5 w-5" />}
       headerAside={isDirty && <UnsavedChangesBadge />}
     >
       <form ref={formRef} onSubmit={handleSubmit} className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 pb-24" noValidate>
-        <FormSection title="Customer Information" description="Update customer details" icon={<UserCircle className="h-4 w-4" />}>
+        <FormSection title={t('customers.form.sections.profile.title')} description={t('customers.form.sections.profile.descriptionEdit')} icon={<UserCircle className="h-4 w-4" />}>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField id="name" label="Customer Name" required error={errors.name}>
-              <Input id="name" value={data.name} onChange={e => handleFieldChange('name', e.target.value)} placeholder="Customer name" />
+            <FormField id="name" label={t('customers.form.fields.name.label')} required error={errors.name}>
+              <Input id="name" value={data.name} onChange={e => handleFieldChange('name', e.target.value)} placeholder={t('customers.form.fields.name.placeholder')} />
             </FormField>
 
-            <FormField id="contact_person" label="Contact Person" error={errors.contact_person}>
-              <Input id="contact_person" value={data.contact_person} onChange={e => handleFieldChange('contact_person', e.target.value)} placeholder="Contact person name" />
+            <FormField id="contact_person" label={t('customers.form.fields.contactPerson.label')} error={errors.contact_person}>
+              <Input id="contact_person" value={data.contact_person} onChange={e => handleFieldChange('contact_person', e.target.value)} placeholder={t('customers.form.fields.contactPerson.placeholder')} />
             </FormField>
 
-            <FormField id="phone" label="Phone Number" error={errors.phone}>
-              <Input id="phone" value={data.phone} onChange={e => handleFieldChange('phone', e.target.value)} placeholder="Phone number" type="tel" />
+            <FormField id="phone" label={t('customers.form.fields.phone.label')} error={errors.phone}>
+              <Input id="phone" value={data.phone} onChange={e => handleFieldChange('phone', e.target.value)} placeholder={t('customers.form.fields.phone.placeholder')} type="tel" />
             </FormField>
 
-            <FormField id="email" label="Email Address" error={errors.email}>
-              <Input id="email" value={data.email} onChange={e => handleFieldChange('email', e.target.value)} placeholder="Email address" type="email" />
+            <FormField id="email" label={t('customers.form.fields.email.label')} error={errors.email}>
+              <Input id="email" value={data.email} onChange={e => handleFieldChange('email', e.target.value)} placeholder={t('customers.form.fields.email.placeholder')} type="email" />
             </FormField>
 
-            <FormField id="status" label="Status" required error={errors.status}>
+            <FormField id="status" label={t('customers.form.fields.status.label')} required error={errors.status}>
               <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('customers.form.fields.status.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="active">{t('customers.status.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('customers.status.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </FormField>
 
             <div className="md:col-span-2">
-              <FormField id="address" label="Address" error={errors.address}>
-                <Textarea id="address" value={data.address} onChange={e => handleFieldChange('address', e.target.value)} placeholder="Customer address" rows={3} />
+              <FormField id="address" label={t('customers.form.fields.address.label')} error={errors.address}>
+                <Textarea id="address" value={data.address} onChange={e => handleFieldChange('address', e.target.value)} placeholder={t('customers.form.fields.address.placeholder')} rows={3} />
               </FormField>
             </div>
           </div>
@@ -125,7 +130,7 @@ export default function CustomersEdit({ customer }: { customer: Customer }) {
       <FormActionsBar
         left={
           <Button type="button" variant="outline" asChild>
-            <Link href="/customers">Cancel</Link>
+            <Link href="/customers">{t('customers.actions.cancel')}</Link>
           </Button>
         }
         right={
@@ -133,12 +138,12 @@ export default function CustomersEdit({ customer }: { customer: Customer }) {
             {processing ? (
               <>
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-                Updating...
+                {t('customers.form.edit.submitting')}
               </>
             ) : (
               <>
                 <CheckCircle className="mr-2 h-4 w-4" />
-                Update Customer
+                {t('customers.form.edit.submit')}
               </>
             )}
           </Button>
