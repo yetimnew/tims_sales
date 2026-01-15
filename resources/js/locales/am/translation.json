@@ -13,9 +13,9 @@
     "sidebar": {
         "dashboard": "ዳሽቦርድ",
         "fleetManagement": "የቡድን አስተዳደር",
-        "trucks": "ትራክቶች",
+        "trucks": "ተሽከርካሪዎች",
         "drivers": "አሽከርካሪዎች",
-        "driverTruckAssignments": "የአሽከርካሪ-ትራክ መመደቦች",
+        "driverTruckAssignments": "የአሽከርካሪ-ተሽከርካሪ መመደቦች",
         "vehicleTypes": "የመኪና አይነቶች",
         "driverSafety": "የአሽከርካሪ ደህንነት",
         "cargoTypes": "የጭነት አይነቶች",
@@ -35,7 +35,7 @@
         "distances": "ርቀቶች",
         "statusManagement": "ሁኔታ አስተዳደር",
         "statusTypeRegistration": "የሁኔታ አይነት መመዝገብ",
-        "dailyTruckStatusRegistration": "ዕለታዊ የትራክ ሁኔታ መመዝገብ",
+        "dailyTruckStatusRegistration": "ዕለታዊ የተሽከርካሪ ሁኔታ መመዝገብ",
         "outsourcing": "አውትሶርሲንግ",
         "outsources": "አውትሶርሶች",
         "outsourcePerformances": "የአውትሶርስ አፈፃፀሞች",
@@ -49,13 +49,13 @@
         "costPerKilometer": "በኪሜ ወጪ",
         "loadFactorUtilization": "የጭነት ፋክተር እና አጠቃቀም",
         "geographicHeatmaps": "የጂኦግራፊ ሙቀት ካርታዎች",
-        "truckGrading": "የትራክ ግሬዲንግ",
+        "truckGrading": "የተሽከርካሪ ግሬዲንግ",
         "driverGrading": "የአሽከርካሪ ግሬዲንግ",
-        "driverTruckGrading": "የአሽከርካሪ-ትራክ ግሬዲንግ",
+        "driverTruckGrading": "የአሽከርካሪ-ተሽከርካሪ ግሬዲንግ",
         "driverSafetyReport": "የአሽከርካሪ ደህንነት",
         "performanceAll": "አፈፃፀም (ሁሉም)",
         "performanceByDriver": "በአሽከርካሪ አፈፃፀም",
-        "performanceByTruck": "በትራክ አፈፃፀም",
+        "performanceByTruck": "በተሽከርካሪ አፈፃፀም",
         "performanceByStatus": "በሁኔታ አፈፃፀም",
         "attachDetachHistory": "የመያዝ/መለየት ታሪክ",
         "dailyStatusReport": "ዕለታዊ የሁኔታ ሪፖርት",
@@ -65,7 +65,7 @@
         "users": "ተጠቃሚዎች",
         "roles": "ሚናዎች",
         "permissions": "ፈቃዶች",
-        "notificationAssignments": "የማስታወቂያያ መመደቦች",
+        "notificationAssignments": "የማስታወቂያ መመደቦች",
         "systemBackups": "የስርዓት ባክአፕ",
         "helpDocumentation": "እገዛ እና ሰነዶች"
     },
@@ -181,7 +181,7 @@
                 "inDays": "በ{{count}} ቀን",
                 "today": "ዛሬ",
                 "overdueDays": "{{count}} ቀን ዘግይቷል",
-                "truckLabel": "ትራክ {{truck}}",
+                "truckLabel": "ተሽከርካሪ {{truck}}",
                 "scheduledDateLabel": "ተይዟል {{date}}",
                 "tbc": "በኋላ ይታያል",
                 "scheduledStatus": "ተይዟል"
@@ -227,7 +227,7 @@
             },
             "tripFallback": "ጉዞ #{{id}}",
             "unknownDriver": "ያልታወቀ አሽከርካሪ",
-            "unknownTruck": "ያልታወቀ ትራክ",
+            "unknownTruck": "ያልታወቀ ተሽከርካሪ",
             "unknownOrigin": "ያልታወቀ መነሻ",
             "unknownDestination": "ያልታወቀ መድረሻ",
             "routeLabel": "{{origin}} → {{destination}}"
@@ -247,7 +247,7 @@
             "corridors": "በዚህ ጊዜ ውስጥ የመንገድ ፍሰቶች አልተመዘገቡም።",
             "financialTrend": "እስካሁን የፋይናንስ መዝገቦች አልተመዘገቡም።",
             "costBreakdown": "የወጪ መከፋፈል አይገኝም። ለማሳየት የፋይናንስ መዝገቦችን ያስገቡ።",
-            "statusUpdates": "እስካሁን የትራክ ሁኔታ ማዘጋጃዎች የሉም።",
+            "statusUpdates": "እስካሁን የተሽከርካሪ ሁኔታ ማዘጋጃዎች የሉም።",
             "fuelRecords": "በተመረጠው ጊዜ የነዳጅ መዝገቦች አይገኙም።",
             "maintenanceTrend": "የጥገና አዝማሚያ እስካሁን አልተመዘገበም።",
             "upcomingMaintenance": "በዕቅድ ጊዜ ውስጥ የሚመጣ ጥገና የለም።",
@@ -258,9 +258,9 @@
         }
     },
     "trucks": {
-        "title": "ትራክቶች",
-        "breadcrumb": "ትራክቶች",
-        "description": "የትራክ ቡድንዎን ከ{{count}} ትራክ{{plural}} ጋር ያስተዳድሩ",
+        "title": "ተሽከርካሪዎች",
+        "breadcrumb": "ተሽከርካሪዎች",
+        "description": "የተሽከርካሪ ቡድንዎን ከ{{count}} ተሽከርካሪ{{plural}} ጋር ያስተዳድሩ",
         "columns": {
             "plate": "ፕሌት",
             "vehicleType": "የመኪና አይነት",
@@ -272,12 +272,12 @@
             "status": "ሁኔታ"
         },
         "table": {
-            "title": "የትራክ ዝርዝር",
+            "title": "የተሽከርካሪ ዝርዝር",
             "description": "በቡድንዎ ውስጥ ያሉ መኪናዎችን ያስተዳድሩ እና ይከታተሉ",
             "actions": "እርምጃዎች"
         },
         "actions": {
-            "add": "ትራክ ጨምር",
+            "add": "ተሽከርካሪ ጨምር",
             "view": "አሳይ",
             "edit": "አርም",
             "delete": "ሰርዝ",
@@ -304,7 +304,7 @@
             "position": "#{{value}}"
         },
         "empty": {
-            "title": "ምንም ትራክ አልተገኘም።",
+            "title": "ምንም ተሽከርካሪ አልተገኘም።",
             "createAction": "አንዱን ፍጠር"
         },
         "stats": {
@@ -329,7 +329,7 @@
                 "label": "የአሽከርካሪ ለውጥ ({{days}}ቀናት)",
                 "averageTenure": "{{days}} ቀናት",
                 "averageTenurePending": "አማካይ ቆይታ እስካሁን የለም",
-                "highChurn": "{{count}} ትራክ(ዎች) ከ{{days}}ቀን በታች",
+                "highChurn": "{{count}} ተሽከርካሪ(ዎች) ከ{{days}}ቀን በታች",
                 "stable": "የተረጋጋ የአሽከርካሪ መመደብ"
             },
             "utilization": {
@@ -356,9 +356,9 @@
             "failedTitle": "❌ ማጥፋት አልተሳካም",
             "errorKnown": "ትራኩን ማጥፋት አልተሳካም። መስፈርቶቹን ይመልከቱ እና እንደገና ይሞክሩ።",
             "errorUnknown": "ትራኩን ሲያጠፉ ያልተጠበቀ ስህተት ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።",
-            "title": "ትራክ ሰርዝ",
-            "description": "ይህን ትራክ ማጥፋት እንደሚፈልጉ እርግጠኛ ነዎት? ይህ እርምጃ አይመለስም።",
-            "confirm": "ትራክ ሰርዝ"
+            "title": "ተሽከርካሪ ሰርዝ",
+            "description": "ይህን ተሽከርካሪ ማጥፋት እንደሚፈልጉ እርግጠኛ ነዎት? ይህ እርምጃ አይመለስም።",
+            "confirm": "ተሽከርካሪ ሰርዝ"
         },
         "form": {
             "badge": "የቡድን ኦፕሬሽን",
@@ -429,29 +429,29 @@
             },
             "create": {
                 "breadcrumb": "ፍጠር",
-                "title": "አዲስ ትራክ ፍጠር",
+                "title": "አዲስ ተሽከርካሪ ፍጠር",
                 "description": "መለያ፣ ዝርዝር መረጃ እና የፋይናንስ የህይወት ዘመን መረጃ በአንድ ስፍራ ያስገቡ።",
                 "backToList": "ወደ ትራኮች ተመለስ",
-                "submit": "ትራክ ፍጠር",
+                "submit": "ተሽከርካሪ ፍጠር",
                 "submitting": "በመፍጠር ላይ...",
-                "successTitle": "✅ ትራክ ተፈጥሯል",
+                "successTitle": "✅ ተሽከርካሪ ተፈጥሯል",
                 "successDescription": "ትራኩ በቡድኑ ውስጥ ተጨምሯል።"
             },
             "edit": {
                 "breadcrumb": "አርም",
-                "title": "ትራክ አሻሽል",
+                "title": "ተሽከርካሪ አሻሽል",
                 "description": "መለያ፣ ቴክኒካዊ ዝርዝሮች ወይም የፋይናንስ መለኪያዎችን ያስተካክሉ።",
                 "headTitle": "አርም {{plate}}",
-                "backToTruck": "ወደ ትራክ ተመለስ",
-                "submit": "ትራክ አሻሽል",
+                "backToTruck": "ወደ ተሽከርካሪ ተመለስ",
+                "submit": "ተሽከርካሪ አሻሽል",
                 "submitting": "በማሻሻል ላይ...",
-                "successTitle": "✅ ትራክ ተዘምኗል",
+                "successTitle": "✅ ተሽከርካሪ ተዘምኗል",
                 "successDescription": "ትራኩ በትክክል ተዘምኗል።"
             }
         },
         "show": {
-            "subtitle": "ሙሉ የትራክ መገለጫ እና የአፈፃፀም ክትትል",
-            "headTitle": "ትራክ - {{plate}}",
+            "subtitle": "ሙሉ የተሽከርካሪ መገለጫ እና የአፈፃፀም ክትትል",
+            "headTitle": "ተሽከርካሪ - {{plate}}",
             "actions": {
                 "deactivate": "አቁም",
                 "viewAll": "ሁሉንም አሳይ",
@@ -478,13 +478,13 @@
             "sections": {
                 "basic": {
                     "title": "መሰረታዊ መረጃ",
-                    "description": "የትራክ ዝርዝር እና መለኪያዎች"
+                    "description": "የተሽከርካሪ ዝርዝር እና መለኪያዎች"
                 },
                 "quickLinks": "ፈጣን አገናኞች",
                 "utilization": "የአጠቃቀም መለኪያዎች",
                 "assignments": {
                     "title": "የአሽከርካሪ መመደቦች",
-                    "description": "ለዚህ ትራክ የተመደቡ የቅርብ አሽከርካሪዎች"
+                    "description": "ለዚህ ተሽከርካሪ የተመደቡ የቅርብ አሽከርካሪዎች"
                 }
             },
             "fields": {
@@ -506,10 +506,10 @@
                 "detached": "ተለይቷል",
                 "assigned": "ተመድቧል",
                 "detachedAt": "ተለይቷል",
-                "empty": "ለዚህ ትራክ የአሽከርካሪ መመደብ እስካሁን የለም።"
+                "empty": "ለዚህ ተሽከርካሪ የአሽከርካሪ መመደብ እስካሁን የለም።"
             },
             "grade": {
-                "title": "የትራክ ደረጃ",
+                "title": "የተሽከርካሪ ደረጃ",
                 "description": "የአፈፃፀም ውጤት",
                 "overallScore": "አጠቃላይ ውጤት"
             },
@@ -529,7 +529,7 @@
                 "distance": "ርቀት",
                 "cargo": "ጭነት",
                 "fuel": "ነዳጅ",
-                "empty": "ለዚህ ትራክ የአፈፃፀም መዝገቦች እስካሁን የሉም።",
+                "empty": "ለዚህ ተሽከርካሪ የአፈፃፀም መዝገቦች እስካሁን የሉም።",
                 "cards": {
                     "totalRecords": "ጠቅላላ መዝገቦች",
                     "mainTrips": "{{count}} ዋና ጉዞዎች",
@@ -572,12 +572,12 @@
                 "overdue": "ዘግይቷል",
                 "cost": "ወጪ",
                 "odometer": "ኦዶሚተር",
-                "empty": "ለዚህ ትራክ የጥገና መረጃ እስካሁን የለም።"
+                "empty": "ለዚህ ተሽከርካሪ የጥገና መረጃ እስካሁን የለም።"
             },
             "history": {
                 "title": "የእንቅስቃሴ ታሪክ",
-                "description": "የትራክ ለውጦች መታወቂያ",
-                "empty": "ለዚህ ትራክ የእንቅስቃሴ ታሪክ እስካሁን የለም።"
+                "description": "የተሽከርካሪ ለውጦች መታወቂያ",
+                "empty": "ለዚህ ተሽከርካሪ የእንቅስቃሴ ታሪክ እስካሁን የለም።"
             },
             "charts": {
                 "loaded": "ጭነት ያለው",
@@ -592,28 +592,28 @@
                 "unknownDriver": "ያልታወቀ አሽከርካሪ"
             },
             "delete": {
-                "successTitle": "✅ ትራክ ተሰርዟል",
+                "successTitle": "✅ ተሽከርካሪ ተሰርዟል",
                 "successDescription": "ትራኩ በተሳካ ሁኔታ ተወግዷል።",
                 "failedTitle": "❌ ማጥፋት አልተሳካም",
-                "failedDescription": "ይህን ትራክ ማጥፋት አልተቻለም።"
+                "failedDescription": "ይህን ተሽከርካሪ ማጥፋት አልተቻለም።"
             },
             "deactivate": {
-                "title": "ትራክ አቁም",
-                "description": "ይህ ትራክ እንደ ቆመ ይታያል።",
+                "title": "ተሽከርካሪ አቁም",
+                "description": "ይህ ተሽከርካሪ እንደ ቆመ ይታያል።",
                 "confirm": "አቁም",
-                "successTitle": "✅ ትራክ ተቋርጧል",
+                "successTitle": "✅ ተሽከርካሪ ተቋርጧል",
                 "successDescription": "ትራኩ ተቋርጧል።",
                 "failedTitle": "❌ ማቋረጥ አልተሳካም",
-                "failedDescription": "ይህን ትራክ ማቋረጥ አልተቻለም።"
+                "failedDescription": "ይህን ተሽከርካሪ ማቋረጥ አልተቻለም።"
             },
             "assignmentPerformances": {
                 "breadcrumb": "የመመደብ አፈፃፀሞች",
                 "headTitle": "{{plate}} · መመደብ {{assignmentId}} · አፈፃፀሞች",
                 "actions": {
-                    "backToTruck": "ወደ ትራክ ተመለስ"
+                    "backToTruck": "ወደ ተሽከርካሪ ተመለስ"
                 },
                 "header": {
-                    "description": "ለዚህ ትራክ የአሽከርካሪ መጣመር የአፈፃፀም ታሪክ"
+                    "description": "ለዚህ ተሽከርካሪ የአሽከርካሪ መጣመር የአፈፃፀም ታሪክ"
                 },
                 "status": {
                     "active": "ንቁ",
@@ -623,8 +623,8 @@
                 },
                 "timeline": {
                     "title": "የመመደብ የጊዜ መስመር",
-                    "description": "ለዚህ ትራክ-አሽከርካሪ መጣመር የህይወት ዙር",
-                    "truck": "ትራክ",
+                    "description": "ለዚህ ተሽከርካሪ-አሽከርካሪ መጣመር የህይወት ዙር",
+                    "truck": "ተሽከርካሪ",
                     "status": "ሁኔታ፡ {{value}}",
                     "driver": "አሽከርካሪ",
                     "driverId": "የአሽከርካሪ መለያ፡ {{value}}",
@@ -689,19 +689,19 @@
         }
     },
     "driverTrucks": {
-        "title": "የአሽከርካሪ-ትራክ መመደቦች",
-        "breadcrumb": "የአሽከርካሪ-ትራክ መመደቦች",
-        "description": "ሁሉንም የአሽከርካሪ-ትራክ መመደቦች ያስተዳድሩ። ጠቅላላ፡ {{count}}",
+        "title": "የአሽከርካሪ-ተሽከርካሪ መመደቦች",
+        "breadcrumb": "የአሽከርካሪ-ተሽከርካሪ መመደቦች",
+        "description": "ሁሉንም የአሽከርካሪ-ተሽከርካሪ መመደቦች ያስተዳድሩ። ጠቅላላ፡ {{count}}",
         "columns": {
             "driver": "አሽከርካሪ",
-            "truck": "ትራክ",
+            "truck": "ተሽከርካሪ",
             "assignedDate": "የተመደበበት ቀን",
             "created": "የተፈጠረበት",
             "status": "ሁኔታ"
         },
         "table": {
             "title": "መመደቦች",
-            "description": "ሁሉም የአሽከርካሪ-ትራክ መመደብ መዝገቦች",
+            "description": "ሁሉም የአሽከርካሪ-ተሽከርካሪ መመደብ መዝገቦች",
             "actions": "እርምጃዎች",
             "detachedAt": "ተለይቷል፡ {{value}}"
         },
@@ -721,7 +721,7 @@
         },
         "mobile": {
             "position": "#{{value}}",
-            "truckPending": "ትራክ እስካሁን የለም",
+            "truckPending": "ተሽከርካሪ እስካሁን የለም",
             "status": "ሁኔታ",
             "assigned": "ተመድቦበት",
             "created": "የተፈጠረበት",
@@ -734,7 +734,7 @@
         "stats": {
             "total": {
                 "label": "መመደቦች",
-                "description": "የአሽከርካሪ-ትራክ ጥንዶች"
+                "description": "የአሽከርካሪ-ተሽከርካሪ ጥንዶች"
             },
             "attached": {
                 "label": "ተያይዟል",
@@ -763,7 +763,7 @@
         },
         "delete": {
             "title": "መመደብ ሰርዝ",
-            "description": "ይህን የአሽከርካሪ-ትራክ መመደብ መሰረዝ ትፈልጋለህ? ይህ እርምጃ መመለስ አይቻልም።",
+            "description": "ይህን የአሽከርካሪ-ተሽከርካሪ መመደብ መሰረዝ ትፈልጋለህ? ይህ እርምጃ መመለስ አይቻልም።",
             "failedTitle": "❌ ማስወገድ አልተሳካም",
             "errorKnown": "መመደቡን ማስወገድ አልተቻለም። እባክዎ መስፈርቶቹን ይፈትሹ እና ይሞክሩ።",
             "itemName": "{{driver}} ↔ {{plate}}"
@@ -784,8 +784,8 @@
             "sections": {
                 "selection": {
                     "title": "የመመደብ ምርጫ",
-                    "description": "ሊጣመር የሚገባውን ንቁ ትራክ እና አሽከርካሪ ይምረጡ።",
-                    "descriptionEdit": "የንቁ ትራክ እና አሽከርካሪ እንዲቀጥሉ ይምረጡ።"
+                    "description": "ሊጣመር የሚገባውን ንቁ ተሽከርካሪ እና አሽከርካሪ ይምረጡ።",
+                    "descriptionEdit": "የንቁ ተሽከርካሪ እና አሽከርካሪ እንዲቀጥሉ ይምረጡ።"
                 },
                 "details": {
                     "title": "የመመደብ ዝርዝሮች",
@@ -797,13 +797,13 @@
                 "truck": {
                     "label": "የሚገኙ ትራኮች",
                     "tooltip": "በንቁ ሁኔታ ያሉ ትራኮች ብቻ ይታያሉ።",
-                    "placeholder": "ትራክ ይምረጡ",
+                    "placeholder": "ተሽከርካሪ ይምረጡ",
                     "searchPlaceholder": "ትራኮችን ይፈልጉ...",
                     "empty": "የሚገኙ ትራኮች አልተገኙም"
                 },
                 "driver": {
                     "label": "የሚገኙ አሽከርካሪዎች",
-                    "tooltip": "ሌላ ንቁ ትራክ ጋር የተጣመሩ አሽከርካሪዎች በራስ-ሰር ተለይተዋል።",
+                    "tooltip": "ሌላ ንቁ ተሽከርካሪ ጋር የተጣመሩ አሽከርካሪዎች በራስ-ሰር ተለይተዋል።",
                     "placeholder": "አሽከርካሪ ይምረጡ",
                     "searchPlaceholder": "አሽከርካሪዎችን ይፈልጉ...",
                     "optionLabel": "{{name}} (መለያ: {{id}})",
@@ -815,7 +815,7 @@
                 }
             },
             "selectedTruck": {
-                "title": "የተመረጠ ትራክ",
+                "title": "የተመረጠ ተሽከርካሪ",
                 "plate": "ፕሌት",
                 "status": "ሁኔታ"
             },
@@ -828,31 +828,31 @@
             "summary": {
                 "title": "የመመደብ አጠቃላይ ግምገማ",
                 "driver": "አሽከርካሪ",
-                "truck": "ትራክ",
+                "truck": "ተሽከርካሪ",
                 "date": "የመመደብ ቀን",
                 "status": "ሁኔታ"
             },
             "create": {
                 "breadcrumb": "መመደብ ፍጠር",
-                "title": "አሽከርካሪን ለትራክ መመደብ",
-                "headTitle": "የአሽከርካሪ-ትራክ መመደብ ፍጠር",
-                "description": "ንቁ አሽከርካሪን ከሚገኝ ትራክ ጋር ያጣመሩ እና የመመደብ መጀመሪያ ቀን ይመዝግቡ።",
+                "title": "አሽከርካሪን ለተሽከርካሪ መመደብ",
+                "headTitle": "የአሽከርካሪ-ተሽከርካሪ መመደብ ፍጠር",
+                "description": "ንቁ አሽከርካሪን ከሚገኝ ተሽከርካሪ ጋር ያጣመሩ እና የመመደብ መጀመሪያ ቀን ይመዝግቡ።",
                 "backToList": "ወደ መመደቦች ተመለስ",
                 "submit": "መመደብ ፍጠር",
                 "submitting": "በመፍጠር ላይ...",
                 "successTitle": "✅ መመደብ ተፈጥሯል",
-                "successDescription": "አሽከርካሪ እና ትራክ በተሳካ ሁኔታ ተጣመሩ።"
+                "successDescription": "አሽከርካሪ እና ተሽከርካሪ በተሳካ ሁኔታ ተጣመሩ።"
             },
             "edit": {
                 "breadcrumb": "አርም",
-                "title": "የአሽከርካሪ-ትራክ መመደብ አስተካክል",
-                "headTitle": "የአሽከርካሪ-ትራክ መመደብ #{{id}} አርም",
-                "description": "የአሽከርካሪ እና ትራክ መጣመርን እና የመመደብ ቀንን ያስተካክሉ።",
+                "title": "የአሽከርካሪ-ተሽከርካሪ መመደብ አስተካክል",
+                "headTitle": "የአሽከርካሪ-ተሽከርካሪ መመደብ #{{id}} አርም",
+                "description": "የአሽከርካሪ እና ተሽከርካሪ መጣመርን እና የመመደብ ቀንን ያስተካክሉ።",
                 "backToAssignment": "ወደ መመደብ ተመለስ",
                 "submit": "መመደብ አዘምን",
                 "submitting": "በማዘመን ላይ...",
                 "successTitle": "✅ መመደብ ተዘምኗል",
-                "successDescription": "የአሽከርካሪ እና ትራክ መጣመር በተሳካ ሁኔታ ተዘምኗል።",
+                "successDescription": "የአሽከርካሪ እና ተሽከርካሪ መጣመር በተሳካ ሁኔታ ተዘምኗል።",
                 "fallbackAssignment": "መመደብ"
             }
         },
@@ -860,7 +860,7 @@
             "loading": "በመጫን ላይ...",
             "breadcrumbItem": "{{driver}} – {{plate}}",
             "title": "{{driver}} · {{plate}}",
-            "subtitle": "የአሽከርካሪ-ትራክ መመደብ የህይወት ዙር ዝርዝር እይታ",
+            "subtitle": "የአሽከርካሪ-ተሽከርካሪ መመደብ የህይወት ዙር ዝርዝር እይታ",
             "headTitle": "መመደብ፡ {{driver}} - {{plate}}",
             "actions": {
                 "back": "ተመለስ",
@@ -894,7 +894,7 @@
                 "operationalNotes": "የእንቅስቃሴ ማስታወሻዎች",
                 "noOperationalNotes": "ተጨማሪ የሁኔታ ማስታወሻዎች የሉም።",
                 "driverSnapshot": "የአሽከርካሪ አቅጣጫ",
-                "truckSnapshot": "የትራክ አቅጣጫ"
+                "truckSnapshot": "የተሽከርካሪ አቅጣጫ"
             },
             "fields": {
                 "driverId": "መለያ፡ {{value}}",
@@ -976,7 +976,7 @@
             },
             "delete": {
                 "successTitle": "✅ መመደብ ተሰርዟል",
-                "successDescription": "የአሽከርካሪ-ትራክ መመደብ በተሳካ ሁኔታ ተወግዷል።",
+                "successDescription": "የአሽከርካሪ-ተሽከርካሪ መመደብ በተሳካ ሁኔታ ተወግዷል።",
                 "failedTitle": "❌ ማጥፋት አልተሳካም",
                 "failedDescription": "ይህን መመደብ ማጥፋት አልተቻለም። እባክዎ የሚከለክሉ መዝገቦችን መርምሩ።",
                 "failedDescriptionUnknown": "መመደቡን ሲሰርዙ ያልተጠበቀ ስህተት ተፈጥሯል። እባክዎ ይድገሙ።"
@@ -988,12 +988,12 @@
             "actions": {
                 "backToAssignment": "ወደ መመደብ ተመለስ"
             },
-            "title": "አሽከርካሪን ከትራክ ለይ",
+            "title": "አሽከርካሪን ከተሽከርካሪ ለይ",
             "workflow": "የመለያየት ሂደት",
             "selectDate": "ቀን ይምረጡ",
             "metrics": {
                 "driver": "አሽከርካሪ",
-                "truck": "ትራክ",
+                "truck": "ተሽከርካሪ",
                 "assignedOn": "ተመድቦበት",
                 "currentDuration": "የአሁኑ ቆይታ"
             },
@@ -1002,7 +1002,7 @@
                 "description": "የመለያየት ሂደት ከመጨረስ በፊት ንቁ መጣመሩን ይገምግሙ።",
                 "driver": "አሽከርካሪ",
                 "driverId": "መለያ፡ {{value}}",
-                "truck": "ትራክ",
+                "truck": "ተሽከርካሪ",
                 "recordedPlate": "የተመዘገበ ፕሌት፡ {{value}}",
                 "assignedOn": "ተመድቦበት",
                 "detachmentDate": "የመለያየት ቀን",
@@ -1027,7 +1027,7 @@
             "summary": {
                 "title": "የመለያየት ማጠቃለያ",
                 "driver": "አሽከርካሪ",
-                "truck": "ትራክ",
+                "truck": "ተሽከርካሪ",
                 "date": "የመለያየት ቀን",
                 "duration": "ጠቅላላ ቆይታ",
                 "reason": "ምክንያት",
@@ -1081,7 +1081,7 @@
         "stats": {
             "total": {
                 "label": "የተሽከርካሪ አይነቶች",
-                "description": "{{count}} አይነቶች ትራክ ያላቸው"
+                "description": "{{count}} አይነቶች ተሽከርካሪ ያላቸው"
             },
             "totalTrucks": {
                 "label": "ጠቅላላ ትራኮች",
@@ -1093,7 +1093,7 @@
             },
             "empty": {
                 "label": "ባዶ አይነቶች",
-                "description": "ምንም ትራክ አልተመደበላቸውም"
+                "description": "ምንም ተሽከርካሪ አልተመደበላቸውም"
             }
         },
         "mobile": {
@@ -1142,7 +1142,7 @@
                 "name": {
                     "label": "ስም",
                     "tooltip": "ለተሽከርካሪ ክፍል ገላጭ ስም ይጠቀሙ።",
-                    "placeholder": "ለምሳሌ፡ ከባድ ትራክ፣ ቀላል ትራክ"
+                    "placeholder": "ለምሳሌ፡ ከባድ ተሽከርካሪ፣ ቀላል ተሽከርካሪ"
                 },
                 "description": {
                     "label": "መግለጫ",
@@ -1180,7 +1180,7 @@
             },
             "summary": {
                 "associatedTrucks": "ተያያዥ ትራኮች",
-                "singleTruck": "አሁን ይህን አይነት የሚጠቀም ትራክ",
+                "singleTruck": "አሁን ይህን አይነት የሚጠቀም ተሽከርካሪ",
                 "multipleTrucks": "አሁን ይህን አይነት የሚጠቀሙ ትራኮች",
                 "created": "የተፈጠረበት",
                 "createdHelper": "የመጀመሪያ መዝገብ",
@@ -1192,7 +1192,7 @@
                     "title": "ተያያዥ ትራኮች",
                     "description": "{{count}} ትራኮች በዚህ የተሽከርካሪ አይነት ተዋቅረዋል",
                     "addedOn": "ተጨምሯል {{value}}",
-                    "empty": "ለዚህ የተሽከርካሪ አይነት እስካሁን ምንም ትራክ አልተመደበም።"
+                    "empty": "ለዚህ የተሽከርካሪ አይነት እስካሁን ምንም ተሽከርካሪ አልተመደበም።"
                 },
                 "activity": {
                     "title": "የእንቅስቃሴ ታሪክ",
@@ -4524,7 +4524,7 @@
                     "description": "የግል እና የሙያ ዝርዝሮች"
                 },
                 "assignments": {
-                    "title": "የትራክ መመደቦች",
+                    "title": "የተሽከርካሪ መመደቦች",
                     "description": "ከዚህ አሽከርካሪ ጋር የተያያዙ ቅርብ መኪናዎች"
                 },
                 "employment": {
@@ -4667,7 +4667,7 @@
                 "backToDriver": "ወደ አሽከርካሪ ተመለስ"
             },
             "header": {
-                "description": "ለዚህ አሽከርካሪና ትራክ መጣመር የአፈፃፀም መዝገቦች"
+                "description": "ለዚህ አሽከርካሪና ተሽከርካሪ መጣመር የአፈፃፀም መዝገቦች"
             },
             "status": {
                 "attached": "ተጣብቋል",
@@ -4677,9 +4677,9 @@
                 "title": "የመመደብ የጊዜ መስመር",
                 "description": "ለዚህ መጣመር የህይወት ዙር መረጃ",
                 "driver": "አሽከርካሪ",
-                "truck": "ትራክ",
+                "truck": "ተሽከርካሪ",
                 "driverId": "መለያ፡ {{value}}",
-                "truckId": "የትራክ መለያ፡ {{value}}",
+                "truckId": "የተሽከርካሪ መለያ፡ {{value}}",
                 "assignedOn": "ተመድቦበት",
                 "detachedOn": "ተለይቶበት"
             },
@@ -4731,7 +4731,7 @@
             },
             "fallbacks": {
                 "assignment": "መመደብ",
-                "unknownTruck": "ያልታወቀ ትራክ"
+                "unknownTruck": "ያልታወቀ ተሽከርካሪ"
             }
         },
         "delete": {
@@ -5079,9 +5079,9 @@
         }
     },
     "truckStatusBoard": {
-        "title": "የትራክ ሁኔታ ቦርድ",
+        "title": "የተሽከርካሪ ሁኔታ ቦርድ",
         "header": {
-            "description": "ዕለታዊ የትራክ ኦፕሬሽን ሁኔታን ያስተዳድሩ - {{count}} ትራክ{{suffix}}"
+            "description": "ዕለታዊ የተሽከርካሪ ኦፕሬሽን ሁኔታን ያስተዳድሩ - {{count}} ተሽከርካሪ{{suffix}}"
         },
         "filters": {
             "searchPlaceholder": "ትራኮችን በሰሌዳ፣ አይነት ወይም አሽከርካሪ ፈልግ...",
@@ -5126,17 +5126,17 @@
             "viewDetails": "ዝርዝር ይመልከቱ →"
         },
         "column": {
-            "noMatches": "በአሁኑ ማጣሪያዎች ምንም ትራክ አልተገኘም",
+            "noMatches": "በአሁኑ ማጣሪያዎች ምንም ተሽከርካሪ አልተገኘም",
             "dropHere": "ትራኮችን እዚህ ጣሉ"
         },
         "board": {
             "title": "የሁኔታ አጠቃላይ",
             "description": "ሁኔታን ለማዘመን ትራኮችን በኮሎኖች መካከል ይጎትቱና ይጣሉ",
-            "noResults": "ለአሁኑ ማጣሪያዎች ምንም ትራክ አልተገኘም።"
+            "noResults": "ለአሁኑ ማጣሪያዎች ምንም ተሽከርካሪ አልተገኘም።"
         },
         "comment": {
             "title": "{{plate}} ላይ አስተያየት ጨምር",
-            "description": "ስለዚህ ትራክ ሁኔታ ማስታወሻ ወይም አስተያየት ያክሉ",
+            "description": "ስለዚህ ተሽከርካሪ ሁኔታ ማስታወሻ ወይም አስተያየት ያክሉ",
             "placeholder": "አስተያየትዎን እዚህ ያስገቡ...",
             "cancel": "ይቅር",
             "save": "አስተያየት አስቀምጥ"
@@ -5163,7 +5163,7 @@
     },
     "truckStatusShow": {
         "breadcrumbs": {
-            "board": "የትራክ ሁኔታ ቦርድ",
+            "board": "የተሽከርካሪ ሁኔታ ቦርድ",
             "overview": "{{plate}} • የሁኔታ አጠቃላይ"
         },
         "headTitle": "የሁኔታ አጠቃላይ - {{plate}}",
@@ -5193,7 +5193,7 @@
                 "title": "የቦርድ እርምጃዎች",
                 "description": "ፈጣን አሰሳ",
                 "backToBoard": "ወደ ቦርድ ተመለስ",
-                "openTruckProfile": "የትራክ መገለጫ ክፈት"
+                "openTruckProfile": "የተሽከርካሪ መገለጫ ክፈት"
             }
         },
         "distribution": {
@@ -5205,7 +5205,7 @@
             "title": "የቅርብ ጊዜ ታሪክ",
             "description": "በቀን ተይዞ የተመዘገቡ የሁኔታ ለውጦች",
             "updateCount": "{{count}} ዝማኔ{{suffix}}",
-            "empty": "ለዚህ ትራክ የቅርብ ጊዜ የሁኔታ ለውጦች አልተገኙም።"
+            "empty": "ለዚህ ተሽከርካሪ የቅርብ ጊዜ የሁኔታ ለውጦች አልተገኙም።"
         },
         "fallbacks": {
             "noStatusRecorded": "ምንም ሁኔታ አልተመዘገበም",

@@ -21,6 +21,7 @@ use App\Services\Trucks\TruckStatusHistoryService;
 use App\Support\PerformanceRecordPresenter;
 use Carbon\CarbonInterface;
 use Exception;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
@@ -126,7 +127,7 @@ class TruckController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreTruckRequest $request)
+    public function store(StoreTruckRequest $request): RedirectResponse
     {
         try {
             $truck = Truck::create($request->validated());
@@ -595,7 +596,7 @@ class TruckController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateTruckRequest $request, Truck $truck)
+    public function update(UpdateTruckRequest $request, Truck $truck): RedirectResponse
     {
         try {
             $original = $this->normalizeAttributes($truck->getOriginal());
@@ -637,7 +638,7 @@ class TruckController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Truck $truck)
+    public function destroy(Truck $truck): RedirectResponse
     {
         try {
             $blockers = $this->truckDeletionGuard->blockers($truck);
@@ -687,7 +688,7 @@ class TruckController extends Controller
     /**
      * Deactivate the specified truck.
      */
-    public function deactivate(Truck $truck)
+    public function deactivate(Truck $truck): RedirectResponse
     {
         $truck->update(['status' => 'inactive']);
         $this->truckMetrics->clearCache();
@@ -699,7 +700,7 @@ class TruckController extends Controller
     /**
      * Activate the specified truck.
      */
-    public function activate(Truck $truck)
+    public function activate(Truck $truck): RedirectResponse
     {
         $truck->update(['status' => 'active']);
         $this->truckMetrics->clearCache();

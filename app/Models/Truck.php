@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\ClearsCacheOnModelEvents;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -129,7 +130,7 @@ class Truck extends Model
     /**
      * Scope a query to only include active trucks.
      */
-    public function scopeActive($query)
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 'active');
     }
