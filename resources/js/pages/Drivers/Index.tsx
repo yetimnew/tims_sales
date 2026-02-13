@@ -32,6 +32,8 @@ interface DriverData {
     id: number;
     driverid: string;
     name: string;
+    localized_name?: string;
+    name_translations?: Record<string, string>;
     sex: string;
     zone?: string;
     mobile?: string;
@@ -80,6 +82,51 @@ interface DriversIndexProps {
     perPageOptions: number[];
 }
 
+const normalizeLocale = (locale?: string): string => {
+    if (!locale) {
+        return '';
+    }
+
+    return locale.toLowerCase().replace('_', '-');
+};
+
+const buildLocaleCandidates = (locale: string | undefined): string[] => {
+    const normalized = normalizeLocale(locale);
+    const primary = normalized.split('-')[0] ?? '';
+    const fallback = 'en';
+
+    return Array.from(
+        new Set(
+            [normalized, primary, fallback].filter((value): value is string => value !== '' && value !== null && value !== undefined),
+        ),
+    );
+};
+
+const normalizeTranslationKeys = (translations: Record<string, string>): Record<string, string> => {
+    return Object.fromEntries(
+        Object.entries(translations).map(([key, value]) => [
+            normalizeLocale(key),
+            value,
+        ]),
+    );
+};
+
+const resolveDriverDisplayName = (driver: DriverData, candidates: string[]): string => {
+    const translations = normalizeTranslationKeys(driver.name_translations ?? {});
+
+    for (const candidate of candidates) {
+        if (translations[candidate]) {
+            return translations[candidate];
+        }
+    }
+
+    if (driver.localized_name) {
+        return driver.localized_name;
+    }
+
+    return driver.name;
+};
+
 const TABLE_LOADING_STORAGE_KEY = 'drivers.index.table-loading';
 
 const getColumnDefinitions = (translate: (key: string) => string): Array<{ key: keyof DriverData | 'status'; label: string }> => [
@@ -104,7 +151,7 @@ type NavigateOverrides = {
 
 export default function DriversIndex({ drivers, metrics, filters, statusOptions, genderOptions, perPageOptions }: DriversIndexProps) {
     const { hasPermission } = usePermissions();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const breadcrumbs = React.useMemo(() => getBreadcrumbs(t), [t]);
     const columnDefinitions = React.useMemo(() => getColumnDefinitions(t), [t]);
     const canViewDriverDetails = hasPermission('drivers.show');
@@ -166,6 +213,11 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
     React.useEffect(() => {
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
+
+    const localeCandidates = React.useMemo(
+        () => buildLocaleCandidates(i18n.resolvedLanguage ?? i18n.language),
+        [i18n.language, i18n.resolvedLanguage],
+    );
 
     const driverData = React.useMemo<DriverData[]>(
         () => (Array.isArray(drivers?.data) ? drivers.data : []),
@@ -504,56 +556,60 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
               </TableRow>
           ))
         : driverData.length > 0
-            ? driverData.map((driver, index) => (
-                  <TableRow key={driver.id} className="hover:bg-muted/50">
-                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                      <TableCell className="font-medium">{driver.name}</TableCell>
-                      <TableCell className="font-mono text-muted-foreground">{driver.driverid}</TableCell>
-                      <TableCell>{getSexBadge(driver.sex)}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                              <MapPinIcon className="h-3 w-3" />
-                              {driver.zone || t('drivers.fallbacks.notAvailable')}
-                          </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                          {driver.mobile ? (
+            ? driverData.map((driver, index) => {
+                  const displayName = resolveDriverDisplayName(driver, localeCandidates);
+
+                  return (
+                      <TableRow key={driver.id} className="hover:bg-muted/50">
+                          <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                          <TableCell className="font-medium">{displayName}</TableCell>
+                          <TableCell className="font-mono text-muted-foreground">{driver.driverid}</TableCell>
+                          <TableCell>{getSexBadge(driver.sex)}</TableCell>
+                          <TableCell className="text-muted-foreground">
                               <div className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {driver.mobile}
+                                  <MapPinIcon className="h-3 w-3" />
+                                  {driver.zone || t('drivers.fallbacks.notAvailable')}
                               </div>
-                          ) : (
-                              t('drivers.fallbacks.notAvailable')
-                          )}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                          {driver.hireddate ? new Date(driver.hireddate).toLocaleDateString() : t('drivers.fallbacks.notAvailable')}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(driver.status)}</TableCell>
-                      <TableCell className="text-center">
-                          <ListingRowActionsMenu
-                              actions={[
-                                  canViewDriverDetails && {
-                                      label: t('drivers.actions.view'),
-                                      icon: <Eye className="h-4 w-4" />,
-                                      href: `/drivers/${driver.id}`,
-                                  },
-                                  hasPermission('drivers.edit') && {
-                                      label: t('drivers.actions.edit'),
-                                      icon: <Edit className="h-4 w-4" />,
-                                      href: `/drivers/${driver.id}/edit`,
-                                  },
-                                  hasPermission('drivers.destroy') && {
-                                      label: t('drivers.actions.delete'),
-                                      icon: <Trash2 className="h-4 w-4" />,
-                                      danger: true,
-                                      onSelect: () => handleDeleteClick(driver),
-                                  },
-                              ]}
-                          />
-                      </TableCell>
-                  </TableRow>
-              ))
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                              {driver.mobile ? (
+                                  <div className="flex items-center gap-1">
+                                      <Phone className="h-3 w-3" />
+                                      {driver.mobile}
+                                  </div>
+                              ) : (
+                                  t('drivers.fallbacks.notAvailable')
+                              )}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                              {driver.hireddate ? new Date(driver.hireddate).toLocaleDateString() : t('drivers.fallbacks.notAvailable')}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(driver.status)}</TableCell>
+                          <TableCell className="text-center">
+                              <ListingRowActionsMenu
+                                  actions={[
+                                      canViewDriverDetails && {
+                                          label: t('drivers.actions.view'),
+                                          icon: <Eye className="h-4 w-4" />,
+                                          href: `/drivers/${driver.id}`,
+                                      },
+                                      hasPermission('drivers.edit') && {
+                                          label: t('drivers.actions.edit'),
+                                          icon: <Edit className="h-4 w-4" />,
+                                          href: `/drivers/${driver.id}/edit`,
+                                      },
+                                      hasPermission('drivers.destroy') && {
+                                          label: t('drivers.actions.delete'),
+                                          icon: <Trash2 className="h-4 w-4" />,
+                                          danger: true,
+                                          onSelect: () => handleDeleteClick(driver),
+                                      },
+                                  ]}
+                              />
+                          </TableCell>
+                      </TableRow>
+                  );
+              })
             : (
                 <TableRow>
                     <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
@@ -625,7 +681,9 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">
                         {t('drivers.mobile.position', { value: item.position })}
                     </span>
-                    <span className="text-base">{item.driver.name}</span>
+                    <span className="text-base">
+                        {resolveDriverDisplayName(item.driver, localeCandidates)}
+                    </span>
                 </div>
             )}
             renderSubtitle={(item) => item.driver.driverid || t('drivers.mobile.driverIdPending')}

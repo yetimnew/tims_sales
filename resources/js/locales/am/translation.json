@@ -4764,6 +4764,11 @@
                     "title": "የእገናኝ እና አድራሻ",
                     "description": "አሽከርካሪውን ማግኘት እና መኖሪያውን ማወቅ እንዲቻል ይረዱ።"
                 }
+                ,
+                "translations": {
+                    "title": "የቋንቋ ትርጉም ስሞች",
+                    "description": "በየቋንቋው የተረጋገጡ የአሽከርካሪ ስሞችን ያስገቡ።"
+                }
             },
             "fields": {
                 "driverId": {
@@ -4812,6 +4817,13 @@
                     "label": "የቤት ቁጥር",
                     "helper": "አስፈላጊ አይደለም - የቤት/ሕንፃ ቁጥር",
                     "placeholder": "የቤት ቁጥር"
+                }
+                ,
+                "nameTranslations": {
+                    "label": "የቋንቋ ትርጉም ስሞች",
+                    "helper": "በየቋንቋው የተረጋገጡ የአሽከርካሪ ስሞችን ያስገቡ።",
+                    "localeLabel": "{{language}} ስም",
+                    "placeholder": "የ{{language}} ስም ያስገቡ"
                 }
             },
             "create": {

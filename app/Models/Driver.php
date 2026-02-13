@@ -23,6 +23,7 @@ class Driver extends Model
         'user_id',
         'driverid',
         'name',
+        'name_translations',
         'sex',
         'birthdate',
         'zone',
@@ -42,6 +43,7 @@ class Driver extends Model
     protected $casts = [
         'birthdate' => 'date',
         'hireddate' => 'date',
+        'name_translations' => 'array',
     ];
 
     /**
@@ -169,6 +171,64 @@ class Driver extends Model
     public function getNameAttribute($value)
     {
         return ucwords($value);
+    }
+
+    /**
+     * Get the driver's localized name for the current locale.
+     */
+    public function getLocalizedNameAttribute(): string
+    {
+        $translations = $this->name_translations ?? [];
+
+        if ($translations === []) {
+            return $this->name;
+        }
+
+        $normalizedTranslations = $this->normalizedNameTranslations($translations);
+        $preferredLocales = $this->preferredNameLocales();
+
+        foreach ($preferredLocales as $candidate) {
+            if (isset($normalizedTranslations[$candidate]) && $normalizedTranslations[$candidate] !== '') {
+                return ucwords($normalizedTranslations[$candidate]);
+            }
+        }
+
+        return $this->name;
+    }
+
+    private function normalizedNameTranslations(array $translations): array
+    {
+        $normalized = [];
+
+        foreach ($translations as $locale => $value) {
+            $key = strtolower(str_replace('_', '-', $locale));
+
+            if ($value === null) {
+                continue;
+            }
+
+            $normalized[$key] = (string) $value;
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Order locales so the current locale is preferred, followed by its base and the default.
+     *
+     * @return array<int, string>
+     */
+    private function preferredNameLocales(): array
+    {
+        $defaultLocale = strtolower(str_replace('_', '-', config('app.locale', 'en')));
+        $currentLocale = strtolower(str_replace('_', '-', app()->getLocale() ?? $defaultLocale));
+        $baseLocale = explode('-', $currentLocale)[0] ?? $currentLocale;
+
+        return array_values(array_unique(array_filter([
+            $currentLocale,
+            $baseLocale,
+            $defaultLocale,
+        ])));
     }
 
     /**

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+import os
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
 from typing import Iterable, Callable
@@ -45,10 +46,17 @@ def main() -> None:
         "operations": build_operations_payloads,
     }
 
-    for path in SQL_CANDIDATES:
-        if not path.exists():
-            continue
+    # Prefer explicit dump via env; otherwise process available candidates oldest → newest so latest wins.
+    env_path = os.environ.get("DATA_SQL_PATH")
+    paths: list[Path]
+    if env_path:
+        candidate = Path(env_path).resolve()
+        paths = [candidate] if candidate.exists() else []
+    else:
+        existing = [p for p in SQL_CANDIDATES if p.exists()]
+        paths = sorted(existing, key=lambda p: p.stat().st_mtime)
 
+    for path in paths:
         sql_text = path.read_text(encoding="utf-8")
         for statement in parse_insert_statements(sql_text):
             builder = builders.get(statement.table)

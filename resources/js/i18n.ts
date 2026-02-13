@@ -9,7 +9,7 @@ export const SUPPORTED_LOCALES = [
     { code: 'am-ET', labelKey: 'languages.amharic' },
 ] as const;
 
-const FALLBACK_LOCALE = 'en';
+export const FALLBACK_LOCALE = 'en';
 const isBrowser = typeof window !== 'undefined';
 
 const getStoredLocale = (): string | null => {

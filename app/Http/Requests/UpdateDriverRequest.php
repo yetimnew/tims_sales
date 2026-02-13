@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Traits\NormalizesDriverNameTranslations;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateDriverRequest extends FormRequest
 {
+    use NormalizesDriverNameTranslations;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -20,6 +23,7 @@ class UpdateDriverRequest extends FormRequest
     public function rules(): array
     {
         $adultCutoffDate = now()->subYears(18)->toDateString();
+        $defaultLocale = config('app.locale', 'en');
 
         return [
             'user_id' => [
@@ -48,6 +52,9 @@ class UpdateDriverRequest extends FormRequest
             ],
             'hireddate' => 'nullable|date|before_or_equal:today',
             'status' => 'required|string|in:active,inactive',
+            'name_translations' => 'nullable|array',
+            "name_translations.{$defaultLocale}" => 'required_with:name_translations|string|max:255',
+            'name_translations.*' => 'nullable|string|max:255',
         ];
     }
 
@@ -75,14 +82,20 @@ class UpdateDriverRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $normalizedName = mb_strtoupper(trim($this->name ?? ''), 'UTF-8');
+
         $this->merge([
             'driverid' => trim($this->driverid ?? ''),
-            'name' => mb_strtoupper(trim($this->name ?? ''), 'UTF-8'),
+            'name' => $normalizedName,
             'mobile' => trim($this->mobile ?? ''),
             'zone' => trim($this->zone ?? ''),
             'woreda' => trim($this->woreda ?? ''),
             'kebele' => trim($this->kebele ?? ''),
             'housenumber' => trim($this->housenumber ?? ''),
+            'name_translations' => $this->normalizeDriverNameTranslations(
+                $this->input('name_translations'),
+                $normalizedName,
+            ),
         ]);
     }
 }

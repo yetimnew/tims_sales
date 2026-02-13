@@ -1,5 +1,6 @@
 import ast
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
@@ -11,7 +12,15 @@ SQL_CANDIDATES = [
     ROOT / "eletderashcom_tims.sql" / "eletderashcom_tims.sql",
     ROOT / "eletderashcom_tims (1).sql",
 ]
-SQL_DUMP = next((path for path in SQL_CANDIDATES if path.exists()), None)
+
+# Allow explicit selection via environment variable; otherwise, choose the most recently modified.
+env_path = os.environ.get("DATA_SQL_PATH")
+if env_path:
+    candidate = Path(env_path).resolve()
+    SQL_DUMP = candidate if candidate.exists() else None
+else:
+    existing = [p for p in SQL_CANDIDATES if p.exists()]
+    SQL_DUMP = max(existing, key=lambda p: p.stat().st_mtime) if existing else None
 
 if SQL_DUMP is None:
     raise FileNotFoundError("No SQL dump found. Expected one of: " + ", ".join(str(path) for path in SQL_CANDIDATES))

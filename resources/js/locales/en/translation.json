@@ -4788,6 +4788,10 @@
                 "contact": {
                     "title": "Contact & Address",
                     "description": "Ensure we can reach the driver and locate their residence."
+                },
+                "translations": {
+                    "title": "Localized Names",
+                    "description": "Add translated versions of the driver name for every supported language."
                 }
             },
             "fields": {
@@ -4837,6 +4841,12 @@
                     "label": "House Number",
                     "helper": "Optional - House/building number",
                     "placeholder": "House number"
+                },
+                "nameTranslations": {
+                    "label": "Localized names",
+                    "helper": "Optionally provide a translated version of the driver name for each supported locale.",
+                    "localeLabel": "{{language}} name",
+                    "placeholder": "Enter the {{language}} name"
                 }
             },
             "create": {

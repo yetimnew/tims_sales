@@ -13,10 +13,11 @@ import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import { validateDriver } from '@/lib/validation';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Info, User, MapPin, CheckCircle, Save, User as UserIcon, Hash, ArrowLeft, AlertCircle } from 'lucide-react';
-import { type BreadcrumbItem } from '@/types';
+import { Globe, Info, User, MapPin, CheckCircle, Save, User as UserIcon, Hash, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useTranslation } from 'react-i18next';
+import { type BreadcrumbItem } from '@/types';
+import { DRIVER_TRANSLATION_LOCALES, initializeDriverTranslations } from '@/lib/driver-translations';
 
 type DriverFormData = {
     user_id: string | null;
@@ -31,6 +32,7 @@ type DriverFormData = {
     mobile: string;
     hireddate: string;
     status: string;
+    name_translations: Record<string, string>;
 };
 
 type DriverFormField = keyof DriverFormData;
@@ -64,14 +66,15 @@ export default function DriversCreate({ availableUsers = [] }: DriversCreateProp
         mobile: '',
         hireddate: '',
         status: 'active',
+        name_translations: initializeDriverTranslations(),
     });
 
-    const [frontendErrors, setFrontendErrors] = useState<Partial<Record<DriverFormField, string>>>({});
+    const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({});
     const [showScrollTop, setShowScrollTop] = useState(false);
     const scrollContainerRef = useRef<HTMLFormElement | null>(null);
     const [isDirty, setIsDirty] = useState(false);
 
-    const validateField = (field: DriverFormField, nextState: DriverFormData) => {
+    const validateField = (field: string, nextState: DriverFormData) => {
         const result = validateDriver(nextState);
 
         setFrontendErrors((prev) => {
@@ -147,6 +150,19 @@ export default function DriversCreate({ availableUsers = [] }: DriversCreateProp
         setIsDirty(true);
     };
 
+    const handleTranslationChange = (locale: string, value: string) => {
+        const nextValue = value.slice(0, 255);
+        const nextTranslations = {
+            ...data.name_translations,
+            [locale]: nextValue,
+        };
+
+        setData('name_translations', nextTranslations);
+        clearErrors(`name_translations.${locale}`);
+        validateField(`name_translations.${locale}`, { ...data, name_translations: nextTranslations });
+        setIsDirty(true);
+    };
+
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
@@ -165,6 +181,11 @@ export default function DriversCreate({ availableUsers = [] }: DriversCreateProp
         transform((data) => ({
             ...data,
             user_id: data.user_id === null || data.user_id === '' || data.user_id === '__none__' ? null : data.user_id,
+            name_translations: Object.fromEntries(
+                Object.entries(data.name_translations ?? {})
+                    .map(([locale, value]) => [locale, (value ?? '').trim()])
+                    .filter(([, value]) => value !== ''),
+            ),
         }));
 
         post('/drivers', {
@@ -187,7 +208,7 @@ export default function DriversCreate({ availableUsers = [] }: DriversCreateProp
         });
     };
 
-    const getFieldError = (fieldName: DriverFormField): string =>
+    const getFieldError = (fieldName: string): string =>
         (errors[fieldName] as string | undefined) || frontendErrors[fieldName] || '';
 
     return (
@@ -337,6 +358,59 @@ export default function DriversCreate({ availableUsers = [] }: DriversCreateProp
                         </FormField>
                     )}
                 </FormSection>
+
+                {DRIVER_TRANSLATION_LOCALES.length > 0 && (
+                    <FormSection
+                        title={t('drivers.form.sections.translations.title')}
+                        description={t('drivers.form.sections.translations.description')}
+                        icon={
+                            <div className="rounded-lg bg-sky-100 p-2 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400">
+                                <Globe className="h-4 w-4" />
+                            </div>
+                        }
+                    >
+                        <FormField
+                            id="name_translations"
+                            label={t('drivers.form.fields.nameTranslations.label')}
+                            helperText={t('drivers.form.fields.nameTranslations.helper')}
+                        >
+                            <div className="grid gap-4 md:grid-cols-2">
+                                {DRIVER_TRANSLATION_LOCALES.map((locale) => {
+                                    const localeError = getFieldError(`name_translations.${locale.code}`);
+
+                                    return (
+                                        <div key={locale.code} className="space-y-1">
+                                            <div className="flex items-center justify-between text-sm font-medium text-slate-600 dark:text-slate-300">
+                                                <span>
+                                                    {t('drivers.form.fields.nameTranslations.localeLabel', {
+                                                        language: t(locale.labelKey),
+                                                    })}
+                                                </span>
+                                                <span className="text-xs font-semibold uppercase text-slate-400">{locale.code}</span>
+                                            </div>
+                                            <Input
+                                                id={`name_translations_${locale.code}`}
+                                                type="text"
+                                                value={data.name_translations[locale.code] ?? ''}
+                                                onChange={(event) => handleTranslationChange(locale.code, event.target.value)}
+                                                placeholder={t('drivers.form.fields.nameTranslations.placeholder', {
+                                                    language: t(locale.labelKey),
+                                                })}
+                                                maxLength={255}
+                                                className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${
+                                                    localeError
+                                                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                                                        : 'hover:border-slate-400 dark:hover:border-slate-500 focus:border-blue-500 focus:ring-blue-500/20'
+                                                }`}
+                                            />
+                                            {localeError && <p className="text-xs font-medium text-rose-600">{localeError}</p>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </FormField>
+                    </FormSection>
+                )}
 
                 <FormSection
                     title={t('drivers.form.sections.personal.title')}

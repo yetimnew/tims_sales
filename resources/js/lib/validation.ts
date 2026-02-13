@@ -1,3 +1,5 @@
+import { DRIVER_TRANSLATION_LOCALES } from './driver-translations';
+
 /**
  * Validation utilities for all application modules
  */
@@ -1119,6 +1121,21 @@ export function validateDriver(data: any): ValidationErrors {
   if (data.woreda) errors.woreda = driverValidation.optionalText(data.woreda, 'Woreda')
   if (data.kebele) errors.kebele = driverValidation.optionalText(data.kebele, 'Kebele')
   if (data.housenumber) errors.housenumber = driverValidation.optionalText(data.housenumber, 'House number')
+  const translations = data.name_translations ?? {}
+  DRIVER_TRANSLATION_LOCALES.forEach(({ code }) => {
+    const rawValue = translations[code]
+    const value = typeof rawValue === 'string' ? rawValue.trim() : ''
+
+    if (value === '') {
+      return
+    }
+
+    const message = driverValidation.optionalText(value, `${code} name`)
+
+    if (message) {
+      errors[`name_translations.${code}`] = message
+    }
+  })
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }

@@ -22,6 +22,7 @@ class PerformancesSeeder extends Seeder
     public function run(): void
     {
         $datasetPath = database_path('seeders/data/legacy_performances.json');
+        $operationsPath = database_path('seeders/data/legacy_operations.json');
 
         if (! File::exists($datasetPath)) {
             throw new \RuntimeException('Legacy performances dataset missing.');
@@ -39,6 +40,27 @@ class PerformancesSeeder extends Seeder
 
             return;
         }
+
+        // Build operation resolution maps to handle deduped operation numbers
+        if (! File::exists($operationsPath)) {
+            throw new \RuntimeException('Legacy operations dataset required for performances seeding.');
+        }
+
+        $legacyOperationsById = collect(json_decode(
+            File::get($operationsPath),
+            true,
+            512,
+            JSON_THROW_ON_ERROR
+        ))->mapWithKeys(function (array $op): array {
+            $id = (int) ($op['legacy_id'] ?? 0);
+            $number = (string) \Illuminate\Support\Str::of($op['operationid'] ?? '')->trim()->squish();
+
+            return $id === 0 || $number === '' ? [] : [$id => $number];
+        });
+
+        $currentOperationsByNumber = Operation::withTrashed()->get()->keyBy(function (Operation $op): string {
+            return (string) \Illuminate\Support\Str::of($op->operationid)->trim()->squish();
+        });
 
         $operations = Operation::withTrashed()->pluck('id')->all();
         if (empty($operations)) {
@@ -67,8 +89,8 @@ class PerformancesSeeder extends Seeder
         DB::table('performances')->truncate();
         Schema::enableForeignKeyConstraints();
 
-        $performances->chunk(500)->each(function ($chunk) use ($operations, $driverTrucks, $users, $placesByLegacyId): void {
-            $records = $chunk->map(function (array $performance) use ($operations, $driverTrucks, $users, $placesByLegacyId): array {
+        $performances->chunk(500)->each(function ($chunk) use ($operations, $driverTrucks, $users, $placesByLegacyId, $legacyOperationsById, $currentOperationsByNumber): void {
+            $records = $chunk->map(function (array $performance) use ($operations, $driverTrucks, $users, $placesByLegacyId, $legacyOperationsById, $currentOperationsByNumber): array {
                 $legacyId = (int) ($performance['legacy_id'] ?? 0);
                 $operationId = (int) ($performance['operation_id'] ?? 0);
                 $driverTruckId = (int) ($performance['driver_truck_id'] ?? 0);
@@ -91,7 +113,18 @@ class PerformancesSeeder extends Seeder
                 }
 
                 if (! in_array($operationId, $operations, true)) {
-                    throw new \RuntimeException("Missing operation {$operationId} referenced by legacy performance {$legacyId}.");
+                    // Attempt to resolve via legacy operation number mapping
+                    $operationNumber = $legacyOperationsById->get($operationId);
+                    if ($operationNumber !== null) {
+                        $resolved = $currentOperationsByNumber->get($operationNumber);
+                        if ($resolved !== null) {
+                            $operationId = $resolved->getKey();
+                        }
+                    }
+
+                    if (! in_array($operationId, $operations, true)) {
+                        throw new \RuntimeException("Missing operation {$operationId} referenced by legacy performance {$legacyId}.");
+                    }
                 }
 
                 if (! in_array($driverTruckId, $driverTrucks, true)) {

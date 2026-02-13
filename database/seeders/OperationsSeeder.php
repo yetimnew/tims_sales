@@ -11,7 +11,6 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class OperationsSeeder extends Seeder
@@ -65,11 +64,17 @@ class OperationsSeeder extends Seeder
             throw new \RuntimeException('Cargo types "Commercial Cargo" and "Relief Cargo" must exist before running OperationsSeeder.');
         }
 
-        Schema::disableForeignKeyConstraints();
-        DB::table('operations')->truncate();
-        Schema::enableForeignKeyConstraints();
+        // Deduplicate by operation number to avoid unique key violations
+        $deduped = $operations
+            ->groupBy(fn (array $op) => (string) Str::of($op['operationid'] ?? '')->trim()->squish())
+            ->map(function ($group) {
+                return collect($group)
+                    ->sortByDesc(fn (array $op) => $op['updated_at'] ?? $op['created_at'] ?? now())
+                    ->first();
+            })
+            ->values();
 
-        $chunks = $operations->chunk(250);
+        $chunks = $deduped->chunk(250);
 
         foreach ($chunks as $chunk) {
             $records = [];
@@ -136,7 +141,32 @@ class OperationsSeeder extends Seeder
                 ];
             }
 
-            DB::table('operations')->insert($records);
+            // Upsert on unique key operationid; exclude primary key from updates
+            DB::table('operations')->upsert(
+                $records,
+                ['operationid'],
+                [
+                    'customer_id',
+                    'startdate',
+                    'destination_scope',
+                    'destination_name',
+                    'destination_reference_type',
+                    'destination_reference_id',
+                    'volume',
+                    'cargo_type_id',
+                    'cargo_service_type',
+                    'km',
+                    'tariff',
+                    'status',
+                    'closed',
+                    'enddate',
+                    'remark',
+                    'user_id',
+                    'created_at',
+                    'updated_at',
+                    'deleted_at',
+                ]
+            );
         }
     }
 

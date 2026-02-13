@@ -399,6 +399,8 @@ class DriverController extends BaseResourceController
             'user_id' => $driver->user_id,
             'driverid' => $driver->driverid,
             'name' => $driver->name,
+            'name_translations' => $driver->name_translations,
+            'localized_name' => $driver->localized_name,
             'sex' => strtolower((string) ($driver->getRawOriginal('sex') ?? $driver->sex ?? '')),
             'birthdate' => $driver->birthdate?->toDateString(),
             'zone' => $driver->zone,
