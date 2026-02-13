@@ -11,6 +11,7 @@ SQL_CANDIDATES = [
     ROOT / "database" / "eletderashcom_tims_12_19.sql",
     ROOT / "eletderashcom_tims.sql" / "eletderashcom_tims.sql",
     ROOT / "eletderashcom_tims (1).sql",
+    ROOT / "eletderashcom_tims.sql",
 ]
 
 # Allow explicit selection via environment variable; otherwise, choose the most recently modified.
@@ -40,6 +41,8 @@ def main() -> None:
     outsource_performances_rows = parse_inserts(sql, "outsource_performances")
     users_rows = parse_inserts(sql, "users")
     places_rows = parse_inserts(sql, "places")
+    zones_rows = parse_inserts(sql, "zones")
+    woredas_rows = parse_inserts(sql, "woredas")
 
     trucks_payload = [transform_truck(row) for row in trucks_rows]
     drivers_payload = [transform_driver(row) for row in drivers_rows]
@@ -58,6 +61,8 @@ def main() -> None:
     ]
     users_payload = [transform_user(row) for row in users_rows]
     places_payload = [transform_place(row) for row in places_rows]
+    zones_payload = [transform_zone(row) for row in zones_rows]
+    woredas_payload = [transform_woreda(row) for row in woredas_rows]
 
     write_json("legacy_trucks.json", trucks_payload)
     write_json("legacy_drivers.json", drivers_payload)
@@ -69,6 +74,10 @@ def main() -> None:
     write_json("legacy_outsources.json", outsources_payload)
     write_json("legacy_outsource_performances.json", outsource_performances_payload)
     write_json("legacy_places.json", places_payload)
+    if zones_payload:
+        write_json("legacy_zones.json", zones_payload)
+    if woredas_payload:
+        write_json("legacy_woredas.json", woredas_payload)
 
     print(f"Exported {len(trucks_payload)} trucks")
     print(f"Exported {len(drivers_payload)} drivers")
@@ -80,11 +89,15 @@ def main() -> None:
     print(f"Exported {len(outsources_payload)} outsources")
     print(f"Exported {len(outsource_performances_payload)} outsource performances")
     print(f"Exported {len(places_payload)} places")
+    if zones_payload:
+        print(f"Exported {len(zones_payload)} zones")
+    if woredas_payload:
+        print(f"Exported {len(woredas_payload)} woredas")
 
 
 def parse_inserts(sql: str, table: str) -> List[Dict[str, Any]]:
     pattern = re.compile(
-        rf"INSERT INTO `{table}`\s*\((.*?)\)\s+VALUES\s*(.*?);",
+        rf"INSERT\s+INTO\s+[`\"]?{table}[`\"]?\s*\((.*?)\)\s+VALUES\s*(.*?);",
         re.DOTALL | re.IGNORECASE,
     )
     rows: List[Dict[str, Any]] = []
@@ -372,6 +385,26 @@ def transform_place(row: Dict[str, Any]) -> Dict[str, Any]:
         "legacy_id": row["id"],
         "name": normalize_string(row.get("name"), strict=False),
         "woreda_legacy_id": int(woreda_id) if woreda_id not in (None, "") else None,
+        "comment": normalize_string(row.get("comment"), strict=False),
+        "status": row.get("status"),
+    }
+
+
+def transform_woreda(row: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "legacy_id": row["id"],
+        "name": normalize_string(row.get("name"), strict=False),
+        "zone_legacy_id": row.get("zone_id"),
+        "comment": normalize_string(row.get("comment"), strict=False),
+        "status": row.get("status"),
+    }
+
+
+def transform_zone(row: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "legacy_id": row["id"],
+        "name": normalize_string(row.get("name"), strict=False),
+        "region_legacy_id": row.get("region_id"),
         "comment": normalize_string(row.get("comment"), strict=False),
         "status": row.get("status"),
     }

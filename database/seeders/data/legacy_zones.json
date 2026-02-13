@@ -4,1357 +4,958 @@
     "name": "SOUTH GONDER",
     "region_legacy_id": 59,
     "comment": null,
-    "administrative_center": "Debre Tabor",
-    "status": 1,
-    "latitude": 11.5,
-    "longitude": 38.5
+    "status": 1
   },
   {
     "legacy_id": 5,
     "name": "BALY",
     "region_legacy_id": 2,
     "comment": "de",
-    "administrative_center": "Robe",
-    "status": 1,
-    "latitude": 7.1242676,
-    "longitude": 40.0080973
+    "status": 1
   },
   {
     "legacy_id": 6,
     "name": "W/SHWA",
     "region_legacy_id": 2,
     "comment": "de",
-    "administrative_center": "Ambo",
-    "status": 1,
-    "latitude": 9.9937611,
-    "longitude": 39.900869
+    "status": 1
   },
   {
     "legacy_id": 7,
     "name": "BORENA",
     "region_legacy_id": 2,
     "comment": "DE",
-    "administrative_center": "Yabelo",
-    "status": 1,
-    "latitude": 4.892569,
-    "longitude": 38.094989
+    "status": 1
   },
   {
     "legacy_id": 8,
     "name": "BUNA BEDLY",
     "region_legacy_id": 2,
     "comment": "DE",
-    "administrative_center": "Bedele",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 9,
     "name": "E/SHWA",
     "region_legacy_id": 2,
     "comment": "de",
-    "administrative_center": "Adama",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 10,
     "name": "MEKO/GASI",
     "region_legacy_id": 2,
     "comment": "de",
-    "administrative_center": "GELGEL BELES 2",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 11,
     "name": "GAMBYLA",
     "region_legacy_id": 11,
     "comment": "de",
-    "administrative_center": "YEGNENGE",
-    "status": 1,
-    "latitude": 7.8102647,
-    "longitude": 34.1822172
+    "status": 1
   },
   {
     "legacy_id": 12,
     "name": "JIMA",
     "region_legacy_id": 2,
     "comment": "de",
-    "administrative_center": "Jimma",
-    "status": 1,
-    "latitude": 10.1387506,
-    "longitude": 37.8902217
+    "status": 1
   },
   {
     "legacy_id": 13,
     "name": "W/GUJI",
     "region_legacy_id": 2,
     "comment": "de",
-    "administrative_center": "Bule Hora",
-    "status": 1,
-    "latitude": 8.9901969,
-    "longitude": 35.8239985
+    "status": 1
   },
   {
     "legacy_id": 14,
     "name": "E/HARERE",
     "region_legacy_id": 56,
     "comment": "de",
-    "administrative_center": "TASHO-E/HARERE",
-    "status": 1,
-    "latitude": 9.56667,
-    "longitude": 38.63333
+    "status": 1
   },
   {
     "legacy_id": 15,
     "name": "W/ARSI",
     "region_legacy_id": 2,
     "comment": "de",
-    "administrative_center": "Shashamane",
-    "status": 1,
-    "latitude": 7.3533442,
-    "longitude": 38.6756595
+    "status": 1
   },
   {
     "legacy_id": 16,
     "name": "S/SHWA",
     "region_legacy_id": 2,
     "comment": "de",
-    "administrative_center": "Batu",
-    "status": 1,
-    "latitude": 7.9358063,
-    "longitude": 38.7164929
+    "status": 1
   },
   {
     "legacy_id": 17,
     "name": "SEGENE",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": "de",
-    "administrative_center": "kilo",
-    "status": 1,
-    "latitude": 6.7089081,
-    "longitude": 35.6841753
+    "status": 1
   },
   {
     "legacy_id": 20,
     "name": "HADEYA",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": "de",
-    "administrative_center": "jacho",
-    "status": 1,
-    "latitude": 6.7089081,
-    "longitude": 35.6841753
+    "status": 1
   },
   {
     "legacy_id": 21,
     "name": "SIDAMA",
     "region_legacy_id": 57,
     "comment": "DE",
-    "administrative_center": "Hawassa",
-    "status": 1,
-    "latitude": 7.06205,
-    "longitude": 38.47635
+    "status": 1
   },
   {
     "legacy_id": 22,
     "name": "SILTIY",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": "de",
-    "administrative_center": "Worabe",
-    "status": 1,
-    "latitude": 6.7089081,
-    "longitude": 35.6841753
+    "status": 1
   },
   {
     "legacy_id": 24,
     "name": "GOJAM",
     "region_legacy_id": 59,
     "comment": "DE",
-    "administrative_center": "BAHR DAR",
-    "status": 1,
-    "latitude": 11.5965167,
-    "longitude": 37.385498
+    "status": 1
   },
   {
     "legacy_id": 25,
     "name": "GAMO GOFA",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": "DE",
-    "administrative_center": "Arba Minch",
-    "status": 1,
-    "latitude": 6.0095303,
-    "longitude": 37.5354187
+    "status": 1
   },
   {
     "legacy_id": 26,
     "name": "ARSI",
     "region_legacy_id": 2,
     "comment": "DE",
-    "administrative_center": "Asella",
-    "status": 1,
-    "latitude": 8.0101011,
-    "longitude": 39.6716774
+    "status": 1
   },
   {
     "legacy_id": 28,
     "name": "HAWI GUDERU",
     "region_legacy_id": 2,
     "comment": "DE",
-    "administrative_center": "Shambu",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 30,
     "name": "DUBT",
     "region_legacy_id": 23,
     "comment": "DE",
-    "administrative_center": "Semera",
-    "status": 0,
-    "latitude": 11.7207,
-    "longitude": 41.059
+    "status": 0
   },
   {
     "legacy_id": 31,
     "name": "W/HARER",
     "region_legacy_id": 56,
     "comment": "DE",
-    "administrative_center": "Chiro",
-    "status": 1,
-    "latitude": 9.3118397,
-    "longitude": 42.1284445
+    "status": 1
   },
   {
     "legacy_id": 32,
     "name": "E/WOLGA",
     "region_legacy_id": 2,
     "comment": "DE",
-    "administrative_center": "Nekemte",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 33,
     "name": "W/WOLGA",
     "region_legacy_id": 2,
     "comment": "DE",
-    "administrative_center": "Gimbi",
-    "status": 1,
-    "latitude": 8.8061916,
-    "longitude": 37.7881259
+    "status": 1
   },
   {
     "legacy_id": 35,
     "name": "DLLO",
     "region_legacy_id": 2,
     "comment": "de",
-    "administrative_center": "BADARMURUK",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 36,
     "name": "JARAR",
     "region_legacy_id": 44,
     "comment": "DE",
-    "administrative_center": "Degehabur",
-    "status": 1,
-    "latitude": 8.0735213,
-    "longitude": 44.0954224
+    "status": 1
   },
   {
     "legacy_id": 37,
     "name": "WORETA",
     "region_legacy_id": 59,
     "comment": "DE",
-    "administrative_center": "Woreta",
-    "status": 1,
-    "latitude": 11.5,
-    "longitude": 38.5
+    "status": 1
   },
   {
     "legacy_id": 39,
     "name": "WOLAYTA",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": "DE",
-    "administrative_center": "Sodo",
-    "status": 1,
-    "latitude": 6.864163,
-    "longitude": 37.762762
+    "status": 1
   },
   {
     "legacy_id": 40,
     "name": "SHEKA",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": "DE",
-    "administrative_center": "Masha",
-    "status": 1,
-    "latitude": 7.5073076,
-    "longitude": 35.3585049
+    "status": 1
   },
   {
     "legacy_id": 41,
     "name": "GURAGE",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": "DE",
-    "administrative_center": "Welkite",
-    "status": 1,
-    "latitude": 7.5829546,
-    "longitude": 37.861302
+    "status": 1
   },
   {
     "legacy_id": 43,
     "name": "S/OMO",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": "DE",
-    "administrative_center": "DARELYE",
-    "status": 1,
-    "latitude": 13.3917079,
-    "longitude": 39.1996716
+    "status": 1
   },
   {
     "legacy_id": 44,
     "name": "DIREDAWA",
     "region_legacy_id": 44,
     "comment": "de",
-    "administrative_center": "DERIDWA/DERIDWA",
-    "status": 1,
-    "latitude": 9.5942885,
-    "longitude": 41.8617959
+    "status": 1
   },
   {
     "legacy_id": 45,
     "name": "E/GUJI",
     "region_legacy_id": 2,
     "comment": "de",
-    "administrative_center": "BULBULA",
-    "status": 1,
-    "latitude": 8.9901969,
-    "longitude": 35.8239985
+    "status": 1
   },
   {
     "legacy_id": 46,
     "name": "AMURU",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": "de",
-    "administrative_center": "ABAYE VHIOMON",
-    "status": 1,
-    "latitude": 6.7089081,
-    "longitude": 35.6841753
+    "status": 1
   },
   {
     "legacy_id": 47,
     "name": "SHKA",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": "DE",
-    "administrative_center": "Masha",
-    "status": 1,
-    "latitude": 6.7089081,
-    "longitude": 35.6841753
+    "status": 1
   },
   {
     "legacy_id": 49,
     "name": "AFEDIRA",
     "region_legacy_id": 23,
     "comment": null,
-    "administrative_center": "Afdera",
-    "status": 1,
-    "latitude": 13.2876191,
-    "longitude": 41.4334728
+    "status": 1
   },
   {
     "legacy_id": 50,
     "name": "A/MENCHI",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": null,
-    "administrative_center": "Mizan Aman",
-    "status": 1,
-    "latitude": 6.7089081,
-    "longitude": 35.6841753
+    "status": 1
   },
   {
     "legacy_id": 51,
     "name": "GUJI",
     "region_legacy_id": 2,
     "comment": null,
-    "administrative_center": "HAYADIMA",
-    "status": 1,
-    "latitude": 5.5501401,
-    "longitude": 39.2030529
+    "status": 1
   },
   {
     "legacy_id": 52,
     "name": "BENSHANGUL",
-    "region_legacy_id": 62,
+    "region_legacy_id": 42,
     "comment": null,
-    "administrative_center": "BELONJ GANFO/KAMASH",
-    "status": 1,
-    "latitude": 10.3778251,
-    "longitude": 35.5084442
+    "status": 1
   },
   {
     "legacy_id": 53,
     "name": "HARO GUDERU",
     "region_legacy_id": 2,
     "comment": "de",
-    "administrative_center": "Shambu",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 54,
     "name": "HARER",
     "region_legacy_id": 2,
     "comment": "DE",
-    "administrative_center": "Harar",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 55,
     "name": "Erer",
     "region_legacy_id": 48,
     "comment": null,
-    "administrative_center": "maraye/m/mariham",
-    "status": 1,
-    "latitude": 8.4392817,
-    "longitude": 42.1142323
+    "status": 1
   },
   {
     "legacy_id": 56,
     "name": "SHINILE",
     "region_legacy_id": 2,
     "comment": null,
-    "administrative_center": "Shinile",
-    "status": 1,
-    "latitude": 10.2122931,
-    "longitude": 41.9276455
+    "status": 1
   },
   {
     "legacy_id": 57,
     "name": "North Wollo",
     "region_legacy_id": 59,
     "comment": null,
-    "administrative_center": "Woldiya",
-    "status": 1,
-    "latitude": 11.8342096,
-    "longitude": 39.6056115
+    "status": 1
   },
   {
     "legacy_id": 58,
-    "name": "ADDISE ABABA",
-    "region_legacy_id": 60,
+    "name": "Addis Abeba",
+    "region_legacy_id": 19,
     "comment": null,
-    "administrative_center": "Addis Ababa",
-    "status": 1,
-    "latitude": 8.9806,
-    "longitude": 38.7578
+    "status": 1
   },
   {
     "legacy_id": 59,
     "name": "GABBI RASU",
     "region_legacy_id": 23,
     "comment": null,
-    "administrative_center": "Awash",
-    "status": 1,
-    "latitude": 9.9749582,
-    "longitude": 40.3904199
+    "status": 1
   },
   {
     "legacy_id": 62,
     "name": "NORTH WOLLO",
     "region_legacy_id": 59,
     "comment": null,
-    "administrative_center": "Woldiya",
-    "status": 1,
-    "latitude": 11.8342096,
-    "longitude": 39.6056115
+    "status": 1
   },
   {
     "legacy_id": 63,
     "name": "ZONE 14",
     "region_legacy_id": 60,
     "comment": null,
-    "administrative_center": "Addis Ababa",
-    "status": 1,
-    "latitude": 8.9806,
-    "longitude": 38.7578
+    "status": 1
   },
   {
     "legacy_id": 64,
     "name": "W/TEGRAYE",
     "region_legacy_id": 55,
     "comment": "DE",
-    "administrative_center": "Shire",
-    "status": 1,
-    "latitude": 13.881273,
-    "longitude": 39.127495
+    "status": 1
   },
   {
     "legacy_id": 65,
     "name": "MEKELE",
     "region_legacy_id": 55,
     "comment": "DE",
-    "administrative_center": "Mekelle",
-    "status": 1,
-    "latitude": 13.4967,
-    "longitude": 39.4767
+    "status": 1
   },
   {
     "legacy_id": 67,
     "name": "AWSI RASU",
     "region_legacy_id": 23,
     "comment": "DE",
-    "administrative_center": "Asayita",
-    "status": 1,
-    "latitude": 11.7108206,
-    "longitude": 41.0330866
+    "status": 1
   },
   {
     "legacy_id": 68,
     "name": "MIKADRA",
     "region_legacy_id": 55,
-    "comment": "\u121b\u12ed\u12ab\u12f5\u122b",
-    "administrative_center": "MIKADRA",
-    "status": 1,
-    "latitude": 13.881273,
-    "longitude": 39.127495
+    "comment": "ማይካድራ",
+    "status": 1
   },
   {
     "legacy_id": 69,
     "name": "HUMERA",
     "region_legacy_id": 55,
     "comment": "DE",
-    "administrative_center": "Humera",
-    "status": 1,
-    "latitude": 14.2876868,
-    "longitude": 36.6088415
+    "status": 1
   },
   {
     "legacy_id": 70,
     "name": "MITSEBRI",
     "region_legacy_id": 55,
     "comment": null,
-    "administrative_center": "May Tsebri",
-    "status": 1,
-    "latitude": 13.881273,
-    "longitude": 39.127495
+    "status": 1
   },
   {
     "legacy_id": 71,
     "name": "DIBATE",
-    "region_legacy_id": 62,
+    "region_legacy_id": 42,
     "comment": "DE",
-    "administrative_center": "DIBATE",
-    "status": 1,
-    "latitude": 10.7745003,
-    "longitude": 36.26338
+    "status": 1
   },
   {
     "legacy_id": 72,
     "name": "KIBLATI RASU",
     "region_legacy_id": 23,
     "comment": "DE",
-    "administrative_center": "Semera",
-    "status": 1,
-    "latitude": 11.7207,
-    "longitude": 41.059
+    "status": 1
   },
   {
     "legacy_id": 74,
     "name": "METEKEL",
     "region_legacy_id": 62,
     "comment": null,
-    "administrative_center": "Gilgel Beles",
-    "status": 1,
-    "latitude": 10.9630277,
-    "longitude": 35.7838685
+    "status": 1
   },
   {
     "legacy_id": 75,
     "name": "RAYA",
     "region_legacy_id": 55,
     "comment": null,
-    "administrative_center": "Maychew",
-    "status": 1,
-    "latitude": 12.05,
-    "longitude": 39.75
+    "status": 1
   },
   {
     "legacy_id": 76,
     "name": "CENTRAL GONDER",
     "region_legacy_id": 59,
     "comment": null,
-    "administrative_center": "Gondar",
-    "status": 1,
-    "latitude": 11.5,
-    "longitude": 38.5
+    "status": 1
   },
   {
     "legacy_id": 77,
     "name": "FINFINE ZURIA",
     "region_legacy_id": 2,
     "comment": null,
-    "administrative_center": "Addis Ababa",
-    "status": 1,
-    "latitude": 8.9806,
-    "longitude": 38.7578
+    "status": 1
   },
   {
     "legacy_id": 79,
     "name": "W/ARISI",
     "region_legacy_id": 2,
     "comment": null,
-    "administrative_center": "Shashamane",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 80,
     "name": "SOUTH WOLLO",
     "region_legacy_id": 59,
     "comment": null,
-    "administrative_center": "Dessie",
-    "status": 1,
-    "latitude": 10.9342833,
-    "longitude": 39.2021182
+    "status": 1
   },
   {
     "legacy_id": 81,
     "name": "WEST GONDER",
     "region_legacy_id": 59,
     "comment": null,
-    "administrative_center": "Metema",
-    "status": 1,
-    "latitude": 12.5460334,
-    "longitude": 37.410935
+    "status": 1
   },
   {
     "legacy_id": 82,
     "name": "Afar",
     "region_legacy_id": 23,
     "comment": "unkoun zone",
-    "administrative_center": "DORO ESIE",
-    "status": 1,
-    "latitude": 11.7108206,
-    "longitude": 41.0330866
+    "status": 1
   },
   {
     "legacy_id": 83,
     "name": "EAST",
     "region_legacy_id": 55,
     "comment": "DE",
-    "administrative_center": "ADEGRATE",
-    "status": 1,
-    "latitude": 8.5427504,
-    "longitude": 39.2800502
+    "status": 1
   },
   {
     "legacy_id": 84,
     "name": "N/WEST",
     "region_legacy_id": 55,
     "comment": "DE",
-    "administrative_center": "SHERARO",
-    "status": 1,
-    "latitude": 14.3930614,
-    "longitude": 37.7713978
+    "status": 1
   },
   {
     "legacy_id": 85,
     "name": "SOUTH",
     "region_legacy_id": 55,
     "comment": null,
-    "administrative_center": "MEHONE",
-    "status": 1,
-    "latitude": 8.5384711,
-    "longitude": 37.9713899
+    "status": 1
   },
   {
     "legacy_id": 86,
     "name": "CENTRAL TIGRAI",
     "region_legacy_id": 55,
     "comment": "DE",
-    "administrative_center": "Axum",
-    "status": 1,
-    "latitude": 14.1220982,
-    "longitude": 38.7321749
+    "status": 1
   },
   {
     "legacy_id": 87,
     "name": "JEGJEGA",
     "region_legacy_id": 48,
     "comment": "DE",
-    "administrative_center": "JEGJEGA",
-    "status": 1,
-    "latitude": 7.2629844,
-    "longitude": 43.5360531
+    "status": 1
   },
   {
     "legacy_id": 88,
     "name": "AFDER",
     "region_legacy_id": 48,
     "comment": "DE",
-    "administrative_center": "Hargele",
-    "status": 1,
-    "latitude": 7.2629844,
-    "longitude": 43.5360531
+    "status": 1
   },
   {
     "legacy_id": 89,
     "name": "Zone 1",
     "region_legacy_id": 57,
     "comment": "de",
-    "administrative_center": "Asayita",
-    "status": 1,
-    "latitude": 11.7260015,
-    "longitude": 40.978725
+    "status": 1
   },
   {
     "legacy_id": 90,
     "name": "Hawassa c",
     "region_legacy_id": 57,
     "comment": "de",
-    "administrative_center": "TULA",
-    "status": 1,
-    "latitude": 7.0481029,
-    "longitude": 38.47861
+    "status": 1
   },
   {
     "legacy_id": 91,
     "name": "CARRI RASU",
     "region_legacy_id": 23,
     "comment": "DE",
-    "administrative_center": "YANGUDI",
-    "status": 1,
-    "latitude": 10.953845,
-    "longitude": 40.7470623
+    "status": 1
   },
   {
     "legacy_id": 92,
     "name": "N.SHEW (R3)",
     "region_legacy_id": 59,
     "comment": "DE",
-    "administrative_center": "BERGI",
-    "status": 1,
-    "latitude": 11.5,
-    "longitude": 38.5
+    "status": 1
   },
   {
     "legacy_id": 93,
     "name": "WELGA",
     "region_legacy_id": 2,
     "comment": "DE",
-    "administrative_center": "NEKEMT",
-    "status": 1,
-    "latitude": 9.0906779,
-    "longitude": 36.5480371
+    "status": 1
   },
   {
     "legacy_id": 94,
     "name": "North Gonder",
     "region_legacy_id": 59,
     "comment": null,
-    "administrative_center": "Gondar",
-    "status": 1,
-    "latitude": 11.5,
-    "longitude": 38.5
+    "status": 1
   },
   {
     "legacy_id": 95,
     "name": "LIBEN",
     "region_legacy_id": 48,
     "comment": "DE",
-    "administrative_center": "Filtu",
-    "status": 1,
-    "latitude": 4.5484468,
-    "longitude": 40.7091252
+    "status": 1
   },
   {
     "legacy_id": 96,
     "name": "KELEM WELLEGA",
     "region_legacy_id": 2,
     "comment": "DE",
-    "administrative_center": "Dembidolo",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 97,
     "name": "OROMIA",
     "region_legacy_id": 59,
     "comment": "DE",
-    "administrative_center": "Kemise",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 98,
     "name": "D/WALO",
     "region_legacy_id": 59,
     "comment": "DE",
-    "administrative_center": "DEGOLO",
-    "status": 1,
-    "latitude": 11.5,
-    "longitude": 38.5
+    "status": 1
   },
   {
     "legacy_id": 99,
     "name": "LALIBELA",
     "region_legacy_id": 59,
     "comment": "DE",
-    "administrative_center": "TEKEZE",
-    "status": 1,
-    "latitude": 12.0344129,
-    "longitude": 39.0431018
+    "status": 1
   },
   {
     "legacy_id": 100,
     "name": "DOLO",
     "region_legacy_id": 48,
     "comment": "DE",
-    "administrative_center": "GALHAMUR",
-    "status": 1,
-    "latitude": 7.2629844,
-    "longitude": 43.5360531
+    "status": 1
   },
   {
     "legacy_id": 101,
     "name": "WAG HEMERA",
     "region_legacy_id": 59,
     "comment": "DE",
-    "administrative_center": "Sekota",
-    "status": 1,
-    "latitude": 12.6254708,
-    "longitude": 39.0348591
+    "status": 1
   },
   {
     "legacy_id": 102,
     "name": "S/WOLLO",
     "region_legacy_id": 59,
     "comment": "DE",
-    "administrative_center": "Dessie",
-    "status": 1,
-    "latitude": 11.5,
-    "longitude": 38.5
+    "status": 1
   },
   {
     "legacy_id": 103,
     "name": "ZONE 3",
     "region_legacy_id": 23,
     "comment": "DE",
-    "administrative_center": "Awash",
-    "status": 1,
-    "latitude": 9.9749582,
-    "longitude": 40.3904199
+    "status": 1
   },
   {
     "legacy_id": 104,
     "name": "FAFEM",
     "region_legacy_id": 48,
     "comment": "DE",
-    "administrative_center": "Jijiga",
-    "status": 1,
-    "latitude": 9.3508,
-    "longitude": 42.7999
+    "status": 1
   },
   {
     "legacy_id": 105,
     "name": "ZONE 2",
     "region_legacy_id": 23,
     "comment": "DE",
-    "administrative_center": "Semera",
-    "status": 1,
-    "latitude": 11.7207,
-    "longitude": 41.059
+    "status": 1
   },
   {
     "legacy_id": 106,
     "name": "GOFA",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": "DE",
-    "administrative_center": "Sawla",
-    "status": 1,
-    "latitude": 6.0095303,
-    "longitude": 37.5354187
+    "status": 1
   },
   {
     "legacy_id": 107,
     "name": "WEAST WOLEGA",
     "region_legacy_id": 2,
     "comment": "DE",
-    "administrative_center": "Gimbi",
-    "status": 1,
-    "latitude": 8.8061916,
-    "longitude": 37.7881259
+    "status": 1
   },
   {
     "legacy_id": 108,
     "name": "SOMALI CITY",
     "region_legacy_id": 48,
     "comment": "DE",
-    "administrative_center": "DANLYAHILY",
-    "status": 1,
-    "latitude": 7.2629844,
-    "longitude": 43.5360531
+    "status": 1
   },
   {
     "legacy_id": 109,
     "name": "HORO GUDURU",
     "region_legacy_id": 2,
     "comment": "DE",
-    "administrative_center": "Shambu",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 110,
     "name": "Benishangul Gumuz",
     "region_legacy_id": 62,
     "comment": "DE",
-    "administrative_center": "OUTAWA",
-    "status": 1,
-    "latitude": 10.0597806,
-    "longitude": 34.5427386
+    "status": 1
   },
   {
     "legacy_id": 111,
     "name": "KOTEBE",
-    "region_legacy_id": 60,
+    "region_legacy_id": 19,
     "comment": "DE",
-    "administrative_center": "KOTEBE",
-    "status": 1,
-    "latitude": 9.0371282,
-    "longitude": 38.8398518
+    "status": 1
   },
   {
     "legacy_id": 112,
     "name": "NORTH/WEAST",
     "region_legacy_id": 55,
     "comment": "DE",
-    "administrative_center": "ENDASELASE",
-    "status": 1,
-    "latitude": 13.881273,
-    "longitude": 39.127495
+    "status": 1
   },
   {
     "legacy_id": 113,
     "name": "MAEKELAWI",
     "region_legacy_id": 55,
     "comment": "DE",
-    "administrative_center": "SELEKELAKA",
-    "status": 1,
-    "latitude": 13.881273,
-    "longitude": 39.127495
+    "status": 1
   },
   {
     "legacy_id": 114,
     "name": "SOUTH TEGERAYE",
     "region_legacy_id": 55,
     "comment": "DE",
-    "administrative_center": "Maychew",
-    "status": 1,
-    "latitude": 13.881273,
-    "longitude": 39.127495
+    "status": 1
   },
   {
     "legacy_id": 115,
     "name": "FANTI RASU",
     "region_legacy_id": 23,
     "comment": "DE",
-    "administrative_center": "Teru",
-    "status": 1,
-    "latitude": 12.4,
-    "longitude": 40.3
+    "status": 1
   },
   {
     "legacy_id": 116,
     "name": "BALE",
     "region_legacy_id": 2,
     "comment": "DE",
-    "administrative_center": "Robe",
-    "status": 1,
-    "latitude": 7.1242676,
-    "longitude": 40.0080973
+    "status": 1
   },
   {
     "legacy_id": 117,
     "name": "Hari Rasu",
     "region_legacy_id": 23,
     "comment": null,
-    "administrative_center": "Yallo",
-    "status": 1,
-    "latitude": 11.7108206,
-    "longitude": 41.0330866
+    "status": 1
   },
   {
     "legacy_id": 118,
     "name": "Dawa",
     "region_legacy_id": 48,
     "comment": null,
-    "administrative_center": "Hudet",
-    "status": 1,
-    "latitude": 4.7172806,
-    "longitude": 40.4804349
+    "status": 1
   },
   {
     "legacy_id": 119,
     "name": "Shebele",
     "region_legacy_id": 48,
     "comment": null,
-    "administrative_center": "kalafo",
-    "status": 1,
-    "latitude": 7.2629844,
-    "longitude": 43.5360531
+    "status": 1
   },
   {
     "legacy_id": 120,
     "name": "Negob",
     "region_legacy_id": 48,
     "comment": null,
-    "administrative_center": "Jijega",
-    "status": 1,
-    "latitude": 7.2629844,
-    "longitude": 43.5360531
+    "status": 1
   },
   {
     "legacy_id": 121,
     "name": "Omo Kuraz",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": null,
-    "administrative_center": "Kangaton",
-    "status": 1,
-    "latitude": 6.7089081,
-    "longitude": 35.6841753
+    "status": 1
   },
   {
     "legacy_id": 122,
     "name": "Fafan",
     "region_legacy_id": 48,
     "comment": null,
-    "administrative_center": "Jijiga",
-    "status": 1,
-    "latitude": 9.3508,
-    "longitude": 42.7999
+    "status": 1
   },
   {
     "legacy_id": 123,
     "name": "Afdera",
     "region_legacy_id": 48,
     "comment": null,
-    "administrative_center": "Afdera",
-    "status": 1,
-    "latitude": 13.2876191,
-    "longitude": 41.4334728
+    "status": 1
   },
   {
     "legacy_id": 124,
     "name": "shapel",
     "region_legacy_id": 48,
     "comment": null,
-    "administrative_center": "Gode",
-    "status": 1,
-    "latitude": 7.2629844,
-    "longitude": 43.5360531
+    "status": 1
   },
   {
     "legacy_id": 125,
     "name": "WEST GOJAM",
     "region_legacy_id": 59,
     "comment": "DE",
-    "administrative_center": "Finote Selam",
-    "status": 1,
-    "latitude": 11.5,
-    "longitude": 38.5
+    "status": 1
   },
   {
     "legacy_id": 126,
     "name": "E/BORENA",
     "region_legacy_id": 2,
     "comment": "DE",
-    "administrative_center": "ARDA MADHERA",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 127,
     "name": "DJIBOUTI",
     "region_legacy_id": 64,
     "comment": "FOR DJIBOUTI OPERATIONS",
-    "administrative_center": "DJIBOUTI",
-    "status": 1,
-    "latitude": 9.145,
-    "longitude": 40.489673
+    "status": 1
   },
   {
     "legacy_id": 128,
     "name": "YANGUDI RASU",
     "region_legacy_id": 23,
     "comment": "DE",
-    "administrative_center": "Weranso",
-    "status": 1,
-    "latitude": 11.7108206,
-    "longitude": 41.0330866
+    "status": 1
   },
   {
     "legacy_id": 129,
     "name": "SITI",
     "region_legacy_id": 48,
     "comment": "DE",
-    "administrative_center": "Shinile",
-    "status": 1,
-    "latitude": 10.2122931,
-    "longitude": 41.9276455
+    "status": 1
   },
   {
     "legacy_id": 130,
     "name": "EAST GOJAM",
     "region_legacy_id": 59,
     "comment": "DE",
-    "administrative_center": "Debre Markos",
-    "status": 1,
-    "latitude": 11.5,
-    "longitude": 38.5
+    "status": 1
   },
   {
     "legacy_id": 131,
     "name": "KORAHEY",
     "region_legacy_id": 48,
     "comment": null,
-    "administrative_center": "Kebri Dehar",
-    "status": 1,
-    "latitude": 7.2629844,
-    "longitude": 43.5360531
+    "status": 1
   },
   {
     "legacy_id": 132,
     "name": "ERER - SOMALI",
     "region_legacy_id": 48,
     "comment": null,
-    "administrative_center": "FIK - LAGAHIDA",
-    "status": 1,
-    "latitude": 7.2629844,
-    "longitude": 43.5360531
+    "status": 1
   },
   {
     "legacy_id": 133,
     "name": "EASTERN TIGRAY",
     "region_legacy_id": 55,
     "comment": null,
-    "administrative_center": "Adigrat",
-    "status": 1,
-    "latitude": 13.881273,
-    "longitude": 39.127495
+    "status": 1
   },
   {
     "legacy_id": 135,
     "name": "ILUBABOR",
     "region_legacy_id": 2,
     "comment": null,
-    "administrative_center": "Metu",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 136,
     "name": "SOUTH EASTERN TIGRAI",
     "region_legacy_id": 55,
     "comment": "DE",
-    "administrative_center": "QWIHA",
-    "status": 1,
-    "latitude": 13.881273,
-    "longitude": 39.127495
+    "status": 1
   },
   {
     "legacy_id": 137,
     "name": "AGNEWAK",
     "region_legacy_id": 11,
     "comment": null,
-    "administrative_center": "Gambela",
-    "status": 1,
-    "latitude": 8.25,
-    "longitude": 34.5833
+    "status": 1
   },
   {
     "legacy_id": 138,
     "name": "NORTH WESTERN TIGRAI",
     "region_legacy_id": 55,
     "comment": "DE",
-    "administrative_center": "Shire",
-    "status": 1,
-    "latitude": 13.881273,
-    "longitude": 39.127495
+    "status": 1
   },
   {
     "legacy_id": 139,
     "name": "Nogob",
     "region_legacy_id": 44,
     "comment": "DE",
-    "administrative_center": "Cayuun 01",
-    "status": 1,
-    "latitude": 9.5942885,
-    "longitude": 41.8617959
+    "status": 1
   },
   {
     "legacy_id": 140,
     "name": "NUWER",
     "region_legacy_id": 11,
     "comment": "DE",
-    "administrative_center": "METAR",
-    "status": 1,
-    "latitude": 7.8102647,
-    "longitude": 34.1822172
+    "status": 1
   },
   {
     "legacy_id": 141,
     "name": "SOUTH WEST SHEWA",
     "region_legacy_id": 2,
     "comment": null,
-    "administrative_center": "Waliso",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 142,
     "name": "SHEGER CITY",
     "region_legacy_id": 2,
     "comment": "DE",
-    "administrative_center": "ALEMGENA",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 143,
     "name": "ARBA MINCH",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": "DE",
-    "administrative_center": "ARBA MINCH",
-    "status": 1,
-    "latitude": 6.7089081,
-    "longitude": 35.6841753
+    "status": 1
   },
   {
     "legacy_id": 144,
     "name": "KALBATI RASU",
     "region_legacy_id": 23,
     "comment": null,
-    "administrative_center": "Semera",
-    "status": 1,
-    "latitude": 11.7207,
-    "longitude": 41.059
+    "status": 1
   },
   {
     "legacy_id": 145,
     "name": "South East Tigray",
     "region_legacy_id": 55,
     "comment": null,
-    "status": 1,
-    "latitude": 13.881273,
-    "longitude": 39.127495
+    "status": 1
   },
   {
     "legacy_id": 146,
     "name": "Central Tigray",
     "region_legacy_id": 55,
     "comment": null,
-    "administrative_center": "Axum",
-    "status": 1,
-    "latitude": 14.1220982,
-    "longitude": 38.7321749
+    "status": 1
   },
   {
     "legacy_id": 147,
     "name": "South West Tigray",
     "region_legacy_id": 55,
     "comment": null,
-    "administrative_center": "May Tsebri",
-    "status": 1,
-    "latitude": 13.881273,
-    "longitude": 39.127495
+    "status": 1
   },
   {
     "legacy_id": 148,
     "name": "South Omo",
-    "region_legacy_id": 65,
-    "comment": "S=south; N=Nation; N=nationality; P=people Of; R=representatives",
-    "administrative_center": "Jinka",
-    "status": 1,
-    "latitude": 6.7089081,
-    "longitude": 35.6841753
+    "region_legacy_id": 3,
+    "comment": "S=south\r\nN=Nation\r\nN=nationality\r\nP=people Of\r\nR=representatives",
+    "status": 1
   },
   {
     "legacy_id": 149,
     "name": "East Borena",
     "region_legacy_id": 2,
     "comment": null,
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 150,
     "name": "KEFA & KONTA",
     "region_legacy_id": 65,
     "comment": null,
-    "administrative_center": "Bonga",
-    "status": 1,
-    "latitude": 7.2667,
-    "longitude": 36.2333
+    "status": 1
   },
   {
     "legacy_id": 151,
     "name": "CENTIRAL ETHI",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": null,
-    "administrative_center": "Bonga",
-    "status": 1,
-    "latitude": 7.2667,
-    "longitude": 36.2333
+    "status": 1
   },
   {
     "legacy_id": 152,
     "name": "JIMMA",
     "region_legacy_id": 2,
     "comment": null,
-    "administrative_center": "Jimma",
-    "status": 1,
-    "latitude": 8.5410261,
-    "longitude": 39.2705461
+    "status": 1
   },
   {
     "legacy_id": 153,
     "name": "CENTI",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": null,
-    "administrative_center": "Bonga",
-    "status": 1,
-    "latitude": 7.2667,
-    "longitude": 36.2333
+    "status": 1
   },
   {
     "legacy_id": 154,
     "name": "Keffa",
-    "region_legacy_id": 65,
+    "region_legacy_id": 3,
     "comment": null,
-    "administrative_center": "Bonga",
-    "status": 1,
-    "latitude": 7.2667,
-    "longitude": 36.2333
+    "status": 1
+  },
+  {
+    "legacy_id": 155,
+    "name": "Doolo",
+    "region_legacy_id": 48,
+    "comment": null,
+    "status": 1
   }
 ]

@@ -15,14 +15,15 @@ SQL_CANDIDATES = [
     Path(__file__).resolve().parent.parent / "operations.sql",
     Path(__file__).resolve().parent.parent / "eletderashcom_tims (1).sql",
     Path(__file__).resolve().parent.parent / "eletderashcom_tims.sql" / "eletderashcom_tims.sql",
+    Path(__file__).resolve().parent.parent / "eletderashcom_tims.sql",
 ]
 PERFORMANCES_JSON_PATH = Path(__file__).resolve().parent.parent / "database/seeders/data/legacy_performances.json"
 OUTSOURCE_JSON_PATH = Path(__file__).resolve().parent.parent / "database/seeders/data/legacy_outsource_performances.json"
 OPERATIONS_JSON_PATH = Path(__file__).resolve().parent.parent / "database/seeders/data/legacy_operations.json"
 
 INSERT_PATTERN = re.compile(
-    r"INSERT INTO `(?P<table>[^`]+)`\s*\((?P<columns>[^)]+)\)\s*VALUES\s*(?P<values>.*?);",
-    re.DOTALL,
+    r"INSERT\s+INTO\s+[`\"]?(?P<table>[A-Za-z0-9_]+)[`\"]?\s*\((?P<columns>[^)]+)\)\s*VALUES\s*(?P<values>.*?);",
+    re.IGNORECASE | re.DOTALL,
 )
 
 
