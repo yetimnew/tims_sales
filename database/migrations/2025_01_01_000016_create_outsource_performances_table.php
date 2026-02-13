@@ -15,8 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('outsource_id')->constrained('outsources');
             $table->foreignId('operation_id')->constrained('operations');
+            // outsource_performances
             $table->string('trip_number');
-            $table->date('dispatch_date');
+            // $table->dateTime('dispatch_date');
+            $table->dateTime('dispatch_date');
             $table->foreignId('from_place_id')->constrained('places');
             $table->foreignId('to_place_id')->constrained('places');
             $table->decimal('distance_km', 10, 2)->nullable();

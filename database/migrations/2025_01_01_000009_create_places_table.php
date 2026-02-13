@@ -24,10 +24,12 @@ return new class extends Migration
             $table->unsignedBigInteger('population')->nullable();
             $table->boolean('is_logistics_hub')->default(false);
             $table->decimal('accessibility_score', 5, 2)->nullable();
+            $table->json('boundary_geojson')->nullable();
             $table->text('infrastructure_notes')->nullable();
             $table->text('road_quality_notes')->nullable();
             $table->timestamps();
             $table->softDeletes();
+
 
             $table->index(['status'], 'idx_places_status');
             $table->index(['woreda_id'], 'idx_places_woreda_id');

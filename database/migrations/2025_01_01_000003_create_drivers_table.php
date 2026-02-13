@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('driverid')->unique();
             $table->string('name');
+              $table->json('name_translations')->nullable();
             $table->string('sex');
             $table->date('birthdate')->nullable();
             $table->string('zone')->nullable();
