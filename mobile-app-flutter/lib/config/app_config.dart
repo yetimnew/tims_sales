@@ -18,11 +18,15 @@ class AppConfig {
     }
     
     // Use localhost for web, 10.0.2.2 for Android emulator
+    // Use local URLs for debug/dev, production URL for release
+    const bool isProduction = bool.fromEnvironment('dart.vm.product');
+    if (isProduction) {
+      return 'https://operation.eletderash.com/api';
+    }
     if (kIsWeb) {
       return 'http://localhost:8000/api';
     }
-    
-    // Default for Android emulator (can be overridden with environment variable)
+    // Default for Android emulator
     return 'http://10.0.2.2:8000/api';
   }
 

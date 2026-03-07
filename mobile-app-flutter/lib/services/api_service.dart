@@ -5,17 +5,18 @@ import '../config/app_config.dart';
 import 'api_config_service.dart';
 
 class ApiService {
-  late Dio _dio;
+  Dio? _dio;
+  Future<void>? _initializationFuture;
   final ApiConfigService _apiConfigService = ApiConfigService();
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal() {
-    _initializeDio();
+    _initializationFuture = _initializeDio();
   }
 
   Future<void> _initializeDio() async {
     final baseUrl = await _apiConfigService.getApiBaseUrl();
-    _dio = Dio(BaseOptions(
+    final dio = Dio(BaseOptions(
       baseUrl: baseUrl,
       connectTimeout: AppConfig.apiTimeout,
       receiveTimeout: AppConfig.apiTimeout,
@@ -25,7 +26,8 @@ class ApiService {
       },
     ));
 
-    _dio.interceptors.add(InterceptorsWrapper(
+    dio.interceptors.clear();
+    dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         // Add auth token if available
         final prefs = await SharedPreferences.getInstance();
@@ -44,6 +46,30 @@ class ApiService {
         return handler.next(error);
       },
     ));
+
+    _dio = dio;
+  }
+
+  Future<Dio> _getDio() async {
+    // Ensure the underlying HTTP client is ready before use.
+    if (_dio != null) {
+      return _dio!;
+    }
+
+    _initializationFuture ??= _initializeDio();
+
+    try {
+      await _initializationFuture;
+    } catch (error) {
+      _initializationFuture = null;
+      rethrow;
+    }
+
+    if (_dio == null) {
+      throw StateError('Failed to initialize API client');
+    }
+
+    return _dio!;
   }
 
   Future<void> _clearAuth() async {
@@ -52,9 +78,12 @@ class ApiService {
     await prefs.remove('user_data');
   }
 
-  Future<Response> get(String endpoint, {Map<String, dynamic>? queryParameters}) async {
+  Future<Response> get(String endpoint,
+      {Map<String, dynamic>? queryParameters}) async {
     try {
-      final response = await _dio.get(endpoint, queryParameters: queryParameters);
+      final dio = await _getDio();
+      final response =
+          await dio.get(endpoint, queryParameters: queryParameters);
       return response;
     } on DioException catch (e) {
       throw await _handleError(e);
@@ -63,7 +92,8 @@ class ApiService {
 
   Future<Response> post(String endpoint, {dynamic data}) async {
     try {
-      final response = await _dio.post(endpoint, data: data);
+      final dio = await _getDio();
+      final response = await dio.post(endpoint, data: data);
       return response;
     } on DioException catch (e) {
       throw await _handleError(e);
@@ -72,7 +102,8 @@ class ApiService {
 
   Future<Response> put(String endpoint, {dynamic data}) async {
     try {
-      final response = await _dio.put(endpoint, data: data);
+      final dio = await _getDio();
+      final response = await dio.put(endpoint, data: data);
       return response;
     } on DioException catch (e) {
       throw await _handleError(e);
@@ -81,7 +112,8 @@ class ApiService {
 
   Future<Response> patch(String endpoint, {dynamic data}) async {
     try {
-      final response = await _dio.patch(endpoint, data: data);
+      final dio = await _getDio();
+      final response = await dio.patch(endpoint, data: data);
       return response;
     } on DioException catch (e) {
       throw await _handleError(e);
@@ -90,7 +122,8 @@ class ApiService {
 
   Future<Response> delete(String endpoint) async {
     try {
-      final response = await _dio.delete(endpoint);
+      final dio = await _getDio();
+      final response = await dio.delete(endpoint);
       return response;
     } on DioException catch (e) {
       throw await _handleError(e);
@@ -104,9 +137,10 @@ class ApiService {
     Map<String, dynamic>? additionalData,
   }) async {
     try {
+      final dio = await _getDio();
       // Read file as bytes (works on both web and mobile)
       final bytes = await file.readAsBytes();
-      
+
       // Get filename - try name first, then path, then default
       String fileName = 'image.jpg';
       if (file.name.isNotEmpty) {
@@ -117,7 +151,7 @@ class ApiService {
           fileName = pathParts.last;
         }
       }
-      
+
       // Ensure filename has extension (default to .jpg if missing)
       if (!fileName.contains('.')) {
         fileName = '$fileName.jpg';
@@ -137,7 +171,7 @@ class ApiService {
 
       final formData = FormData.fromMap(formDataMap);
 
-      final response = await _dio.post(
+      final response = await dio.post(
         endpoint,
         data: formData,
         options: Options(
@@ -154,7 +188,8 @@ class ApiService {
 
   /// Reinitialize Dio with new base URL (call after changing API URL in settings)
   Future<void> reinitialize() async {
-    await _initializeDio();
+    _initializationFuture = _initializeDio();
+    await _initializationFuture;
   }
 
   Future<Exception> _handleError(DioException error) async {
@@ -167,16 +202,41 @@ class ApiService {
     } else if (error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.receiveTimeout) {
       final baseUrl = await _apiConfigService.getApiBaseUrl();
-      return Exception('Connection timeout. Please check your internet connection.\n\nCurrent API URL: $baseUrl\n\nFor physical devices, ensure:\n1. Phone and computer are on same Wi-Fi\n2. API URL is set correctly in Settings\n3. Laravel server is running: php artisan serve --host=0.0.0.0');
+      final switched = await _fallbackToProductionIfUsingLocal(baseUrl);
+      final hint = switched
+          ? '\n\nThe app switched to the production API automatically. Please retry.'
+          : '\n\nFor physical devices, ensure:\n1. Phone and computer are on same Wi-Fi\n2. API URL is set correctly in Settings\n3. Laravel server is running: php artisan serve --host=0.0.0.0';
+      return Exception(
+          'Connection timeout. Please check your internet connection.\n\nCurrent API URL: ${switched ? ApiConfigService.productionApiUrl : baseUrl}$hint');
     } else if (error.type == DioExceptionType.connectionError) {
       // More detailed connection error message with instructions
       final baseUrl = await _apiConfigService.getApiBaseUrl();
-      return Exception('Cannot connect to server at $baseUrl.\n\nFor physical devices:\n1. Find your computer\'s IP (ipconfig on Windows)\n2. Go to Settings → API Configuration\n3. Set URL: http://YOUR_IP:8000/api\n4. Ensure server is running: php artisan serve --host=0.0.0.0');
+      final switched = await _fallbackToProductionIfUsingLocal(baseUrl);
+      final hint = switched
+          ? '\n\nThe app switched to the production API automatically. Please retry.'
+          : '\n\nFor physical devices:\n1. Find your computer\'s IP (ipconfig on Windows)\n2. Go to Settings → API Configuration\n3. Set URL: http://YOUR_IP:8000/api\n4. Ensure server is running: php artisan serve --host=0.0.0.0';
+      return Exception(
+          'Cannot connect to server at ${switched ? ApiConfigService.productionApiUrl : baseUrl}.$hint');
     } else {
       // More detailed error message
       final baseUrl = await _apiConfigService.getApiBaseUrl();
-      return Exception('Network error: ${error.message ?? "Unknown error"}. Server: $baseUrl');
+      return Exception(
+          'Network error: ${error.message ?? "Unknown error"}. Server: $baseUrl');
     }
   }
-}
 
+  Future<bool> _fallbackToProductionIfUsingLocal(String baseUrl) async {
+    if (!baseUrl.contains('10.0.2.2')) {
+      return false;
+    }
+
+    final switched = await _apiConfigService
+        .setApiBaseUrl(ApiConfigService.productionApiUrl);
+    if (!switched) {
+      return false;
+    }
+
+    await reinitialize();
+    return true;
+  }
+}

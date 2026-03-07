@@ -6,6 +6,7 @@ import '../config/app_config.dart';
 /// Allows users to set custom API URL for physical devices
 class ApiConfigService {
   static const String _apiUrlKey = 'custom_api_base_url';
+  static const String productionApiUrl = 'https://operation.eletderash.com/api';
   static final ApiConfigService _instance = ApiConfigService._internal();
   factory ApiConfigService() => _instance;
   ApiConfigService._internal();
@@ -51,8 +52,13 @@ class ApiConfigService {
     if (kIsWeb) {
       return 'http://localhost:8000/api';
     }
-    // For mobile (both emulator and physical device), default to emulator address
-    // User should set custom URL for physical device
+
+    // Default to production API so end users connect out of the box.
+    if (!kDebugMode) {
+      return productionApiUrl;
+    }
+
+    // Debug builds can still target the local backend.
     return 'http://10.0.2.2:8000/api';
   }
 
@@ -61,12 +67,13 @@ class ApiConfigService {
     try {
       // Validate URL format
       if (!_isValidUrl(url)) {
-        throw Exception('Invalid URL format. Please use format: http://IP_ADDRESS:PORT/api');
+        throw Exception(
+            'Invalid URL format. Please use format: http://IP_ADDRESS:PORT/api');
       }
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_apiUrlKey, url);
-      
+
       if (kDebugMode) {
         debugPrint('[API Config] Saved custom API URL: $url');
       }
@@ -84,7 +91,7 @@ class ApiConfigService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_apiUrlKey);
-      
+
       if (kDebugMode) {
         debugPrint('[API Config] Cleared custom API URL');
       }
@@ -110,24 +117,24 @@ class ApiConfigService {
   /// Validate URL format
   bool _isValidUrl(String url) {
     if (url.isEmpty) return false;
-    
+
     // Basic validation - should start with http:// or https://
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       return false;
     }
-    
+
     // Should contain /api at the end
     if (!url.endsWith('/api')) {
       return false;
     }
-    
+
     return true;
   }
 
   /// Get instructions for finding computer IP address
   static String getIpAddressInstructions() {
     return '''
-To find your computer's IP address:
+To point the app at a local development server, first find your computer's IP address:
 
 Windows:
 1. Open Command Prompt
@@ -148,6 +155,8 @@ Make sure:
 - Your computer and phone are on the same Wi-Fi network
 - Laravel server is running: php artisan serve --host=0.0.0.0
 - Firewall allows connections on port 8000
+
+Note: The app defaults to $productionApiUrl. Set a custom URL only when you need to target a local server.
 ''';
   }
 }

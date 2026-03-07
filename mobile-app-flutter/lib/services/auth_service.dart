@@ -38,9 +38,25 @@ class AuthService {
     } catch (e) {
       return {
         'success': false,
-        'error': e.toString(),
+        'error': _formatErrorMessage(e),
       };
     }
+  }
+
+  String _formatErrorMessage(Object error) {
+    final rawMessage = error.toString().replaceFirst(RegExp(r'^Exception:\s*'), '').trim();
+    if (rawMessage.isEmpty) {
+      return 'Unable to sign in. Please try again.';
+    }
+
+    final normalized = rawMessage.toLowerCase();
+    if (normalized.contains('invalid credentials') ||
+        normalized.contains('unauthorized') ||
+        normalized.contains('do not match our records')) {
+      return 'Invalid email or password.';
+    }
+
+    return rawMessage;
   }
 
   Future<bool> logout() async {

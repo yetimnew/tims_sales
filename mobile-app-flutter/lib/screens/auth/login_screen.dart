@@ -718,7 +718,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                               const SizedBox(width: 8),
                                               Expanded(
                                                 child: Text(
-                                                  'Exception: $_errorMessage',
+                                                  _errorMessage!,
                                                   style: const TextStyle(
                                                     color: Colors.red,
                                                     fontSize: 13,

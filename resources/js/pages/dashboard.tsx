@@ -111,14 +111,14 @@ interface DashboardProps {
         revenue30d: number;
         operatingCost30d: number;
         margin30d: number;
-        fareboxRecovery: number | null;
+        // fareboxRecovery: number | null;
         avgRevenuePerTon: number | null;
         avgCostPerTon: number | null;
         change: {
             revenue: number | null;
             operatingCost: number | null;
             margin: number | null;
-            fareboxRecovery: number | null;
+            // fareboxRecovery: number | null;
         };
         trend: Array<{ period: string; revenue: number; cost: number; net: number }>;
         costBreakdown: Array<{ label: string; value: number }>;
@@ -201,7 +201,7 @@ const PRIMARY_KPI_ICONS: Record<string, ComponentType<{ className?: string }>> =
     trips30d: Truck,
     avgLoadPerTrip: Gauge,
     margin30d: DollarSign,
-    fareboxRecovery: Target,
+    // fareboxRecovery: Target,
     fleetUtilisation: Sparkles,
 };
 
@@ -480,13 +480,13 @@ export default function Dashboard({
                 change: financialOverview.change.margin,
                 type: 'currency' as const,
             },
-            {
-                key: 'fareboxRecovery',
-                label: t('dashboard.financialPulse.fareboxRecovery'),
-                value: financialOverview.fareboxRecovery,
-                change: financialOverview.change.fareboxRecovery,
-                type: 'percent' as const,
-            },
+            // {
+            //     key: 'fareboxRecovery',
+            //     label: t('dashboard.financialPulse.fareboxRecovery'),
+            //     value: financialOverview.fareboxRecovery,
+            //     change: financialOverview.change.fareboxRecovery,
+            //     type: 'percent' as const,
+            // },
         ],
         [financialOverview, t]
     );

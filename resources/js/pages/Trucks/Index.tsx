@@ -580,23 +580,6 @@ export default function TrucksIndex({
             valueClassName: isTableLoading ? undefined : 'text-emerald-600',
         },
         {
-            id: 'driver-churn',
-            label: t('trucks.stats.churn.label', { days: churnWindowDays }),
-            icon: <Users className="h-3.5 w-3.5 text-rose-600" />,
-            className: 'min-w-[220px] flex-shrink-0',
-            value: isTableLoading ? (
-                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
-            ) : (
-                averageTenureDisplay
-            ),
-            description: isTableLoading ? (
-                <Skeleton className="h-3 w-32" aria-hidden="true" />
-            ) : (
-                highChurnDescription
-            ),
-            valueClassName: isTableLoading ? undefined : churnValueClass,
-        },
-        {
             id: 'utilization',
             label: t('trucks.stats.utilization.label', { days: utilization?.window_days ?? 30 }),
             icon: <Gauge className="h-3.5 w-3.5 text-slate-600" />,
@@ -704,7 +687,11 @@ export default function TrucksIndex({
                   <TableCell className="text-center font-medium">
                       {rowOffset + index + 1}
                   </TableCell>
-                  <TableCell className="font-medium">{truck.plate}</TableCell>
+                  <TableCell className="font-medium">
+                      <Link href={`/trucks/${truck.id}`} className="text-primary underline">
+                          {truck.plate}
+                      </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                       {truck.vehicleType?.name || t('trucks.fallbacks.notAvailable')}
                   </TableCell>
