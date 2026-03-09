@@ -13,7 +13,6 @@ import { useListingLoading } from '@/hooks/use-listing-loading';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
-import { toast } from '@/hooks/use-toast';
 import {
     Plus,
     Eye,
@@ -353,20 +352,8 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                         .join('\n');
 
                     setDeleteError(messages || fallback);
-
-                    toast({
-                        title: t('driverTrucks.delete.failedTitle'),
-                        description: messages || fallback,
-                        variant: 'destructive',
-                    });
                 } else {
                     setDeleteError(fallback);
-
-                    toast({
-                        title: t('driverTrucks.delete.failedTitle'),
-                        description: fallback,
-                        variant: 'destructive',
-                    });
                 }
             },
         });

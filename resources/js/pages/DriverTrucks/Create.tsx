@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/use-toast';
 import { validateDriverTruck } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
@@ -84,33 +83,7 @@ export default function DriverTrucksCreate({ trucks, drivers, error }: Props) {
     const [driverSearch, setDriverSearch] = useState('');
     const scrollContainerRef = useRef<HTMLFormElement | null>(null);
 
-    useEffect(() => {
-        if (!error) {
-            return;
-        }
 
-        toast({
-            title: t('driverTrucks.form.validation.errorTitle'),
-            description: error,
-            variant: 'destructive',
-        });
-    }, [error, t]);
-
-    useEffect(() => {
-        const messages = Object.values(errors)
-            .map((message) => (typeof message === 'string' ? message : String(message)))
-            .filter(Boolean);
-
-        if (messages.length === 0) {
-            return;
-        }
-
-        toast({
-            title: t('driverTrucks.form.validation.title'),
-            description: messages.join(', '),
-            variant: 'destructive',
-        });
-    }, [errors, t]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -171,11 +144,6 @@ export default function DriverTrucksCreate({ trucks, drivers, error }: Props) {
         const validationResult = validateDriverTruck(data);
         if (Object.keys(validationResult).length > 0) {
             setFrontendErrors(validationResult as Partial<Record<DriverTruckFormField, string>>);
-            toast({
-                title: t('driverTrucks.form.validation.title'),
-                description: t('driverTrucks.form.validation.fixErrors'),
-                variant: 'destructive',
-            });
             return;
         }
 
@@ -185,10 +153,6 @@ export default function DriverTrucksCreate({ trucks, drivers, error }: Props) {
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: t('driverTrucks.form.create.successTitle'),
-                    description: t('driverTrucks.form.create.successDescription'),
-                });
             },
         });
     };

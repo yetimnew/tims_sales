@@ -6,7 +6,6 @@ import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
     AlertTriangle,
@@ -153,29 +152,7 @@ export default function Detach({ driverTruck }: Props) {
 
     const maxDetachmentDate = useMemo(() => startOfToday(), []);
 
-    useEffect(() => {
-        if (wasSuccessful) {
-            toast({
-                title: t('driverTrucks.detach.successTitle'),
-                description: t('driverTrucks.detach.successDescription'),
-                variant: 'success',
-            });
-        }
-    }, [wasSuccessful, t]);
 
-    useEffect(() => {
-        const parsedErrors = Object.values(errors ?? {})
-            .flatMap((message) => (Array.isArray(message) ? message : [message]))
-            .filter((message): message is string => Boolean(message));
-
-        if (parsedErrors.length > 0) {
-            toast({
-                title: t('driverTrucks.form.validation.title'),
-                description: parsedErrors.join('\n'),
-                variant: 'destructive',
-            });
-        }
-    }, [errors, t]);
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();

@@ -13,7 +13,6 @@ import { useListingLoading } from '@/hooks/use-listing-loading';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
-import { toast } from '@/hooks/use-toast';
 import { Plus, Eye, Edit, Search, Trash2, Users, UserCheck, UserX, User, MapPin as MapPinIcon, Phone } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -363,30 +362,16 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
             },
             onError: (errors) => {
                 setIsDeleting(false);
-
                 if (errors && typeof errors === 'object') {
                     const messages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
                         .filter((value) => Boolean(value))
                         .join('\n');
-
                     const fallback = t('drivers.delete.errorKnown');
                     setDeleteError(messages || fallback);
-
-                    toast({
-                        title: t('drivers.delete.failedTitle'),
-                        description: messages || fallback,
-                        variant: 'destructive',
-                    });
                 } else {
                     const fallback = t('drivers.delete.errorUnknown');
                     setDeleteError(fallback);
-
-                    toast({
-                        title: t('drivers.delete.failedTitle'),
-                        description: fallback,
-                        variant: 'destructive',
-                    });
                 }
             },
         });

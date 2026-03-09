@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link, useForm } from '@inertiajs/react';
-import { toast } from '@/hooks/use-toast';
 import { validateTruck, type ValidationErrors, truckValidation } from '@/lib/validation';
 import { Info, Wrench, DollarSign, CheckCircle, Save, Truck, Hash, ArrowLeft, AlertCircle } from 'lucide-react';
 import { FormEventHandler, useEffect, useMemo, useRef, useState } from 'react';
@@ -97,11 +96,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
     useEffect(() => {
         const errorMessages = Object.entries(errors).map(([, message]) => typeof message === 'string' ? message : String(message));
         if (errorMessages.length > 0) {
-            toast({
-                title: t('trucks.form.validation.title'),
-                description: errorMessages.join(', '),
-                variant: 'destructive',
-            });
+            // Only controller handles notification
         }
     }, [errors, t]);
 
@@ -133,11 +128,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
         delete allErrors.serviceStartDate;
         if (Object.keys(allErrors).length > 0) {
             setFrontendErrors(allErrors);
-            toast({
-                title: t('trucks.form.validation.title'),
-                description: t('trucks.form.validation.fixErrors'),
-                variant: 'destructive',
-            });
+            // Only controller handles notification
             return;
         }
         post('/trucks', {
@@ -146,10 +137,6 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: t('trucks.form.create.successTitle'),
-                    description: t('trucks.form.create.successDescription'),
-                });
             },
         });
     };

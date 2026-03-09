@@ -13,7 +13,6 @@ import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
 import { Link, router } from '@inertiajs/react';
-import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
 import { useTranslation } from 'react-i18next';
 import {
@@ -461,30 +460,16 @@ export default function TrucksIndex({
             },
             onError: (errors) => {
                 setIsDeleting(false);
-
                 if (errors && typeof errors === 'object') {
                     const messages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
                         .filter((value) => Boolean(value))
                         .join('\n');
-
                     const fallback = t('trucks.delete.errorKnown');
                     setDeleteError(messages || fallback);
-
-                    toast({
-                        title: t('trucks.delete.failedTitle'),
-                        description: messages || fallback,
-                        variant: 'destructive',
-                    });
                 } else {
                     const fallback = t('trucks.delete.errorUnknown');
                     setDeleteError(fallback);
-
-                    toast({
-                        title: t('trucks.delete.failedTitle'),
-                        description: fallback,
-                        variant: 'destructive',
-                    });
                 }
             },
         });

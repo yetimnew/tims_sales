@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Link, useForm } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import { validateDriver } from '@/lib/validation';
-import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Globe, Info, User, MapPin, CheckCircle, Save, User as UserIcon, Hash, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -96,13 +95,14 @@ export default function DriversCreate({ availableUsers = [] }: DriversCreateProp
             typeof message === 'string' ? message : String(message),
         );
 
-        if (errorMessages.length > 0) {
-            toast({
-                title: t('drivers.form.validation.title'),
-                description: errorMessages.join(', '),
-                variant: 'destructive',
-            });
-        }
+        // Only controller handles notification
+        // if (errorMessages.length > 0) {
+        //     toast({
+        //         title: t('drivers.form.validation.title'),
+        //         description: errorMessages.join(', '),
+        //         variant: 'destructive',
+        //     });
+        // }
     }, [errors, t]);
 
     useEffect(() => {
@@ -169,11 +169,6 @@ export default function DriversCreate({ availableUsers = [] }: DriversCreateProp
         const allErrors = validateDriver(data);
         if (Object.keys(allErrors).length > 0) {
             setFrontendErrors(allErrors);
-            toast({
-                title: t('drivers.form.validation.title'),
-                description: t('drivers.form.validation.fixErrors'),
-                variant: 'destructive',
-            });
             return;
         }
 
@@ -194,10 +189,6 @@ export default function DriversCreate({ availableUsers = [] }: DriversCreateProp
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: t('drivers.form.create.successTitle'),
-                    description: t('drivers.form.create.successDescription'),
-                });
             },
             onError: () => {
                 transform((data) => data);
