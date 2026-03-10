@@ -149,6 +149,11 @@ class DriverFuelController extends Controller
             'odometer_reading' => 'nullable|integer|min:0|max:9999999',
             'receipt_number' => 'nullable|string|max:255|unique:fuel_records,receipt_number',
             'notes' => 'nullable|string|max:1000',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'location_accuracy_m' => 'nullable|numeric|min:0|max:99999.99',
+            'location_timestamp' => 'nullable|date',
+            'receipt_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -170,7 +175,39 @@ class DriverFuelController extends Controller
             ], 422);
         }
 
+        $latestOdometerRecord = FuelRecord::query()
+            ->where('driver_truck_id', $activeAssignment->id)
+            ->whereNotNull('odometer_reading')
+            ->orderByDesc('fuel_date')
+            ->orderByDesc('created_at')
+            ->first();
+
+        if (
+            isset($validated['odometer_reading']) &&
+            $latestOdometerRecord !== null &&
+            $validated['odometer_reading'] < $latestOdometerRecord->odometer_reading
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => sprintf(
+                    'Odometer reading cannot be lower than the last recorded value (%d km).',
+                    $latestOdometerRecord->odometer_reading
+                ),
+                'errors' => [
+                    'odometer_reading' => [
+                        sprintf('Latest recorded odometer is %d km.', $latestOdometerRecord->odometer_reading),
+                    ],
+                ],
+            ], 422);
+        }
+
         try {
+            $receiptImagePath = null;
+
+            if ($request->hasFile('receipt_image')) {
+                $receiptImagePath = $request->file('receipt_image')->store('fuel-receipts', 'public');
+            }
+
             // Create fuel record
             $fuelRecord = FuelRecord::create([
                 'driver_truck_id' => $activeAssignment->id,
@@ -185,7 +222,13 @@ class DriverFuelController extends Controller
                 'fuel_type' => $validated['fuel_type'],
                 'odometer_reading' => $validated['odometer_reading'] ?? null,
                 'receipt_number' => $validated['receipt_number'] ?? null,
+                'receipt_image_path' => $receiptImagePath,
                 'notes' => $validated['notes'] ?? null,
+                'latitude' => $validated['latitude'] ?? null,
+                'longitude' => $validated['longitude'] ?? null,
+                'location_accuracy_m' => $validated['location_accuracy_m'] ?? null,
+                'location_timestamp' => $validated['location_timestamp'] ?? now(),
+                'submitted_via_mobile' => true,
             ]);
 
             // Load relationships
@@ -221,7 +264,15 @@ class DriverFuelController extends Controller
             'fuel_type' => $record->fuel_type,
             'odometer_reading' => $record->odometer_reading,
             'receipt_number' => $record->receipt_number,
+            'receipt_image' => $record->receipt_image_url,
             'notes' => $record->notes,
+            'latitude' => $record->latitude !== null ? (float) $record->latitude : null,
+            'longitude' => $record->longitude !== null ? (float) $record->longitude : null,
+            'location_accuracy_m' => $record->location_accuracy_m !== null ? (float) $record->location_accuracy_m : null,
+            'location_timestamp' => $record->location_timestamp?->toIso8601String(),
+            'submitted_via_mobile' => (bool) $record->submitted_via_mobile,
+            'reviewed_at' => $record->reviewed_at?->toIso8601String(),
+            'review_note' => $record->review_note,
             'truck' => $record->driverTruck && $record->driverTruck->truck ? [
                 'id' => $record->driverTruck->truck->id,
                 'plate' => $record->driverTruck->truck->plate,

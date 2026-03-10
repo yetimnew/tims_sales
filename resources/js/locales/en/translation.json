@@ -17,6 +17,8 @@
         "drivers": "Drivers",
         "driverTruckAssignments": "Driver-Truck Assignments",
         "vehicleTypes": "Vehicle Types",
+        "fuelRecords": "Fuel Records",
+        "fuelMobileReview": "Fuel",
         "driverSafety": "Driver Safety",
         "cargoTypes": "Cargo Types",
         "maintenance": "Maintenance",
@@ -24,6 +26,7 @@
         "overview": "Overview",
         "maintenanceTypes": "Maintenance Types",
         "overdueAlerts": "Overdue & Alerts",
+        "mobileRequests": "Mobile Requests",
         "operations": "Operations",
         "performances": "Performances",
         "customers": "Customers",
@@ -36,6 +39,10 @@
         "statusManagement": "Status Management",
         "statusTypeRegistration": "Status Type Registration",
         "dailyTruckStatusRegistration": "Daily Truck Status Registration",
+        "driverStatusHistory": "Driver Status History",
+        "mobile": "Mobile",
+        "tracking": "Tracking",
+        "emergency": "Emergency",
         "outsourcing": "Outsourcing",
         "outsources": "Outsources",
         "outsourcePerformances": "Outsource Performances",
@@ -4872,1032 +4879,1277 @@
                 "fallbackName": "Driver"
             }
         },
-    "statusTypes": {
-        "title": "Status Types",
-        "description": "Manage {{count}} lifecycle status categories.",
-        "table": {
-            "title": "Status Type Catalog",
-            "description": "Track and govern the lifecycle categories used across the platform"
-        },
-        "columns": {
-            "index": "#",
-            "name": "Name",
-            "description": "Description",
-            "statuses": "Statuses",
-            "created": "Created",
-            "actions": "Actions"
-        },
-        "stats": {
-            "total": {
-                "label": "Total Types",
-                "description": "All lifecycle categories"
+        "statusTypes": {
+            "title": "Status Types",
+            "description": "Manage {{count}} lifecycle status categories.",
+            "table": {
+                "title": "Status Type Catalog",
+                "description": "Track and govern the lifecycle categories used across the platform"
             },
-            "inUse": {
-                "label": "In Use",
-                "description": "{{count}} statuses linked"
-            },
-            "unused": {
-                "label": "Unused",
-                "description": "Ready for assignment"
-            },
-            "average": {
-                "label": "Avg. Statuses",
-                "description": "Per status type"
-            },
-            "recent": {
-                "label": "Created ({{days}}d)",
-                "description": "Recently added types"
-            },
-            "statuses": {
-                "label": "Statuses",
-                "description": "Across all types"
-            }
-        },
-        "filters": {
-            "searchPlaceholder": "Search status types...",
-            "rowsLabel": "Rows",
-            "usagePlaceholder": "Usage",
-            "allUsage": "All usage states",
-            "perPageOption": "{{value}} / page"
-        },
-        "labels": {
-            "statuses": "Statuses"
-        },
-        "actions": {
-            "view": "View",
-            "edit": "Edit",
-            "delete": "Delete",
-            "export": "Export CSV",
-            "add": "Add Status Type",
-            "cancel": "Cancel",
-            "back": "Back"
-        },
-        "empty": {
-            "title": "No status types found.",
-            "action": "Create one"
-        },
-        "validation": {
-            "title": "Validation Error",
-            "description": "Please fix the errors",
-            "allDescription": "Please fix all errors",
-            "formDescription": "Please fix all errors in the form below"
-        },
-        "form": {
-            "sections": {
-                "details": {
-                    "title": "Status Type Details",
-                    "description": "Provide a name and optional description for the status type.",
-                    "editDescription": "Update the status type information"
-                }
-            },
-            "fields": {
-                "name": {
-                    "label": "Name",
-                    "placeholder": "Enter status type name"
-                },
-                "description": {
-                    "label": "Description",
-                    "placeholder": "Enter status type description"
-                }
-            }
-        },
-        "create": {
-            "title": "Create Status Type",
-            "headTitle": "Create Status Type",
-            "description": "Define a new status type for categorizing statuses.",
-            "submit": "Create Status Type"
-        },
-        "edit": {
-            "breadcrumb": "Edit",
-            "title": "Edit Status Type",
-            "headTitle": "Edit Status Type",
-            "description": "Update status type details",
-            "submit": "Update Status Type",
-            "submitting": "Updating..."
-        },
-        "show": {
-            "subtitleFallback": "Status type classification for operational tracking.",
-            "headTitle": "Status Type: {{name}}",
-            "sections": {
-                "basic": {
-                    "title": "Basic Information",
-                    "description": "Core status type details"
-                },
-                "record": {
-                    "title": "Record Information",
-                    "description": "System tracking"
-                },
-                "activity": {
-                    "title": "Activity Log",
-                    "description": "Auditable timeline"
-                }
-            },
-            "fields": {
+            "columns": {
+                "index": "#",
                 "name": "Name",
-                "id": "Status Type ID",
                 "description": "Description",
+                "statuses": "Statuses",
                 "created": "Created",
-                "updated": "Last Updated"
+                "actions": "Actions"
             },
-            "toast": {
-                "successTitle": "Success",
-                "successDescription": "Status type deleted successfully",
-                "errorTitle": "Error",
-                "errorDescription": "Failed to delete status type"
-            }
-        },
-        "delete": {
-            "title": "Delete Status Type",
-            "description": "Are you sure you want to delete this status type? This action cannot be undone.",
-            "confirmLabel": "Delete Status Type",
-            "successTitle": "Status type deleted",
-            "successDescription": "The status type has been removed.",
-            "failedTitle": "Delete failed",
-            "failedDescription": "Failed to delete status type. Please review the requirements and try again.",
-            "failedUnknownDescription": "An unexpected error occurred while deleting the status type. Please try again."
-        },
-        "fallbacks": {
-            "notAvailable": "—",
-            "noStatuses": "No statuses yet",
-            "noDescription": "No description provided."
-        }
-    },
-    "truckStatusBoard": {
-        "title": "Truck Status Board",
-        "header": {
-            "description": "Manage daily truck operational status - {{count}} truck{{suffix}}"
-        },
-        "filters": {
-            "searchPlaceholder": "Search trucks by plate, type, or driver...",
-            "button": "Filters",
-            "clear": "Clear filters",
-            "dialogTitle": "Filter trucks",
-            "dialogDescription": "Choose the drivers, equipment, and plates you want to display on the board.",
-            "drivers": {
-                "label": "Drivers",
-                "triggerAll": "All drivers",
-                "summaryAll": "All drivers shown",
-                "heading": "Drivers",
-                "searchPlaceholder": "Search driver...",
-                "empty": "No drivers found."
-            },
-            "equipment": {
-                "label": "Equipment",
-                "triggerAll": "All equipment",
-                "summaryAll": "All equipment shown",
-                "heading": "Equipment",
-                "searchPlaceholder": "Search equipment...",
-                "empty": "No equipment found."
-            },
-            "plates": {
-                "label": "Plates",
-                "triggerAll": "All plates",
-                "summaryAll": "All plates shown",
-                "heading": "Plates",
-                "searchPlaceholder": "Search plate...",
-                "empty": "No plates found."
-            },
-            "clearSelections": "Clear selections",
-            "close": "Close"
-        },
-        "card": {
-            "notes": "Notes",
-            "syncing": "Syncing",
-            "driver": "Driver: {{name}}",
-            "notesTooltipUpdate": "View or update notes",
-            "notesTooltipAdd": "Add a quick note",
-            "changedBy": "By {{name}}",
-            "viewDetails": "View details →"
-        },
-        "column": {
-            "noMatches": "No trucks match the current filters",
-            "dropHere": "Drop trucks here"
-        },
-        "board": {
-            "title": "Status Overview",
-            "description": "Drag and drop trucks between columns to update their status",
-            "noResults": "No trucks found for the current filters."
-        },
-        "comment": {
-            "title": "Add Comment for {{plate}}",
-            "description": "Add notes or comments about this truck's status",
-            "placeholder": "Enter your comment here...",
-            "cancel": "Cancel",
-            "save": "Save Comment"
-        },
-        "toast": {
-            "updateFailedTitle": "Status update failed",
-            "updateFailedDescription": "We could not sync this move. The truck was returned to its previous column."
-        }
-    },
-    "truckStatusHistory": {
-        "breadcrumbs": {
-            "trucks": "Trucks",
-            "history": "History {{plate}}"
-        },
-        "headTitle": "Status History - {{plate}}",
-        "title": "{{plate}} • Status History",
-        "filters": {
-            "label": "Filter"
-        },
-        "labels": {
-            "by": "by {{name}}"
-        },
-        "empty": "No history found."
-    },
-    "truckStatusShow": {
-        "breadcrumbs": {
-            "board": "Truck Status Board",
-            "overview": "{{plate}} • Status Overview"
-        },
-        "headTitle": "Status Overview - {{plate}}",
-        "title": "{{plate}} • Status Overview",
-        "labels": {
-            "assignedTo": "Assigned to {{name}}",
-            "trackingWindow": "Tracking last {{days}} days",
-            "to": "to",
-            "by": "by {{name}}"
-        },
-        "kpi": {
-            "currentStatus": {
-                "title": "Current Status",
-                "description": "Latest captured state from the status board",
-                "updatedOn": "Updated on {{date}}"
-            },
-            "updatesLogged": {
-                "title": "Updates Logged",
-                "description": "Total entries captured within the window",
-                "daysWithUpdates": "days with updates: {{count}}"
-            },
-            "distinctStatuses": {
-                "title": "Distinct Statuses",
-                "description": "Unique statuses recorded recently"
-            },
-            "boardActions": {
-                "title": "Board Actions",
-                "description": "Quick navigation",
-                "backToBoard": "Back to board",
-                "openTruckProfile": "Open truck profile"
-            }
-        },
-        "distribution": {
-            "title": "Status distribution",
-            "description": "How often each status appears in the recent window",
-            "empty": "No status activity recorded in this window."
-        },
-        "timeline": {
-            "title": "Recent timeline",
-            "description": "The most recent status changes captured per day",
-            "updateCount": "{{count}} update{{suffix}}",
-            "empty": "No recent status changes found for this truck."
-        },
-        "fallbacks": {
-            "noStatusRecorded": "No status recorded",
-            "unknownStatus": "Unknown status",
-            "unknownDate": "Unknown date",
-            "timeNotCaptured": "Time not captured"
-        }
-    },
-    "users": {
-        "title": "User Management",
-        "description": "Manage {{count}} system user{{suffix}}",
-        "breadcrumbs": {
-            "management": "User management"
-        },
-        "columns": {
-            "index": "#",
-            "name": "Name",
-            "email": "Email",
-            "roles": "Roles",
-            "verified": "Verified",
-            "created_at": "Created",
-            "actions": "Actions"
-        },
-        "labels": {
-            "id": "ID #{{id}}"
-        },
-        "table": {
-            "title": "User Directory",
-            "description": "{{count}} total user{{suffix}} in system"
-        },
-        "stats": {
-            "total": {
-                "label": "Total Users",
-                "description": "All accounts"
-            },
-            "verified": {
-                "label": "Verified Users",
-                "description": "Email confirmed"
-            },
-            "pending": {
-                "label": "Pending Verification",
-                "description": "Awaiting confirmation"
-            },
-            "admins": {
-                "label": "Admins",
-                "description": "Full access roles"
-            },
-            "managers": {
-                "label": "Managers",
-                "description": "Management roles"
-            }
-        },
-        "status": {
-            "verified": "Verified",
-            "pending": "Pending",
-            "unverified": "Unverified"
-        },
-        "filters": {
-            "searchPlaceholder": "Search by name or email...",
-            "clearSearch": "Clear search",
-            "role": {
-                "placeholder": "Role",
-                "all": "All roles",
-                "chip": "Role: {{value}}"
-            },
-            "status": {
-                "placeholder": "Status",
-                "all": "All statuses",
-                "verified": "Verified",
-                "pending": "Pending",
-                "chip": "Status: {{value}}"
-            },
-            "rows": {
-                "label": "Rows",
-                "perPageOption": "{{value}} / page",
-                "chip": "Rows: {{value}}"
-            }
-        },
-        "actions": {
-            "view": "View",
-            "edit": "Edit",
-            "delete": "Delete",
-            "export": "Export CSV",
-            "add": "Add User",
-            "cancel": "Cancel",
-            "backToList": "Back to users",
-            "actions": "Actions",
-            "quick": "Quick actions",
-            "resendInvite": "Resend invite (pending)",
-            "sendReset": "Send reset link"
-        },
-        "empty": {
-            "title": "No users found",
-            "description": "Get started by adding your first user to the system. Manage access and permissions effectively.",
-            "filteredDescription": "No users match \"{{term}}\". Try adjusting your filters or search terms.",
-            "action": "Add First User",
-            "filteredAction": "Clear Filters & Add User",
-            "createOne": "Create one"
-        },
-        "mobile": {
-            "roles": "Roles",
-            "verified": "Verified",
-            "created": "Created"
-        },
-        "validation": {
-            "title": "Validation Error",
-            "description": "Please resolve the highlighted fields before submitting.",
-            "formDescription": "Please fix all errors in the form below"
-        },
-        "form": {
-            "sections": {
-                "profile": {
-                    "title": "Profile & Contact",
-                    "description": "Name and sign-in email for the new teammate."
+            "stats": {
+                "total": {
+                    "label": "Total Types",
+                    "description": "All lifecycle categories"
                 },
-                "access": {
-                    "title": "Access & Security",
-                    "description": "Assign the right role and set a strong starter password."
+                "inUse": {
+                    "label": "In Use",
+                    "description": "{{count}} statuses linked"
                 },
-                "notifications": {
-                    "title": "Notification Preferences",
-                    "description": "Fine-tune advanced notification defaults for this account.",
-                    "optional": "Optional",
-                    "helper": "Select which lifecycle notifications this user should receive by default. They can personalize their channels later inside their profile.",
-                    "adminHint": "Admins automatically receive every notification across all channels.",
-                    "addPlaceholder": "Add notification type",
-                    "allAssigned": "All notification types are already assigned.",
-                    "addAction": "Add notification",
-                    "assignAll": "Assign all",
-                    "clear": "Clear",
-                    "overview": {
-                        "title": "Assignment overview",
-                        "selected": "{{count}} of {{total}} notifications selected",
-                        "coverage": "{{value}}% coverage"
+                "unused": {
+                    "label": "Unused",
+                    "description": "Ready for assignment"
+                },
+                "average": {
+                    "label": "Avg. Statuses",
+                    "description": "Per status type"
+                },
+                "recent": {
+                    "label": "Created ({{days}}d)",
+                    "description": "Recently added types"
+                },
+                "statuses": {
+                    "label": "Statuses",
+                    "description": "Across all types"
+                }
+            },
+            "filters": {
+                "searchPlaceholder": "Search status types...",
+                "rowsLabel": "Rows",
+                "usagePlaceholder": "Usage",
+                "allUsage": "All usage states",
+                "perPageOption": "{{value}} / page"
+            },
+            "labels": {
+                "statuses": "Statuses"
+            },
+            "actions": {
+                "view": "View",
+                "edit": "Edit",
+                "delete": "Delete",
+                "export": "Export CSV",
+                "add": "Add Status Type",
+                "cancel": "Cancel",
+                "back": "Back"
+            },
+            "empty": {
+                "title": "No status types found.",
+                "action": "Create one"
+            },
+            "validation": {
+                "title": "Validation Error",
+                "description": "Please fix the errors",
+                "allDescription": "Please fix all errors",
+                "formDescription": "Please fix all errors in the form below"
+            },
+            "form": {
+                "sections": {
+                    "details": {
+                        "title": "Status Type Details",
+                        "description": "Provide a name and optional description for the status type.",
+                        "editDescription": "Update the status type information"
+                    }
+                },
+                "fields": {
+                    "name": {
+                        "label": "Name",
+                        "placeholder": "Enter status type name"
                     },
-                    "searchPlaceholder": "Search assigned notifications",
-                    "empty": "No notifications selected. The user will inherit only default alerts from their permissions.",
-                    "noMatches": "No notifications match your search.",
-                    "noDescription": "No description available for this notification.",
-                    "remove": "Remove",
-                    "channels": {
-                        "inApp": {
-                            "title": "In-app alerts",
-                            "description": "Deliver real-time messages inside the dashboard."
-                        },
-                        "email": {
-                            "title": "Email alerts",
-                            "description": "Send transactional emails when this event occurs."
-                        }
+                    "description": {
+                        "label": "Description",
+                        "placeholder": "Enter status type description"
                     }
                 }
             },
-            "fields": {
-                "name": {
-                    "label": "Name",
-                    "placeholder": "Enter user name"
+            "create": {
+                "title": "Create Status Type",
+                "headTitle": "Create Status Type",
+                "description": "Define a new status type for categorizing statuses.",
+                "submit": "Create Status Type"
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Edit Status Type",
+                "headTitle": "Edit Status Type",
+                "description": "Update status type details",
+                "submit": "Update Status Type",
+                "submitting": "Updating..."
+            },
+            "show": {
+                "subtitleFallback": "Status type classification for operational tracking.",
+                "headTitle": "Status Type: {{name}}",
+                "sections": {
+                    "basic": {
+                        "title": "Basic Information",
+                        "description": "Core status type details"
+                    },
+                    "record": {
+                        "title": "Record Information",
+                        "description": "System tracking"
+                    },
+                    "activity": {
+                        "title": "Activity Log",
+                        "description": "Auditable timeline"
+                    }
                 },
-                "email": {
-                    "label": "Email",
-                    "placeholder": "Enter email address"
+                "fields": {
+                    "name": "Name",
+                    "id": "Status Type ID",
+                    "description": "Description",
+                    "created": "Created",
+                    "updated": "Last Updated"
                 },
-                "role": {
-                    "label": "Role",
-                    "placeholder": "Select a role"
-                },
-                "password": {
-                    "label": "Password",
-                    "placeholder": "Enter password",
-                    "show": "Show password",
-                    "hide": "Hide password"
-                },
-                "passwordStrength": {
-                    "label": "Password strength",
-                    "waiting": "Waiting for input",
-                    "helper": "Start typing to evaluate this password."
-                },
-                "passwordConfirmation": {
-                    "label": "Confirm Password",
-                    "placeholder": "Confirm password",
-                    "show": "Show password confirmation",
-                    "hide": "Hide password confirmation"
+                "toast": {
+                    "successTitle": "Success",
+                    "successDescription": "Status type deleted successfully",
+                    "errorTitle": "Error",
+                    "errorDescription": "Failed to delete status type"
                 }
+            },
+            "delete": {
+                "title": "Delete Status Type",
+                "description": "Are you sure you want to delete this status type? This action cannot be undone.",
+                "confirmLabel": "Delete Status Type",
+                "successTitle": "Status type deleted",
+                "successDescription": "The status type has been removed.",
+                "failedTitle": "Delete failed",
+                "failedDescription": "Failed to delete status type. Please review the requirements and try again.",
+                "failedUnknownDescription": "An unexpected error occurred while deleting the status type. Please try again."
+            },
+            "fallbacks": {
+                "notAvailable": "—",
+                "noStatuses": "No statuses yet",
+                "noDescription": "No description provided."
             }
         },
-        "create": {
-            "breadcrumb": "Create",
-            "title": "Create New User",
-            "headTitle": "Create User",
-            "description": "Add a new teammate, set their role, and configure notification preferences.",
-            "submit": "Create User",
-            "submitting": "Creating...",
-            "successTitle": "✅ User Created",
-            "successDescription": "The new user has been added successfully."
+        "truckStatusBoard": {
+            "title": "Truck Status Board",
+            "header": {
+                "description": "Manage daily truck operational status - {{count}} truck{{suffix}}"
+            },
+            "filters": {
+                "searchPlaceholder": "Search trucks by plate, type, or driver...",
+                "button": "Filters",
+                "clear": "Clear filters",
+                "dialogTitle": "Filter trucks",
+                "dialogDescription": "Choose the drivers, equipment, and plates you want to display on the board.",
+                "drivers": {
+                    "label": "Drivers",
+                    "triggerAll": "All drivers",
+                    "summaryAll": "All drivers shown",
+                    "heading": "Drivers",
+                    "searchPlaceholder": "Search driver...",
+                    "empty": "No drivers found."
+                },
+                "equipment": {
+                    "label": "Equipment",
+                    "triggerAll": "All equipment",
+                    "summaryAll": "All equipment shown",
+                    "heading": "Equipment",
+                    "searchPlaceholder": "Search equipment...",
+                    "empty": "No equipment found."
+                },
+                "plates": {
+                    "label": "Plates",
+                    "triggerAll": "All plates",
+                    "summaryAll": "All plates shown",
+                    "heading": "Plates",
+                    "searchPlaceholder": "Search plate...",
+                    "empty": "No plates found."
+                },
+                "clearSelections": "Clear selections",
+                "close": "Close"
+            },
+            "card": {
+                "notes": "Notes",
+                "syncing": "Syncing",
+                "driver": "Driver: {{name}}",
+                "notesTooltipUpdate": "View or update notes",
+                "notesTooltipAdd": "Add a quick note",
+                "changedBy": "By {{name}}",
+                "viewDetails": "View details →"
+            },
+            "column": {
+                "noMatches": "No trucks match the current filters",
+                "dropHere": "Drop trucks here"
+            },
+            "board": {
+                "title": "Status Overview",
+                "description": "Drag and drop trucks between columns to update their status",
+                "noResults": "No trucks found for the current filters."
+            },
+            "comment": {
+                "title": "Add Comment for {{plate}}",
+                "description": "Add notes or comments about this truck's status",
+                "placeholder": "Enter your comment here...",
+                "cancel": "Cancel",
+                "save": "Save Comment"
+            },
+            "toast": {
+                "updateFailedTitle": "Status update failed",
+                "updateFailedDescription": "We could not sync this move. The truck was returned to its previous column."
+            }
         },
-        "edit": {
-            "breadcrumb": "Edit",
-            "title": "Edit User",
-            "description": "Refresh profile details, adjust access, and keep credentials secure.",
-            "headTitle": "Edit {{name}}",
-            "backToProfile": "Back to profile",
-            "fields": {
-                "fullName": {
-                    "label": "Full name",
-                    "placeholder": "e.g. Jane Smith"
+        "truckStatusHistory": {
+            "breadcrumbs": {
+                "trucks": "Trucks",
+                "history": "History {{plate}}"
+            },
+            "headTitle": "Status History - {{plate}}",
+            "title": "{{plate}} • Status History",
+            "filters": {
+                "label": "Filter"
+            },
+            "labels": {
+                "by": "by {{name}}"
+            },
+            "empty": "No history found."
+        },
+        "truckStatusShow": {
+            "breadcrumbs": {
+                "board": "Truck Status Board",
+                "overview": "{{plate}} • Status Overview"
+            },
+            "headTitle": "Status Overview - {{plate}}",
+            "title": "{{plate}} • Status Overview",
+            "labels": {
+                "assignedTo": "Assigned to {{name}}",
+                "trackingWindow": "Tracking last {{days}} days",
+                "to": "to",
+                "by": "by {{name}}"
+            },
+            "kpi": {
+                "currentStatus": {
+                    "title": "Current Status",
+                    "description": "Latest captured state from the status board",
+                    "updatedOn": "Updated on {{date}}"
                 },
+                "updatesLogged": {
+                    "title": "Updates Logged",
+                    "description": "Total entries captured within the window",
+                    "daysWithUpdates": "days with updates: {{count}}"
+                },
+                "distinctStatuses": {
+                    "title": "Distinct Statuses",
+                    "description": "Unique statuses recorded recently"
+                },
+                "boardActions": {
+                    "title": "Board Actions",
+                    "description": "Quick navigation",
+                    "backToBoard": "Back to board",
+                    "openTruckProfile": "Open truck profile"
+                }
+            },
+            "distribution": {
+                "title": "Status distribution",
+                "description": "How often each status appears in the recent window",
+                "empty": "No status activity recorded in this window."
+            },
+            "timeline": {
+                "title": "Recent timeline",
+                "description": "The most recent status changes captured per day",
+                "updateCount": "{{count}} update{{suffix}}",
+                "empty": "No recent status changes found for this truck."
+            },
+            "fallbacks": {
+                "noStatusRecorded": "No status recorded",
+                "unknownStatus": "Unknown status",
+                "unknownDate": "Unknown date",
+                "timeNotCaptured": "Time not captured"
+            }
+        },
+        "users": {
+            "title": "User Management",
+            "description": "Manage {{count}} system user{{suffix}}",
+            "breadcrumbs": {
+                "management": "User management"
+            },
+            "columns": {
+                "index": "#",
+                "name": "Name",
+                "email": "Email",
+                "roles": "Roles",
+                "verified": "Verified",
+                "created_at": "Created",
+                "actions": "Actions"
+            },
+            "labels": {
+                "id": "ID #{{id}}"
+            },
+            "table": {
+                "title": "User Directory",
+                "description": "{{count}} total user{{suffix}} in system"
+            },
+            "stats": {
+                "total": {
+                    "label": "Total Users",
+                    "description": "All accounts"
+                },
+                "verified": {
+                    "label": "Verified Users",
+                    "description": "Email confirmed"
+                },
+                "pending": {
+                    "label": "Pending Verification",
+                    "description": "Awaiting confirmation"
+                },
+                "admins": {
+                    "label": "Admins",
+                    "description": "Full access roles"
+                },
+                "managers": {
+                    "label": "Managers",
+                    "description": "Management roles"
+                }
+            },
+            "status": {
+                "verified": "Verified",
+                "pending": "Pending",
+                "unverified": "Unverified"
+            },
+            "filters": {
+                "searchPlaceholder": "Search by name or email...",
+                "clearSearch": "Clear search",
                 "role": {
-                    "helper": "Roles define which areas of the platform this teammate can access."
+                    "placeholder": "Role",
+                    "all": "All roles",
+                    "chip": "Role: {{value}}"
                 },
-                "password": {
-                    "label": "New password",
-                    "helper": "Leave blank to keep the current password.",
-                    "placeholder": "Generate a stronger secret"
-                }
-            },
-            "sections": {
-                "profile": {
-                    "description": "Keep the name and email aligned with your directory."
+                "status": {
+                    "placeholder": "Status",
+                    "all": "All statuses",
+                    "verified": "Verified",
+                    "pending": "Pending",
+                    "chip": "Status: {{value}}"
                 },
-                "access": {
-                    "description": "Adjust the user's role or rotate their credentials when needed."
+                "rows": {
+                    "label": "Rows",
+                    "perPageOption": "{{value}} / page",
+                    "chip": "Rows: {{value}}"
                 }
             },
-            "sidebar": {
-                "title": "Account snapshot",
-                "description": "Quickly confirm the essentials before saving.",
-                "labels": {
-                    "userId": "User ID",
-                    "role": "Assigned role",
-                    "verification": "Verification",
-                    "memberSince": "Member since"
+            "actions": {
+                "view": "View",
+                "edit": "Edit",
+                "delete": "Delete",
+                "export": "Export CSV",
+                "add": "Add User",
+                "cancel": "Cancel",
+                "backToList": "Back to users",
+                "actions": "Actions",
+                "quick": "Quick actions",
+                "resendInvite": "Resend invite (pending)",
+                "sendReset": "Send reset link"
+            },
+            "empty": {
+                "title": "No users found",
+                "description": "Get started by adding your first user to the system. Manage access and permissions effectively.",
+                "filteredDescription": "No users match \"{{term}}\". Try adjusting your filters or search terms.",
+                "action": "Add First User",
+                "filteredAction": "Clear Filters & Add User",
+                "createOne": "Create one"
+            },
+            "mobile": {
+                "roles": "Roles",
+                "verified": "Verified",
+                "created": "Created"
+            },
+            "validation": {
+                "title": "Validation Error",
+                "description": "Please resolve the highlighted fields before submitting.",
+                "formDescription": "Please fix all errors in the form below"
+            },
+            "form": {
+                "sections": {
+                    "profile": {
+                        "title": "Profile & Contact",
+                        "description": "Name and sign-in email for the new teammate."
+                    },
+                    "access": {
+                        "title": "Access & Security",
+                        "description": "Assign the right role and set a strong starter password."
+                    },
+                    "notifications": {
+                        "title": "Notification Preferences",
+                        "description": "Fine-tune advanced notification defaults for this account.",
+                        "optional": "Optional",
+                        "helper": "Select which lifecycle notifications this user should receive by default. They can personalize their channels later inside their profile.",
+                        "adminHint": "Admins automatically receive every notification across all channels.",
+                        "addPlaceholder": "Add notification type",
+                        "allAssigned": "All notification types are already assigned.",
+                        "addAction": "Add notification",
+                        "assignAll": "Assign all",
+                        "clear": "Clear",
+                        "overview": {
+                            "title": "Assignment overview",
+                            "selected": "{{count}} of {{total}} notifications selected",
+                            "coverage": "{{value}}% coverage"
+                        },
+                        "searchPlaceholder": "Search assigned notifications",
+                        "empty": "No notifications selected. The user will inherit only default alerts from their permissions.",
+                        "noMatches": "No notifications match your search.",
+                        "noDescription": "No description available for this notification.",
+                        "remove": "Remove",
+                        "channels": {
+                            "inApp": {
+                                "title": "In-app alerts",
+                                "description": "Deliver real-time messages inside the dashboard."
+                            },
+                            "email": {
+                                "title": "Email alerts",
+                                "description": "Send transactional emails when this event occurs."
+                            }
+                        }
+                    }
+                },
+                "fields": {
+                    "name": {
+                        "label": "Name",
+                        "placeholder": "Enter user name"
+                    },
+                    "email": {
+                        "label": "Email",
+                        "placeholder": "Enter email address"
+                    },
+                    "role": {
+                        "label": "Role",
+                        "placeholder": "Select a role"
+                    },
+                    "password": {
+                        "label": "Password",
+                        "placeholder": "Enter password",
+                        "show": "Show password",
+                        "hide": "Hide password"
+                    },
+                    "passwordStrength": {
+                        "label": "Password strength",
+                        "waiting": "Waiting for input",
+                        "helper": "Start typing to evaluate this password."
+                    },
+                    "passwordConfirmation": {
+                        "label": "Confirm Password",
+                        "placeholder": "Confirm password",
+                        "show": "Show password confirmation",
+                        "hide": "Hide password confirmation"
+                    }
                 }
             },
-            "tip": {
-                "title": "Tip",
-                "description": "If you rotate credentials, let the teammate know so they can sign in with the updated password immediately."
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Create New User",
+                "headTitle": "Create User",
+                "description": "Add a new teammate, set their role, and configure notification preferences.",
+                "submit": "Create User",
+                "submitting": "Creating...",
+                "successTitle": "✅ User Created",
+                "successDescription": "The new user has been added successfully."
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Edit User",
+                "description": "Refresh profile details, adjust access, and keep credentials secure.",
+                "headTitle": "Edit {{name}}",
+                "backToProfile": "Back to profile",
+                "fields": {
+                    "fullName": {
+                        "label": "Full name",
+                        "placeholder": "e.g. Jane Smith"
+                    },
+                    "role": {
+                        "helper": "Roles define which areas of the platform this teammate can access."
+                    },
+                    "password": {
+                        "label": "New password",
+                        "helper": "Leave blank to keep the current password.",
+                        "placeholder": "Generate a stronger secret"
+                    }
+                },
+                "sections": {
+                    "profile": {
+                        "description": "Keep the name and email aligned with your directory."
+                    },
+                    "access": {
+                        "description": "Adjust the user's role or rotate their credentials when needed."
+                    }
+                },
+                "sidebar": {
+                    "title": "Account snapshot",
+                    "description": "Quickly confirm the essentials before saving.",
+                    "labels": {
+                        "userId": "User ID",
+                        "role": "Assigned role",
+                        "verification": "Verification",
+                        "memberSince": "Member since"
+                    }
+                },
+                "tip": {
+                    "title": "Tip",
+                    "description": "If you rotate credentials, let the teammate know so they can sign in with the updated password immediately."
+                },
+                "requiredFields": "Required fields",
+                "saving": "Saving…",
+                "save": "Save changes"
+            },
+            "show": {
+                "subtitle": "#{{id}} · Last updated {{date}}",
+                "headTitle": "User · {{name}}",
+                "kpi": {
+                    "emailStatus": {
+                        "label": "Email Status",
+                        "helperUnverified": "Not yet verified"
+                    },
+                    "roles": {
+                        "label": "Roles Assigned",
+                        "helperSingle": "1 role",
+                        "helperMultiple": "{{count}} roles"
+                    },
+                    "activity": {
+                        "label": "Activity Entries",
+                        "helper": "Total logged actions"
+                    },
+                    "lastActivity": {
+                        "label": "Last Activity",
+                        "helper": "Most recent action",
+                        "empty": "No activity"
+                    }
+                },
+                "sections": {
+                    "profile": {
+                        "title": "User Profile",
+                        "description": "Core account information"
+                    },
+                    "roles": {
+                        "title": "Roles & Permissions",
+                        "description": "Assigned access levels",
+                        "empty": "No roles assigned yet."
+                    },
+                    "activity": {
+                        "title": "Activity History",
+                        "description": "Recent actions by this user",
+                        "empty": "No activity recorded yet."
+                    }
+                },
+                "fields": {
+                    "name": "Full Name",
+                    "email": "Email Address",
+                    "emailStatus": "Email Status",
+                    "verifiedOn": "Verified on {{date}}"
+                }
+            },
+            "delete": {
+                "title": "Delete User",
+                "description": "Are you sure you want to delete this user? This action cannot be undone.",
+                "successTitle": "✅ User Deleted",
+                "successDescription": "{{name}} has been removed successfully.",
+                "failedTitle": "❌ Delete Failed",
+                "failedDescription": "Please try again or contact support if the issue persists."
+            },
+            "fallbacks": {
+                "notAvailable": "—",
+                "noRoles": "No roles",
+                "unassigned": "Unassigned"
+            }
+        },
+        "roles": {
+            "title": "Role Management",
+            "description": "Manage {{count}} role{{suffix}} across the platform",
+            "breadcrumbs": {
+                "management": "User management"
+            },
+            "columns": {
+                "index": "#",
+                "name": "Role",
+                "permissions": "Permissions",
+                "created_at": "Created",
+                "actions": "Actions"
+            },
+            "labels": {
+                "guard": "Guard: {{value}}",
+                "more": "+{{count}} more"
+            },
+            "table": {
+                "title": "Role Directory",
+                "description": "{{count}} total role{{suffix}} in system"
+            },
+            "stats": {
+                "total": {
+                    "label": "Total Roles",
+                    "description": "Defined access groups"
+                },
+                "admins": {
+                    "label": "Admin Variants",
+                    "description": "High privilege profiles"
+                },
+                "averagePermissions": {
+                    "label": "Avg Permissions",
+                    "description": "Per role on average"
+                },
+                "guards": {
+                    "label": "Guard Types",
+                    "description": "Unique guard names"
+                }
+            },
+            "filters": {
+                "searchPlaceholder": "Search by role name...",
+                "clearSearch": "Clear search",
+                "permissionGroup": {
+                    "placeholder": "Permission group",
+                    "all": "All groups",
+                    "chip": "Group: {{value}}"
+                },
+                "rows": {
+                    "label": "Rows",
+                    "perPageOption": "{{value}} / page",
+                    "chip": "Rows: {{value}}"
+                }
+            },
+            "actions": {
+                "view": "View",
+                "edit": "Edit",
+                "delete": "Delete",
+                "export": "Export CSV",
+                "add": "Add Role",
+                "cancel": "Cancel",
+                "backToList": "Back to Roles"
+            },
+            "empty": {
+                "title": "No roles found",
+                "description": "Start by creating your first role to manage access levels effectively.",
+                "filteredDescription": "No roles match \"{{term}}\". Try adjusting your filters or search terms.",
+                "action": "Add First Role",
+                "filteredAction": "Clear Filters & Add Role",
+                "createOne": "Create one"
+            },
+            "mobile": {
+                "permissions": "Permissions",
+                "created": "Created"
+            },
+            "validation": {
+                "title": "Validation Error",
+                "description": "Please fix the errors",
+                "allDescription": "Please fix all errors",
+                "formDescription": "Please resolve the highlighted issues before submitting."
+            },
+            "form": {
+                "sections": {
+                    "overview": {
+                        "title": "Role Overview",
+                        "description": "Give the role a clear name and, optionally, a description to help teammates understand its purpose."
+                    }
+                },
+                "fields": {
+                    "name": {
+                        "label": "Role Name",
+                        "placeholder": "e.g., Dispatch Supervisor"
+                    },
+                    "description": {
+                        "label": "Role Description",
+                        "helper": "Optional context for other administrators.",
+                        "placeholder": "Describe where this role is used and any high-level responsibility."
+                    }
+                }
+            },
+            "permissions": {
+                "title": "Permission Library",
+                "description": "Browse grouped permissions, filter by keyword, and toggle exactly what this role should be able to do.",
+                "searchPlaceholder": "Search permissions or modules",
+                "matchingGroups": "{{count}} matching group{{suffix}}",
+                "showingGroups": "Showing {{count}} permission group{{suffix}}",
+                "moduleMeta": "{{total}} available · {{selected}} selected",
+                "deselect": "Deselect",
+                "selectAll": "Select All",
+                "dependencyHint": "Dependencies auto-selected if needed.",
+                "empty": "No permission groups match your search.",
+                "emptyHint": "Try refining or clearing the filter to view all modules.",
+                "summary": {
+                    "title": "Selection summary",
+                    "description": "Focus on the exact access this role needs.",
+                    "coverage": "Coverage",
+                    "selected": "Selected",
+                    "remaining": "Remaining"
+                },
+                "selectEverything": "Select everything",
+                "clearSelection": "Clear selection",
+                "dependencyCard": {
+                    "title": "Dependencies handled for you",
+                    "description": "When a permission requires another, both are automatically selected. Review module notes for details before finalizing."
+                }
             },
             "requiredFields": "Required fields",
-            "saving": "Saving…",
-            "save": "Save changes"
-        },
-        "show": {
-            "subtitle": "#{{id}} · Last updated {{date}}",
-            "headTitle": "User · {{name}}",
-            "kpi": {
-                "emailStatus": {
-                    "label": "Email Status",
-                    "helperUnverified": "Not yet verified"
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Create Role",
+                "headTitle": "Create Role",
+                "description": "Define a new role, describe its purpose, and curate the exact permissions it should carry.",
+                "submit": "Create Role"
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Edit Role",
+                "headTitle": "Edit {{name}}",
+                "description": "Adjust role information, fine-tune its permissions, and keep your access model in sync.",
+                "backToRole": "Back to Role",
+                "sections": {
+                    "overview": {
+                        "description": "Update the role's name and ensure the description still reflects its responsibilities."
+                    },
+                    "permissions": {
+                        "description": "Review grouped permissions and adjust what this role should be allowed to do."
+                    }
                 },
-                "roles": {
-                    "label": "Roles Assigned",
-                    "helperSingle": "1 role",
-                    "helperMultiple": "{{count}} roles"
+                "fields": {
+                    "description": {
+                        "helper": "Share context to help teammates understand this role's remit.",
+                        "placeholder": "Document the scope, reporting lines, or escalation responsibilities."
+                    }
                 },
-                "activity": {
-                    "label": "Activity Entries",
-                    "helper": "Total logged actions"
+                "summary": {
+                    "description": "Keep the role lean by reviewing totals."
                 },
-                "lastActivity": {
-                    "label": "Last Activity",
-                    "helper": "Most recent action",
-                    "empty": "No activity"
+                "dependencyCard": {
+                    "description": "When a permission requires another, both stay aligned automatically. Review notes before finalizing."
+                },
+                "submit": "Update Role"
+            },
+            "show": {
+                "subtitleFallback": "No description provided for this role yet.",
+                "headTitle": "Role · {{name}}",
+                "updatedBadge": "#{{id}} · Updated {{date}}",
+                "kpi": {
+                    "permissions": {
+                        "label": "Permissions",
+                        "helper": "Total capabilities"
+                    },
+                    "users": {
+                        "label": "Assigned Users",
+                        "helper": "Team members"
+                    },
+                    "modules": {
+                        "label": "Modules",
+                        "helper": "Areas covered"
+                    },
+                    "created": {
+                        "label": "Created",
+                        "helper": "Initial setup"
+                    }
+                },
+                "sections": {
+                    "permissions": {
+                        "title": "Permission Library",
+                        "description": "Organized view of every capability attached to this role",
+                        "moduleCount": "{{count}} permission{{suffix}}",
+                        "empty": "No permissions assigned to this role yet.",
+                        "assignAction": "Assign Permissions"
+                    },
+                    "people": {
+                        "title": "People With This Role",
+                        "description": "Understand who inherits the permissions defined above",
+                        "empty": "No users currently linked to this role.",
+                        "emptyHint": "Assign it to teammates to extend access."
+                    },
+                    "glance": {
+                        "title": "At a Glance",
+                        "description": "Quick audit summary",
+                        "modules": "Modules covered",
+                        "permissions": "Permissions total",
+                        "members": "Members assigned"
+                    },
+                    "activity": {
+                        "title": "Activity Log",
+                        "description": "Review every change captured for this role"
+                    }
+                },
+                "tip": {
+                    "title": "Need to refine this role?",
+                    "description": "Use the edit action to adjust responsibilities or prune unneeded access as your security posture evolves."
                 }
             },
-            "sections": {
-                "profile": {
-                    "title": "User Profile",
-                    "description": "Core account information"
-                },
-                "roles": {
-                    "title": "Roles & Permissions",
-                    "description": "Assigned access levels",
-                    "empty": "No roles assigned yet."
-                },
-                "activity": {
-                    "title": "Activity History",
-                    "description": "Recent actions by this user",
-                    "empty": "No activity recorded yet."
-                }
+            "delete": {
+                "title": "Delete Role",
+                "description": "Are you sure you want to delete this role? This action cannot be undone.",
+                "successTitle": "Success",
+                "successDescription": "{{name}} has been removed from the system successfully.",
+                "failedTitle": "Error",
+                "failedDescription": "Failed to delete role"
             },
-            "fields": {
-                "name": "Full Name",
-                "email": "Email Address",
-                "emailStatus": "Email Status",
-                "verifiedOn": "Verified on {{date}}"
-            }
-        },
-        "delete": {
-            "title": "Delete User",
-            "description": "Are you sure you want to delete this user? This action cannot be undone.",
-            "successTitle": "✅ User Deleted",
-            "successDescription": "{{name}} has been removed successfully.",
-            "failedTitle": "❌ Delete Failed",
-            "failedDescription": "Please try again or contact support if the issue persists."
-        },
-        "fallbacks": {
-            "notAvailable": "—",
-            "noRoles": "No roles",
-            "unassigned": "Unassigned"
-        }
-    },
-    "roles": {
-        "title": "Role Management",
-        "description": "Manage {{count}} role{{suffix}} across the platform",
-        "breadcrumbs": {
-            "management": "User management"
-        },
-        "columns": {
-            "index": "#",
-            "name": "Role",
-            "permissions": "Permissions",
-            "created_at": "Created",
-            "actions": "Actions"
-        },
-        "labels": {
-            "guard": "Guard: {{value}}",
-            "more": "+{{count}} more"
-        },
-        "table": {
-            "title": "Role Directory",
-            "description": "{{count}} total role{{suffix}} in system"
-        },
-        "stats": {
-            "total": {
-                "label": "Total Roles",
-                "description": "Defined access groups"
-            },
-            "admins": {
-                "label": "Admin Variants",
-                "description": "High privilege profiles"
-            },
-            "averagePermissions": {
-                "label": "Avg Permissions",
-                "description": "Per role on average"
-            },
-            "guards": {
-                "label": "Guard Types",
-                "description": "Unique guard names"
-            }
-        },
-        "filters": {
-            "searchPlaceholder": "Search by role name...",
-            "clearSearch": "Clear search",
-            "permissionGroup": {
-                "placeholder": "Permission group",
-                "all": "All groups",
-                "chip": "Group: {{value}}"
-            },
-            "rows": {
-                "label": "Rows",
-                "perPageOption": "{{value}} / page",
-                "chip": "Rows: {{value}}"
-            }
-        },
-        "actions": {
-            "view": "View",
-            "edit": "Edit",
-            "delete": "Delete",
-            "export": "Export CSV",
-            "add": "Add Role",
-            "cancel": "Cancel",
-            "backToList": "Back to Roles"
-        },
-        "empty": {
-            "title": "No roles found",
-            "description": "Start by creating your first role to manage access levels effectively.",
-            "filteredDescription": "No roles match \"{{term}}\". Try adjusting your filters or search terms.",
-            "action": "Add First Role",
-            "filteredAction": "Clear Filters & Add Role",
-            "createOne": "Create one"
-        },
-        "mobile": {
-            "permissions": "Permissions",
-            "created": "Created"
-        },
-        "validation": {
-            "title": "Validation Error",
-            "description": "Please fix the errors",
-            "allDescription": "Please fix all errors",
-            "formDescription": "Please resolve the highlighted issues before submitting."
-        },
-        "form": {
-            "sections": {
-                "overview": {
-                    "title": "Role Overview",
-                    "description": "Give the role a clear name and, optionally, a description to help teammates understand its purpose."
-                }
-            },
-            "fields": {
-                "name": {
-                    "label": "Role Name",
-                    "placeholder": "e.g., Dispatch Supervisor"
-                },
-                "description": {
-                    "label": "Role Description",
-                    "helper": "Optional context for other administrators.",
-                    "placeholder": "Describe where this role is used and any high-level responsibility."
-                }
+            "fallbacks": {
+                "notAvailable": "—",
+                "noPermissions": "No permissions"
             }
         },
         "permissions": {
-            "title": "Permission Library",
-            "description": "Browse grouped permissions, filter by keyword, and toggle exactly what this role should be able to do.",
-            "searchPlaceholder": "Search permissions or modules",
-            "matchingGroups": "{{count}} matching group{{suffix}}",
-            "showingGroups": "Showing {{count}} permission group{{suffix}}",
-            "moduleMeta": "{{total}} available · {{selected}} selected",
-            "deselect": "Deselect",
-            "selectAll": "Select All",
-            "dependencyHint": "Dependencies auto-selected if needed.",
-            "empty": "No permission groups match your search.",
-            "emptyHint": "Try refining or clearing the filter to view all modules.",
-            "summary": {
-                "title": "Selection summary",
-                "description": "Focus on the exact access this role needs.",
-                "coverage": "Coverage",
-                "selected": "Selected",
-                "remaining": "Remaining"
+            "title": "Permission Management",
+            "description": "Manage {{count}} permission{{suffix}} across the platform",
+            "breadcrumbs": {
+                "management": "User management"
             },
-            "selectEverything": "Select everything",
-            "clearSelection": "Clear selection",
-            "dependencyCard": {
-                "title": "Dependencies handled for you",
-                "description": "When a permission requires another, both are automatically selected. Review module notes for details before finalizing."
-            }
-        },
-        "requiredFields": "Required fields",
-        "create": {
-            "breadcrumb": "Create",
-            "title": "Create Role",
-            "headTitle": "Create Role",
-            "description": "Define a new role, describe its purpose, and curate the exact permissions it should carry.",
-            "submit": "Create Role"
-        },
-        "edit": {
-            "breadcrumb": "Edit",
-            "title": "Edit Role",
-            "headTitle": "Edit {{name}}",
-            "description": "Adjust role information, fine-tune its permissions, and keep your access model in sync.",
-            "backToRole": "Back to Role",
-            "sections": {
-                "overview": {
-                    "description": "Update the role's name and ensure the description still reflects its responsibilities."
-                },
-                "permissions": {
-                    "description": "Review grouped permissions and adjust what this role should be allowed to do."
-                }
+            "columns": {
+                "index": "#",
+                "name": "Permission",
+                "module": "Module",
+                "action": "Action",
+                "guard": "Guard",
+                "created_at": "Created"
             },
-            "fields": {
-                "description": {
-                    "helper": "Share context to help teammates understand this role's remit.",
-                    "placeholder": "Document the scope, reporting lines, or escalation responsibilities."
-                }
+            "labels": {
+                "id": "ID #{{id}}",
+                "guard": "Guard: {{value}}"
             },
-            "summary": {
-                "description": "Keep the role lean by reviewing totals."
+            "table": {
+                "title": "Permission Directory",
+                "description": "{{count}} total permission{{suffix}} in system"
             },
-            "dependencyCard": {
-                "description": "When a permission requires another, both stay aligned automatically. Review notes before finalizing."
-            },
-            "submit": "Update Role"
-        },
-        "show": {
-            "subtitleFallback": "No description provided for this role yet.",
-            "headTitle": "Role · {{name}}",
-            "updatedBadge": "#{{id}} · Updated {{date}}",
-            "kpi": {
-                "permissions": {
-                    "label": "Permissions",
-                    "helper": "Total capabilities"
-                },
-                "users": {
-                    "label": "Assigned Users",
-                    "helper": "Team members"
+            "stats": {
+                "total": {
+                    "label": "Total Permissions",
+                    "description": "Across the platform"
                 },
                 "modules": {
                     "label": "Modules",
-                    "helper": "Areas covered"
+                    "description": "Permission groups"
                 },
-                "created": {
-                    "label": "Created",
-                    "helper": "Initial setup"
+                "guards": {
+                    "label": "Guard Types",
+                    "description": "Distinct guard names"
                 }
             },
-            "sections": {
-                "permissions": {
-                    "title": "Permission Library",
-                    "description": "Organized view of every capability attached to this role",
-                    "moduleCount": "{{count}} permission{{suffix}}",
-                    "empty": "No permissions assigned to this role yet.",
-                    "assignAction": "Assign Permissions"
+            "filters": {
+                "searchPlaceholder": "Search permissions...",
+                "clearSearch": "Clear search",
+                "module": {
+                    "placeholder": "Module",
+                    "all": "All modules",
+                    "chip": "Module: {{value}}"
                 },
-                "people": {
-                    "title": "People With This Role",
-                    "description": "Understand who inherits the permissions defined above",
-                    "empty": "No users currently linked to this role.",
-                    "emptyHint": "Assign it to teammates to extend access."
-                },
-                "glance": {
-                    "title": "At a Glance",
-                    "description": "Quick audit summary",
-                    "modules": "Modules covered",
-                    "permissions": "Permissions total",
-                    "members": "Members assigned"
-                },
-                "activity": {
-                    "title": "Activity Log",
-                    "description": "Review every change captured for this role"
+                "rows": {
+                    "label": "Rows",
+                    "perPageOption": "{{value}} / page",
+                    "chip": "Rows: {{value}}"
                 }
             },
-            "tip": {
-                "title": "Need to refine this role?",
-                "description": "Use the edit action to adjust responsibilities or prune unneeded access as your security posture evolves."
+            "mobile": {
+                "module": "Module",
+                "action": "Action",
+                "created": "Created"
+            },
+            "actions": {
+                "export": "Export CSV"
+            },
+            "empty": {
+                "title": "No permissions found",
+                "description": "Permissions are managed automatically. Adjust filters or roles to view assigned access.",
+                "filteredDescription": "No permissions match \"{{term}}\". Try adjusting your filters or search terms."
+            },
+            "fallbacks": {
+                "notAvailable": "—"
             }
         },
-        "delete": {
-            "title": "Delete Role",
-            "description": "Are you sure you want to delete this role? This action cannot be undone.",
-            "successTitle": "Success",
-            "successDescription": "{{name}} has been removed from the system successfully.",
-            "failedTitle": "Error",
-            "failedDescription": "Failed to delete role"
+        "notifications": {
+            "title": "Notifications",
+            "subtitle": "Stay up to date with the latest activity across your fleet.",
+            "inApp": {
+                "title": "In-app notifications",
+                "description": "Manage recent events and keep your team aligned.",
+                "unreadBadge": "{{count}} unread",
+                "caughtUp": "All caught up",
+                "unreadLabel": "Unread notifications"
+            },
+            "recent": {
+                "title": "Recent activity",
+                "description": "Notifications expire after they are archived or older than 30 days.",
+                "markAll": "Mark all as read",
+                "markSingle": "Mark as read",
+                "marking": "Marking…"
+            },
+            "empty": {
+                "title": "Nothing new to review",
+                "description": "We will notify you here as soon as something changes."
+            }
+        },
+        "notificationAssignments": {
+            "title": "Notification assignments",
+            "breadcrumbs": {
+                "management": "User management"
+            },
+            "subtitle": "Grant notification types to team members and configure their default delivery methods. Users can fine-tune the channels you enable for them via their personal settings.",
+            "search": {
+                "placeholder": "Search people by name or email",
+                "submit": "Search",
+                "clear": "Clear"
+            },
+            "people": {
+                "title": "People",
+                "description": "Select a person to manage their notification access.",
+                "empty": "No users match your search criteria."
+            },
+            "types": {
+                "title": "Notification types",
+                "description": "Enable notification channels for the selected person. Removing a notification stops all deliveries until it is added again."
+            },
+            "filters": {
+                "categories": {
+                    "placeholder": "Select category",
+                    "all": "All categories",
+                    "empty": "No notification categories available yet."
+                },
+                "rows": {
+                    "all": "All",
+                    "active": "Active",
+                    "pending": "Pending removal"
+                }
+            },
+            "typePicker": {
+                "disabled": "Insufficient permissions",
+                "selectCategory": "Select a category first",
+                "allAssigned": "All types assigned",
+                "selectTypes": "Select notification types",
+                "selectedAll": "Selected all ({{count}})",
+                "selected": "{{count}} selected",
+                "searchPlaceholder": "Search notification types",
+                "emptyAllAssigned": "All notification types in this category are already assigned.",
+                "emptyNoMatch": "No notification types match your search.",
+                "selectAll": "Select all",
+                "clear": "Clear",
+                "addSelected": "Add selected",
+                "selectedBadge": "{{count}} type{{suffix}} selected"
+            },
+            "empty": {
+                "noUser": "Select a person on the left to view their notification access.",
+                "noTypes": "{{name}} does not have any notification types assigned yet. Use the selector above to grant access.",
+                "noMatch": "No notification types match the selected filter. Adjust the filter to view assignments."
+            },
+            "summary": {
+                "fullyEnabled": "{{count}} fully enabled",
+                "pendingRemoval": "{{count}} pending removal",
+                "inApp": "{{count}} in-app",
+                "email": "{{count}} email",
+                "available": "{{count}} available",
+                "unsaved": "Unsaved changes"
+            },
+            "rows": {
+                "noDescription": "No description available.",
+                "assignedBy": "Grant by {{name}}",
+                "newAssignment": "New assignment",
+                "willRemove": "Will be removed",
+                "deliveryDisabled": "Delivery disabled",
+                "updatedAt": "Updated {{date}}",
+                "restore": "Restore",
+                "remove": "Remove"
+            },
+            "channels": {
+                "inApp": {
+                    "title": "In-app alerts",
+                    "description": "Deliver real-time notifications within the dashboard."
+                },
+                "email": {
+                    "title": "Email alerts",
+                    "description": "Send transactional emails when this event occurs."
+                }
+            },
+            "sidebar": {
+                "title": "Not yet assigned",
+                "description": "Notifications in {{category}} that are still available to grant.",
+                "assignAll": "Assign all",
+                "empty": "Every notification in this category is already assigned.",
+                "add": "Add"
+            },
+            "actions": {
+                "saving": "Saving…",
+                "save": "Save changes",
+                "reset": "Reset"
+            }
+        },
+        "notificationPreferences": {
+            "title": "Notification preferences",
+            "header": {
+                "title": "Manage notifications",
+                "description": "Choose how you want to be notified. Contact your administrator if you need access to additional notification types."
+            },
+            "empty": {
+                "title": "No notifications assigned yet",
+                "description": "Your administrator has not enabled any notifications for your account. You will see options here once a notification type is assigned to you."
+            },
+            "coverage": {
+                "title": "Notification coverage",
+                "description": "{{enabled}} of {{total}} notifications are fully enabled (in-app & email).",
+                "enableAll": "Enable all",
+                "disableAll": "Disable all"
+            },
+            "rows": {
+                "noDescription": "No additional description provided.",
+                "enabledBy": "Enabled by {{name}}",
+                "updatedAt": "Updated {{date}}"
+            },
+            "channels": {
+                "inApp": {
+                    "title": "In-app alerts",
+                    "description": "Receive notifications inside the application."
+                },
+                "email": {
+                    "title": "Email alerts",
+                    "description": "We will send emails when this event occurs."
+                }
+            },
+            "actions": {
+                "saving": "Saving…",
+                "save": "Save preferences",
+                "saved": "Saved"
+            }
         },
         "fallbacks": {
-            "notAvailable": "—",
-            "noPermissions": "No permissions"
+            "notAvailable": "N/A"
         }
     },
-    "permissions": {
-        "title": "Permission Management",
-        "description": "Manage {{count}} permission{{suffix}} across the platform",
-        "breadcrumbs": {
-            "management": "User management"
+    "operations": {
+        "title": "Operations",
+        "breadcrumb": "Operations",
+        "description": "Manage {{count}} operation{{plural}} and monitor execution progress.",
+        "table": {
+            "title": "Operations List",
+            "description": "Track operation plans, progress, and lifecycle status.",
+            "index": "#",
+            "actions": "Actions"
         },
         "columns": {
-            "index": "#",
-            "name": "Permission",
-            "module": "Module",
-            "action": "Action",
-            "guard": "Guard",
-            "created_at": "Created"
+            "operationId": "Operation ID",
+            "customer": "Customer",
+            "startDate": "Start Date",
+            "volume": "Volume (MT)",
+            "distance": "Distance (KM)",
+            "upliftProgress": "Uplift Progress",
+            "closed": "State"
         },
-        "labels": {
-            "id": "ID #{{id}}",
-            "guard": "Guard: {{value}}"
+        "actions": {
+            "add": "Add Operation",
+            "view": "View",
+            "edit": "Edit",
+            "close": "Close",
+            "reopen": "Reopen",
+            "delete": "Delete",
+            "cancel": "Cancel"
         },
-        "table": {
-            "title": "Permission Directory",
-            "description": "{{count}} total permission{{suffix}} in system"
+        "filters": {
+            "searchPlaceholder": "Search operations...",
+            "rowsLabel": "Rows",
+            "statusPlaceholder": "Status",
+            "allStatuses": "All statuses",
+            "customerPlaceholder": "Customer",
+            "allCustomers": "All customers",
+            "perPageOption": "{{value}} / page"
         },
         "stats": {
             "total": {
-                "label": "Total Permissions",
-                "description": "Across the platform"
+                "label": "Total Operations",
+                "description": "{{count}} open"
             },
-            "modules": {
-                "label": "Modules",
-                "description": "Permission groups"
+            "active": {
+                "label": "Active",
+                "description": "Currently active operations"
             },
-            "guards": {
-                "label": "Guard Types",
-                "description": "Distinct guard names"
+            "inactive": {
+                "label": "Inactive",
+                "description": "Paused operations"
+            },
+            "closed": {
+                "label": "Closed",
+                "description": "Completed or locked operations"
             }
         },
-        "filters": {
-            "searchPlaceholder": "Search permissions...",
-            "clearSearch": "Clear search",
-            "module": {
-                "placeholder": "Module",
-                "all": "All modules",
-                "chip": "Module: {{value}}"
-            },
-            "rows": {
-                "label": "Rows",
-                "perPageOption": "{{value}} / page",
-                "chip": "Rows: {{value}}"
-            }
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive",
+            "open": "Open",
+            "closed": "Closed",
+            "pending": "Pending",
+            "cancelled": "Cancelled",
+            "unknown": "Unknown"
+        },
+        "executionModes": {
+            "company": "Company",
+            "vendor": "Vendor",
+            "hybrid": "Hybrid",
+            "pending": "Pending"
+        },
+        "progress": {
+            "delivered": "Delivered",
+            "deliveredValue": "{{value}} MT",
+            "notAvailable": "N/A",
+            "completionValue": "{{value}}% complete",
+            "noPlan": "No planned volume",
+            "remainingValue": "{{value}} MT remaining",
+            "placeholder": "No remaining data"
         },
         "mobile": {
-            "module": "Module",
-            "action": "Action",
-            "created": "Created"
-        },
-        "actions": {
-            "export": "Export CSV"
+            "position": "#{{value}}",
+            "startDate": "Start Date",
+            "volume": "Volume",
+            "volumeValue": "{{value}} MT",
+            "distance": "Distance",
+            "distanceValue": "{{value}} KM"
         },
         "empty": {
-            "title": "No permissions found",
-            "description": "Permissions are managed automatically. Adjust filters or roles to view assigned access.",
-            "filteredDescription": "No permissions match \"{{term}}\". Try adjusting your filters or search terms."
+            "title": "No operations found.",
+            "createAction": "Create one"
         },
         "fallbacks": {
-            "notAvailable": "—"
-        }
-    },
-    "notifications": {
-        "title": "Notifications",
-        "subtitle": "Stay up to date with the latest activity across your fleet.",
-        "inApp": {
-            "title": "In-app notifications",
-            "description": "Manage recent events and keep your team aligned.",
-            "unreadBadge": "{{count}} unread",
-            "caughtUp": "All caught up",
-            "unreadLabel": "Unread notifications"
+            "notAvailable": "—",
+            "unknown": "Unknown",
+            "unassignedCustomer": "Unassigned customer"
         },
-        "recent": {
-            "title": "Recent activity",
-            "description": "Notifications expire after they are archived or older than 30 days.",
-            "markAll": "Mark all as read",
-            "markSingle": "Mark as read",
-            "marking": "Marking…"
+        "delete": {
+            "title": "Delete Operation",
+            "description": "Are you sure you want to delete this operation? This action cannot be undone.",
+            "successTitle": "✅ Operation Deleted",
+            "successDescription": "The operation was removed successfully.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Failed to delete operation. Please try again."
         },
-        "empty": {
-            "title": "Nothing new to review",
-            "description": "We will notify you here as soon as something changes."
-        }
-    },
-    "notificationAssignments": {
-        "title": "Notification assignments",
-        "breadcrumbs": {
-            "management": "User management"
-        },
-        "subtitle": "Grant notification types to team members and configure their default delivery methods. Users can fine-tune the channels you enable for them via their personal settings.",
-        "search": {
-            "placeholder": "Search people by name or email",
-            "submit": "Search",
-            "clear": "Clear"
-        },
-        "people": {
-            "title": "People",
-            "description": "Select a person to manage their notification access.",
-            "empty": "No users match your search criteria."
-        },
-        "types": {
-            "title": "Notification types",
-            "description": "Enable notification channels for the selected person. Removing a notification stops all deliveries until it is added again."
-        },
-        "filters": {
-            "categories": {
-                "placeholder": "Select category",
-                "all": "All categories",
-                "empty": "No notification categories available yet."
+        "close": {
+            "title": "Close Operation",
+            "description": "Close operation {{id}}? This will lock further updates.",
+            "fallbackId": "this operation",
+            "fields": {
+                "closedDate": "Closed Date",
+                "comment": "Comment",
+                "commentPlaceholder": "Reason for closing or notes..."
             },
-            "rows": {
-                "all": "All",
-                "active": "Active",
-                "pending": "Pending removal"
+            "submit": "Close Operation",
+            "submitting": "Closing...",
+            "successTitle": "✅ Operation Closed",
+            "successDescription": "Operation {{id}} has been closed successfully.",
+            "failedTitle": "❌ Close Failed",
+            "failedDescription": "Failed to close operation. Please try again."
+        },
+        "reopen": {
+            "title": "Reopen Operation",
+            "description": "Reopen operation {{id}} and allow updates again?",
+            "fallbackId": "this operation",
+            "fields": {
+                "comment": "Comment",
+                "commentPlaceholder": "Reason for reopening..."
+            },
+            "submit": "Reopen Operation",
+            "submitting": "Reopening...",
+            "successTitle": "✅ Operation Reopened",
+            "successDescription": "Operation {{id}} has been reopened successfully.",
+            "failedTitle": "❌ Reopen Failed",
+            "failedDescription": "Failed to reopen operation. Please try again."
+        },
+        "form": {
+            "validation": {
+                "title": "⚠️ Validation Error",
+                "resolve": "Please resolve the highlighted fields before submitting.",
+                "resolveEdit": "Please resolve the highlighted fields before saving changes.",
+                "destinationRequired": "Destination is required."
+            },
+            "sections": {
+                "overview": {
+                    "title": "Overview",
+                    "description": "Define core operation details and ownership.",
+                    "descriptionEdit": "Review and update core operation details and ownership."
+                },
+                "schedule": {
+                    "title": "Schedule & Cargo",
+                    "description": "Set execution date, service type, and transport volume.",
+                    "descriptionEdit": "Adjust schedule, service type, and transport volume."
+                },
+                "commercial": {
+                    "title": "Commercial",
+                    "description": "Set tariff and additional remarks.",
+                    "descriptionEdit": "Update tariff and additional remarks."
+                }
+            },
+            "fields": {
+                "operationId": {
+                    "label": "Operation ID",
+                    "placeholder": "Enter operation identifier"
+                },
+                "customer": {
+                    "label": "Customer",
+                    "placeholder": "Select customer",
+                    "recentLabel": "Recent customers"
+                },
+                "status": {
+                    "label": "Status",
+                    "placeholder": "Select status"
+                },
+                "destinationScope": {
+                    "label": "Destination Scope",
+                    "placeholder": "Select destination scope"
+                },
+                "destination": {
+                    "label": "Destination",
+                    "placeholder": "Select destination",
+                    "empty": "No destinations available for selected scope.",
+                    "scopeHint": "Showing destinations from {{scope}} scope.",
+                    "scopePlaceholder": "Select destination scope first."
+                },
+                "startDate": {
+                    "label": "Start Date",
+                    "placeholder": "Select start date"
+                },
+                "cargoServiceType": {
+                    "label": "Cargo Service Type",
+                    "placeholder": "Select cargo service type"
+                },
+                "cargoType": {
+                    "label": "Cargo Type",
+                    "placeholder": "Select cargo type",
+                    "recentLabel": "Recent cargo types"
+                },
+                "volume": {
+                    "label": "Volume (MT)",
+                    "placeholder": "Enter volume"
+                },
+                "distance": {
+                    "label": "Distance (KM)",
+                    "placeholder": "Enter distance"
+                },
+                "tariff": {
+                    "label": "Tariff",
+                    "placeholder": "Enter tariff"
+                },
+                "remark": {
+                    "label": "Remark",
+                    "placeholder": "Optional remark",
+                    "placeholderEdit": "Update remark"
+                }
+            },
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Create Operation",
+                "headTitle": "Create Operation",
+                "description": "Register a new operation with destination, schedule, and commercial details.",
+                "submit": "Create Operation",
+                "submitting": "Creating..."
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Edit Operation",
+                "headTitle": "Edit Operation {{id}}",
+                "description": "Update operation details and keep execution data accurate.",
+                "submit": "Update Operation",
+                "submitting": "Updating...",
+                "successTitle": "✅ Operation Updated",
+                "successDescription": "Operation updated successfully."
             }
         },
-        "typePicker": {
-            "disabled": "Insufficient permissions",
-            "selectCategory": "Select a category first",
-            "allAssigned": "All types assigned",
-            "selectTypes": "Select notification types",
-            "selectedAll": "Selected all ({{count}})",
-            "selected": "{{count}} selected",
-            "searchPlaceholder": "Search notification types",
-            "emptyAllAssigned": "All notification types in this category are already assigned.",
-            "emptyNoMatch": "No notification types match your search.",
-            "selectAll": "Select all",
-            "clear": "Clear",
-            "addSelected": "Add selected",
-            "selectedBadge": "{{count}} type{{suffix}} selected"
+        "show": {
+            "fallbackId": "Operation {{id}}",
+            "currency": "ETB {{value}}",
+            "percent": "{{value}}%",
+            "currencyPerUnit": "ETB {{value}} / {{unit}}",
+            "valueWithUnit": "{{value}} {{unit}}"
         },
-        "empty": {
-            "noUser": "Select a person on the left to view their notification access.",
-            "noTypes": "{{name}} does not have any notification types assigned yet. Use the selector above to grant access.",
-            "noMatch": "No notification types match the selected filter. Adjust the filter to view assignments."
-        },
-        "summary": {
-            "fullyEnabled": "{{count}} fully enabled",
-            "pendingRemoval": "{{count}} pending removal",
-            "inApp": "{{count}} in-app",
-            "email": "{{count}} email",
-            "available": "{{count}} available",
-            "unsaved": "Unsaved changes"
-        },
-        "rows": {
-            "noDescription": "No description available.",
-            "assignedBy": "Grant by {{name}}",
-            "newAssignment": "New assignment",
-            "willRemove": "Will be removed",
-            "deliveryDisabled": "Delivery disabled",
-            "updatedAt": "Updated {{date}}",
-            "restore": "Restore",
-            "remove": "Remove"
-        },
-        "channels": {
-            "inApp": {
-                "title": "In-app alerts",
-                "description": "Deliver real-time notifications within the dashboard."
-            },
-            "email": {
-                "title": "Email alerts",
-                "description": "Send transactional emails when this event occurs."
-            }
-        },
-        "sidebar": {
-            "title": "Not yet assigned",
-            "description": "Notifications in {{category}} that are still available to grant.",
-            "assignAll": "Assign all",
-            "empty": "Every notification in this category is already assigned.",
-            "add": "Add"
-        },
-        "actions": {
-            "saving": "Saving…",
-            "save": "Save changes",
-            "reset": "Reset"
+        "index": {
+            "shouldShowSkeleton": "operations-index-skeleton"
         }
-    },
-    "notificationPreferences": {
-        "title": "Notification preferences",
-        "header": {
-            "title": "Manage notifications",
-            "description": "Choose how you want to be notified. Contact your administrator if you need access to additional notification types."
-        },
-        "empty": {
-            "title": "No notifications assigned yet",
-            "description": "Your administrator has not enabled any notifications for your account. You will see options here once a notification type is assigned to you."
-        },
-        "coverage": {
-            "title": "Notification coverage",
-            "description": "{{enabled}} of {{total}} notifications are fully enabled (in-app & email).",
-            "enableAll": "Enable all",
-            "disableAll": "Disable all"
-        },
-        "rows": {
-            "noDescription": "No additional description provided.",
-            "enabledBy": "Enabled by {{name}}",
-            "updatedAt": "Updated {{date}}"
-        },
-        "channels": {
-            "inApp": {
-                "title": "In-app alerts",
-                "description": "Receive notifications inside the application."
-            },
-            "email": {
-                "title": "Email alerts",
-                "description": "We will send emails when this event occurs."
-            }
-        },
-        "actions": {
-            "saving": "Saving…",
-            "save": "Save preferences",
-            "saved": "Saved"
-        }
-    },
-    "fallbacks": {
-        "notAvailable": "N/A"
     }
-}
 }

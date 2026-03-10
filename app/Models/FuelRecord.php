@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
@@ -26,7 +27,16 @@ class FuelRecord extends Model
         'fuel_type',
         'odometer_reading',
         'receipt_number',
+        'receipt_image_path',
         'notes',
+        'latitude',
+        'longitude',
+        'location_accuracy_m',
+        'location_timestamp',
+        'submitted_via_mobile',
+        'reviewed_at',
+        'reviewed_by_user_id',
+        'review_note',
         'user_id',
     ];
 
@@ -35,6 +45,12 @@ class FuelRecord extends Model
         'fuel_quantity_liters' => 'decimal:2',
         'fuel_price_per_liter' => 'decimal:2',
         'total_cost' => 'decimal:2',
+        'latitude' => 'decimal:7',
+        'longitude' => 'decimal:7',
+        'location_accuracy_m' => 'decimal:2',
+        'location_timestamp' => 'datetime',
+        'submitted_via_mobile' => 'boolean',
+        'reviewed_at' => 'datetime',
     ];
 
     /**
@@ -59,6 +75,11 @@ class FuelRecord extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function reviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by_user_id');
     }
 
     /**
@@ -121,18 +142,26 @@ class FuelRecord extends Model
         return null;
     }
 
+    public function getReceiptImageUrlAttribute(): ?string
+    {
+        if (! $this->receipt_image_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->receipt_image_path);
+    }
+
     /**
      * Configure the activity log options.
      */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['truck_id', 'driver_id', 'fuel_date', 'fuel_quantity_liters', 'fuel_price_per_liter', 'total_cost', 'fuel_station', 'fuel_type', 'odometer_reading', 'receipt_number', 'notes'])
+            ->logOnly(['truck_id', 'driver_id', 'fuel_date', 'fuel_quantity_liters', 'fuel_price_per_liter', 'total_cost', 'fuel_station', 'fuel_type', 'odometer_reading', 'receipt_number', 'receipt_image_path', 'notes', 'latitude', 'longitude', 'location_accuracy_m', 'location_timestamp', 'submitted_via_mobile', 'reviewed_at', 'reviewed_by_user_id', 'review_note'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->useLogName('fuel_records');
     }
 }
-
 
 

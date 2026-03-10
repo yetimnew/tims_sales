@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { type BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { ActivityLogTable } from '@/components/activity-log-table';
+import { formatCurrency } from '@/lib/formatters/currency';
 import { useState } from 'react';
 import { DetailPageLayout } from '@/components/detail/detail-page-layout';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
@@ -71,13 +72,6 @@ export default function FinancialShow({ financial, activityLogs = [] }: Financia
       month: 'long',
       day: 'numeric',
     });
-  };
-
-  const formatCurrency = (value: number) => {
-    return `$${Number(value).toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
   };
 
   const getPeriodBadgeColor = (type: string) => {

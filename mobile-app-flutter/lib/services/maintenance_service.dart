@@ -30,5 +30,47 @@ class MaintenanceService {
       return null;
     }
   }
+
+  Future<MaintenanceRecord?> acknowledgeMaintenance(int maintenanceId) async {
+    try {
+      final response = await _apiService.post('${AppConfig.maintenanceEndpoint}/$maintenanceId/acknowledge');
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return MaintenanceRecord.fromJson(response.data['data'] as Map<String, dynamic>);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<MaintenanceRecord?> reportIssue(int maintenanceId, String message) async {
+    try {
+      final response = await _apiService.post(
+        '${AppConfig.maintenanceEndpoint}/$maintenanceId/report-issue',
+        data: {'message': message},
+      );
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return MaintenanceRecord.fromJson(response.data['data'] as Map<String, dynamic>);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<MaintenanceRecord?> requestService(int maintenanceId, {String? notes}) async {
+    try {
+      final response = await _apiService.post(
+        '${AppConfig.maintenanceEndpoint}/$maintenanceId/request-service',
+        data: {'notes': notes},
+      );
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return MaintenanceRecord.fromJson(response.data['data'] as Map<String, dynamic>);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
 }
 

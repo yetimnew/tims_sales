@@ -5,6 +5,7 @@ import '../../main.dart';
 import '../../services/auth_service.dart';
 import '../../services/biometric_service.dart';
 import '../../services/language_service.dart';
+import '../../services/location_service.dart';
 import '../auth/login_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import 'about_screen.dart';
@@ -23,6 +24,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final AuthService _authService = AuthService();
   final BiometricService _biometricService = BiometricService();
+  final LocationService _locationService = LocationService();
   
   bool _biometricEnabled = false;
   bool _locationTrackingEnabled = true;
@@ -103,8 +105,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _toggleLocationTracking(bool value) async {
+    if (value) {
+      try {
+        await _locationService.startBackgroundTracking(persistPreference: false);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Unable to start location tracking: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+    } else {
+      await _locationService.stopBackgroundTracking(persistPreference: false);
+    }
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('location_tracking_enabled', value);
+
     setState(() {
       _locationTrackingEnabled = value;
     });

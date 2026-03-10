@@ -16,6 +16,7 @@ import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import * as React from 'react';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { formatCurrency } from '@/lib/formatters/currency';
 import { AlertTriangle, CheckCircle, Clock, DollarSign, Edit, Eye, Plus, Search, Trash2, User, Wrench } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -112,20 +113,6 @@ const formatNumber = (value: number | string | null | undefined) => {
     }).format(numeric);
 };
 
-const formatCurrency = (value: number | string | null | undefined) => {
-    const numeric = toNumeric(value);
-    if (numeric === null) {
-        return '$0.00';
-    }
-
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(numeric);
-};
-
 const formatDate = (value?: string | null) => {
     if (!value) {
         return '—';
@@ -201,7 +188,7 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
     const { hasPermission } = usePermissions();
     const canCreateMaintenance = hasPermission('maintenance.create');
     const canEditMaintenance = hasPermission('maintenance.edit');
-    const canDeleteMaintenance = hasPermission('maintenance.delete');
+    const canDeleteMaintenance = hasPermission('maintenance.destroy');
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
@@ -864,8 +851,6 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
         </>
     );
 }
-
-
 
 
 

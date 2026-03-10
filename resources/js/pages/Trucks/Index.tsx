@@ -673,8 +673,11 @@ export default function TrucksIndex({
                       {rowOffset + index + 1}
                   </TableCell>
                   <TableCell className="font-medium">
-                      <Link href={`/trucks/${truck.id}`} className="text-primary underline">
-                          {truck.plate}
+                      <Link
+                          href={`/trucks/${truck.id}`}
+                          className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-800 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:border-blue-800 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                      >
+                          <span className="tracking-[0.02em]">{truck.plate}</span>
                       </Link>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
@@ -798,7 +801,12 @@ export default function TrucksIndex({
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">
                         {t('trucks.mobile.position', { value: item.position })}
                     </span>
-                    <span className="text-base">{item.truck.plate}</span>
+                    <Link
+                        href={`/trucks/${item.truck.id}`}
+                        className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-800 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:border-blue-800 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                    >
+                        <span className="tracking-[0.02em]">{item.truck.plate}</span>
+                    </Link>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}

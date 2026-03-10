@@ -24,7 +24,7 @@ class UpdateMaintenanceRequest extends FormRequest
             'work_performed' => ['nullable', 'string', 'max:2000'],
             'parts_replaced' => ['nullable', 'string', 'max:2000'],
             'service_provider' => ['nullable', 'string', 'max:255'],
-            'status' => ['required', 'string', 'in:scheduled,in_progress,completed,overdue'],
+            'status' => ['required', 'string', 'in:scheduled,in_progress,completed'],
             'assigned_mechanic_id' => ['nullable', 'exists:users,id'],
         ];
     }

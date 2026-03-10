@@ -225,8 +225,8 @@ class DashboardController extends Controller
         $marginPrev30 = $revenuePrev30 - $operatingCostPrev30;
         $avgRevenuePerTon = $tonnageLast30 > 0 ? $revenueLast30 / $tonnageLast30 : null;
         $avgCostPerTon = $tonnageLast30 > 0 ? $operatingCostLast30 / $tonnageLast30 : null;
-        $fareboxRecovery = $operatingCostLast30 > 0 ? ($revenueLast30 / $operatingCostLast30) * 100 : null;
-        $fareboxRecoveryPrev = $operatingCostPrev30 > 0 ? ($revenuePrev30 / $operatingCostPrev30) * 100 : null;
+        // $fareboxRecovery = $operatingCostLast30 > 0 ? ($revenueLast30 / $operatingCostLast30) * 100 : null;
+        // $fareboxRecoveryPrev = $operatingCostPrev30 > 0 ? ($revenuePrev30 / $operatingCostPrev30) * 100 : null;
 
         $financialTrend = TruckFinancialRecord::query()
             ->where('record_date', '>=', $start180)
@@ -601,14 +601,14 @@ class DashboardController extends Controller
             'revenue30d' => $revenueLast30,
             'operatingCost30d' => $operatingCostLast30,
             'margin30d' => $marginLast30,
-            'fareboxRecovery' => $fareboxRecovery,
+            // 'fareboxRecovery' => $fareboxRecovery,
             'avgRevenuePerTon' => $avgRevenuePerTon,
             'avgCostPerTon' => $avgCostPerTon,
             'change' => [
                 'revenue' => $percentChange($revenueLast30, $revenuePrev30),
                 'operatingCost' => $percentChange($operatingCostLast30, $operatingCostPrev30),
                 'margin' => $percentChange($marginLast30, $marginPrev30),
-                'fareboxRecovery' => $percentChange($fareboxRecovery, $fareboxRecoveryPrev),
+                // 'fareboxRecovery' => $percentChange($fareboxRecovery, $fareboxRecoveryPrev),
             ],
             'trend' => $financialTrend,
             'costBreakdown' => $costBreakdown,
@@ -681,14 +681,14 @@ class DashboardController extends Controller
                 'format' => 'currency',
                 'change' => $percentChange($marginLast30, $marginPrev30),
             ],
-            [
-                'key' => 'fareboxRecovery',
-                'label' => 'Farebox recovery',
-                'value' => $fareboxRecovery,
-                'unit' => '%',
-                'format' => 'percent',
-                'change' => $percentChange($fareboxRecovery, $fareboxRecoveryPrev),
-            ],
+            // [
+            //     'key' => 'fareboxRecovery',
+            //     'label' => 'Farebox recovery',
+            //     'value' => $fareboxRecovery,
+            //     'unit' => '%',
+            //     'format' => 'percent',
+            //     'change' => $percentChange($fareboxRecovery, $fareboxRecoveryPrev),
+            // ],
             [
                 'key' => 'fleetUtilisation',
                 'label' => 'Fleet utilisation',

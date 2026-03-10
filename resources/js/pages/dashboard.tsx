@@ -549,9 +549,9 @@ export default function Dashboard({
                 </header>
 
                 {/* Primary KPIs Section */}
-                <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                     {primaryKpis.length === 0 && (
-                        <Card className="sm:col-span-2 lg:col-span-3 xl:col-span-6 border-dashed border-slate-300/70 dark:border-slate-700/70 bg-white dark:bg-slate-800">
+                        <Card className="sm:col-span-2 lg:col-span-3 xl:col-span-5 border-dashed border-slate-300/70 dark:border-slate-700/70 bg-white dark:bg-slate-800">
                             <CardContent className="flex h-32 items-center justify-center text-sm text-slate-500 dark:text-slate-400">
                                 {t('dashboard.empty.kpis')}
                             </CardContent>

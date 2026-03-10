@@ -32,8 +32,9 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
   }
 
   Future<void> _checkTrackingStatus() async {
+    final isTracking = await _locationService.getTrackingStatus();
     setState(() {
-      _isTracking = _locationService.isTracking;
+      _isTracking = isTracking;
     });
   }
 
@@ -126,8 +127,9 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
       // Stop tracking
       try {
         await _locationService.stopBackgroundTracking();
+        final isTracking = await _locationService.getTrackingStatus();
         setState(() {
-          _isTracking = _locationService.isTracking;
+          _isTracking = isTracking;
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -153,8 +155,9 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
       // Start tracking
       try {
         await _locationService.startBackgroundTracking();
+        final isTracking = await _locationService.getTrackingStatus();
         setState(() {
-          _isTracking = _locationService.isTracking;
+          _isTracking = isTracking;
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

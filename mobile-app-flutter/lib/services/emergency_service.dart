@@ -8,23 +8,20 @@ class EmergencyService {
 
   Future<Map<String, dynamic>> sendEmergencyAlert({String? message}) async {
     try {
-      // Get current location
       final location = await _locationService.getCurrentLocation();
-      
-      if (location == null) {
-        return {
-          'success': false,
-          'error': 'Unable to get current location. Please enable location services.',
-        };
+
+      final payload = <String, dynamic>{
+        'message': message,
+      };
+
+      if (location != null) {
+        payload['latitude'] = location['latitude'];
+        payload['longitude'] = location['longitude'];
       }
 
       final response = await _apiService.post(
         '/driver/emergency',
-        data: {
-          'latitude': location['latitude'],
-          'longitude': location['longitude'],
-          'message': message,
-        },
+        data: payload,
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {

@@ -129,8 +129,8 @@ const resolveDriverDisplayName = (driver: DriverData, candidates: string[]): str
 const TABLE_LOADING_STORAGE_KEY = 'drivers.index.table-loading';
 
 const getColumnDefinitions = (translate: (key: string) => string): Array<{ key: keyof DriverData | 'status'; label: string }> => [
-    { key: 'name', label: translate('drivers.columns.name') },
     { key: 'driverid', label: translate('drivers.columns.driverId') },
+    { key: 'name', label: translate('drivers.columns.name') },
     { key: 'sex', label: translate('drivers.columns.gender') },
     { key: 'zone', label: translate('drivers.columns.location') },
     { key: 'mobile', label: translate('drivers.columns.phone') },
@@ -547,8 +547,15 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                   return (
                       <TableRow key={driver.id} className="hover:bg-muted/50">
                           <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                          <TableCell className="font-medium">
+                              <Link
+                                  href={`/drivers/${driver.id}`}
+                                  className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-800 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:border-blue-800 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                              >
+                                  <span className="font-mono tracking-[0.02em]">{driver.driverid}</span>
+                              </Link>
+                          </TableCell>
                           <TableCell className="font-medium">{displayName}</TableCell>
-                          <TableCell className="font-mono text-muted-foreground">{driver.driverid}</TableCell>
                           <TableCell>{getSexBadge(driver.sex)}</TableCell>
                           <TableCell className="text-muted-foreground">
                               <div className="flex items-center gap-1">
@@ -666,12 +673,15 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">
                         {t('drivers.mobile.position', { value: item.position })}
                     </span>
-                    <span className="text-base">
-                        {resolveDriverDisplayName(item.driver, localeCandidates)}
-                    </span>
+                    <Link
+                        href={`/drivers/${item.driver.id}`}
+                        className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-800 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:border-blue-800 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                    >
+                        <span className="font-mono tracking-[0.02em]">{item.driver.driverid || t('drivers.mobile.driverIdPending')}</span>
+                    </Link>
                 </div>
             )}
-            renderSubtitle={(item) => item.driver.driverid || t('drivers.mobile.driverIdPending')}
+            renderSubtitle={(item) => resolveDriverDisplayName(item.driver, localeCandidates)}
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between text-sm">

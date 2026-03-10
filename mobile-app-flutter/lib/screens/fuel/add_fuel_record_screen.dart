@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../services/fuel_service.dart';
 
@@ -21,10 +23,12 @@ class _AddFuelRecordScreenState extends State<AddFuelRecordScreen> {
   final _odometerController = TextEditingController();
   final _receiptNumberController = TextEditingController();
   final _notesController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
 
   String _selectedFuelType = 'diesel';
   bool _isLoading = false;
   String? _errorMessage;
+  XFile? _receiptImage;
 
   @override
   void dispose() {
@@ -71,6 +75,8 @@ class _AddFuelRecordScreenState extends State<AddFuelRecordScreen> {
     });
 
     try {
+      final position = await _tryGetCurrentPosition();
+
       await _fuelService.createFuelRecord(
         fuelDate: _selectedDate.toIso8601String().split('T')[0],
         fuelQuantityLiters: double.parse(_fuelQuantityController.text),
@@ -87,6 +93,11 @@ class _AddFuelRecordScreenState extends State<AddFuelRecordScreen> {
         notes: _notesController.text.trim().isNotEmpty
             ? _notesController.text.trim()
             : null,
+        receiptImage: _receiptImage,
+        latitude: position?.latitude,
+        longitude: position?.longitude,
+        locationAccuracyM: position?.accuracy,
+        locationTimestamp: position?.timestamp?.toIso8601String() ?? DateTime.now().toIso8601String(),
       );
 
       if (mounted) {
@@ -99,10 +110,83 @@ class _AddFuelRecordScreenState extends State<AddFuelRecordScreen> {
         );
       }
     } catch (e) {
+      final message = e.toString().replaceAll('Exception: ', '');
+      if (mounted && message == 'Fuel record queued for offline sync') {
+        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Fuel record queued for sync when connection returns'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
       setState(() {
         _isLoading = false;
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _errorMessage = message;
       });
+    }
+  }
+
+  Future<void> _pickReceiptImage() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera),
+              title: const Text('Take Photo'),
+              onTap: () => Navigator.of(context).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from Gallery'),
+              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) {
+      return;
+    }
+
+    final image = await _imagePicker.pickImage(source: source, imageQuality: 80);
+    if (image == null) {
+      return;
+    }
+
+    setState(() {
+      _receiptImage = image;
+    });
+  }
+
+  Future<Position?> _tryGetCurrentPosition() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        return null;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return null;
+      }
+
+      return Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+    } catch (_) {
+      return null;
     }
   }
 
@@ -284,6 +368,24 @@ class _AddFuelRecordScreenState extends State<AddFuelRecordScreen> {
                   border: OutlineInputBorder(),
                   hintText: 'Enter receipt number',
                 ),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _isLoading ? null : _pickReceiptImage,
+                icon: const Icon(Icons.receipt_long),
+                label: Text(_receiptImage == null ? 'Attach Receipt Image' : 'Change Receipt Image'),
+              ),
+              if (_receiptImage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _receiptImage!.name,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              const SizedBox(height: 16),
+              Text(
+                'Current location will be captured automatically if permission is granted.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
               ),
               const SizedBox(height: 16),
 

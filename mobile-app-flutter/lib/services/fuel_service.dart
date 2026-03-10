@@ -1,6 +1,6 @@
-import '../config/app_config.dart';
 import '../models/fuel_record.dart';
 import '../models/sync_queue_item.dart';
+import 'package:image_picker/image_picker.dart';
 import 'api_service.dart';
 import 'connectivity_service.dart';
 import 'offline_storage_service.dart';
@@ -73,12 +73,15 @@ class FuelService {
     int? odometerReading,
     String? receiptNumber,
     String? notes,
-    String? receiptImagePath, // Local file path for image
+    XFile? receiptImage,
+    double? latitude,
+    double? longitude,
+    double? locationAccuracyM,
+    String? locationTimestamp,
   }) async {
     final isConnected = _connectivityService.isConnected;
 
-    // If offline or has image, queue for sync (file uploads need online)
-    if (!isConnected || receiptImagePath != null) {
+    if (!isConnected) {
       await _queueFuelRecordCreate(
         fuelDate: fuelDate,
         fuelQuantityLiters: fuelQuantityLiters,
@@ -89,11 +92,13 @@ class FuelService {
         odometerReading: odometerReading,
         receiptNumber: receiptNumber,
         notes: notes,
-        receiptImagePath: receiptImagePath,
+        receiptImagePath: receiptImage?.path,
+        latitude: latitude,
+        longitude: longitude,
+        locationAccuracyM: locationAccuracyM,
+        locationTimestamp: locationTimestamp,
       );
 
-      // Return a placeholder record for offline mode
-      // The actual record will be created when synced
       throw Exception('Fuel record queued for offline sync');
     }
 
@@ -108,12 +113,23 @@ class FuelService {
         if (odometerReading != null) 'odometer_reading': odometerReading,
         if (receiptNumber != null && receiptNumber.isNotEmpty) 'receipt_number': receiptNumber,
         if (notes != null && notes.isNotEmpty) 'notes': notes,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
+        if (locationAccuracyM != null) 'location_accuracy_m': locationAccuracyM,
+        if (locationTimestamp != null) 'location_timestamp': locationTimestamp,
       };
 
-      final response = await _apiService.post(
-        '/driver/fuel',
-        data: formData,
-      );
+      final response = receiptImage != null
+          ? await _apiService.uploadFile(
+              '/driver/fuel',
+              receiptImage,
+              'receipt_image',
+              additionalData: formData,
+            )
+          : await _apiService.post(
+              '/driver/fuel',
+              data: formData,
+            );
 
       if (response.statusCode == 201 && response.data['success'] == true) {
         return FuelRecord.fromJson(response.data['data']);
@@ -132,7 +148,11 @@ class FuelService {
         odometerReading: odometerReading,
         receiptNumber: receiptNumber,
         notes: notes,
-        receiptImagePath: receiptImagePath,
+        receiptImagePath: receiptImage?.path,
+        latitude: latitude,
+        longitude: longitude,
+        locationAccuracyM: locationAccuracyM,
+        locationTimestamp: locationTimestamp,
       );
       rethrow;
     }
@@ -149,6 +169,10 @@ class FuelService {
     String? receiptNumber,
     String? notes,
     String? receiptImagePath,
+    double? latitude,
+    double? longitude,
+    double? locationAccuracyM,
+    String? locationTimestamp,
   }) async {
     final item = SyncQueueItem(
       id: 'fuel_${DateTime.now().millisecondsSinceEpoch}',
@@ -164,6 +188,10 @@ class FuelService {
         'receiptNumber': receiptNumber,
         'notes': notes,
         'imagePath': receiptImagePath, // Note: File path storage would need special handling
+        'latitude': latitude,
+        'longitude': longitude,
+        'locationAccuracyM': locationAccuracyM,
+        'locationTimestamp': locationTimestamp,
       },
       createdAt: DateTime.now(),
     );

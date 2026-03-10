@@ -708,8 +708,26 @@ export default function OperationsIndex({
             ? operationData.map((operation, index) => (
                   <TableRow key={operation.id} className="hover:bg-muted/50">
                       <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                      <TableCell className="font-medium">{operation.operationid}</TableCell>
-                      <TableCell className="text-muted-foreground">{operation.customer?.name || notAvailableLabel}</TableCell>
+                      <TableCell className="font-medium">
+                          <Link
+                              href={`/operations/${operation.id}`}
+                              className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-800 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:border-blue-800 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                          >
+                              <span className="tracking-[0.02em]">{operation.operationid}</span>
+                          </Link>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                          {operation.customer ? (
+                              <Link
+                                  href={`/customers/${operation.customer.id}`}
+                                  className="font-medium text-slate-700 transition-colors hover:text-blue-700 hover:underline dark:text-slate-200 dark:hover:text-blue-300"
+                              >
+                                  {operation.customer.name}
+                              </Link>
+                          ) : (
+                              notAvailableLabel
+                          )}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">{formatDateValue(operation.startdate)}</TableCell>
                       <TableCell className="text-right font-medium">{formatNumberValue(operation.volume)}</TableCell>
                       <TableCell className="text-right text-muted-foreground">{formatNumberValue(operation.km)}</TableCell>
@@ -817,11 +835,27 @@ export default function OperationsIndex({
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">
                         {t('operations.mobile.position', { value: item.position })}
                     </span>
-                    <span className="text-base">{item.record.operationid}</span>
+                    <Link
+                        href={`/operations/${item.record.id}`}
+                        className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-800 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:border-blue-800 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                    >
+                        <span className="tracking-[0.02em]">{item.record.operationid}</span>
+                    </Link>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
-            renderSubtitle={(item) => item.record.customer?.name || t('operations.fallbacks.unassignedCustomer')}
+            renderSubtitle={(item) =>
+                item.record.customer ? (
+                    <Link
+                        href={`/customers/${item.record.customer.id}`}
+                        className="font-medium text-slate-700 transition-colors hover:text-blue-700 hover:underline dark:text-slate-200 dark:hover:text-blue-300"
+                    >
+                        {item.record.customer.name}
+                    </Link>
+                ) : (
+                    t('operations.fallbacks.unassignedCustomer')
+                )
+            }
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">

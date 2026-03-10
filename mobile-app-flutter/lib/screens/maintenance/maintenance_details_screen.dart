@@ -44,6 +44,118 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
     }
   }
 
+  Future<void> _acknowledgeMaintenance() async {
+    final updated = await _maintenanceService.acknowledgeMaintenance(widget.maintenanceId);
+    if (updated == null) {
+      _showMessage('Failed to acknowledge maintenance.', isError: true);
+      return;
+    }
+
+    setState(() {
+      _maintenance = updated;
+    });
+
+    _showMessage('Maintenance acknowledged.');
+  }
+
+  Future<void> _reportIssue() async {
+    final controller = TextEditingController();
+    final message = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Report Issue'),
+        content: TextField(
+          controller: controller,
+          maxLines: 4,
+          decoration: const InputDecoration(labelText: 'Describe the issue'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
+
+    if (message == null || message.isEmpty) {
+      return;
+    }
+
+    final updated = await _maintenanceService.reportIssue(widget.maintenanceId, message);
+    if (updated == null) {
+      _showMessage('Failed to report issue.', isError: true);
+      return;
+    }
+
+    setState(() {
+      _maintenance = updated;
+    });
+
+    _showMessage('Issue reported successfully.');
+  }
+
+  Future<void> _requestService() async {
+    final controller = TextEditingController();
+    final notes = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Request Service'),
+        content: TextField(
+          controller: controller,
+          maxLines: 4,
+          decoration: const InputDecoration(labelText: 'Optional notes'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+            child: const Text('Request'),
+          ),
+        ],
+      ),
+    );
+
+    if (notes == null) {
+      return;
+    }
+
+    final updated = await _maintenanceService.requestService(
+      widget.maintenanceId,
+      notes: notes.isEmpty ? null : notes,
+    );
+    if (updated == null) {
+      _showMessage('Failed to request service.', isError: true);
+      return;
+    }
+
+    setState(() {
+      _maintenance = updated;
+    });
+
+    _showMessage('Service request sent.');
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,6 +179,14 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
                             // Status Card
                             _buildStatusCard(context, _maintenance!),
                             const SizedBox(height: 16),
+
+                            _buildActionCard(context, _maintenance!),
+                            const SizedBox(height: 16),
+
+                            if (_maintenance!.hasManagerDecision) ...[
+                              _buildManagerDecisionCard(context, _maintenance!),
+                              const SizedBox(height: 16),
+                            ],
 
                             // Basic Information
                             _buildBasicInfoCard(context, _maintenance!),
@@ -344,6 +464,134 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
     );
   }
 
+  Widget _buildActionCard(BuildContext context, MaintenanceRecord maintenance) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Driver Actions',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                if (maintenance.driverAcknowledgedAt == null)
+                  FilledButton.icon(
+                    onPressed: _acknowledgeMaintenance,
+                    icon: const Icon(Icons.check_circle),
+                    label: const Text('Acknowledge'),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: _reportIssue,
+                  icon: const Icon(Icons.report_problem_outlined),
+                  label: const Text('Report Issue'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _requestService,
+                  icon: const Icon(Icons.build_circle_outlined),
+                  label: const Text('Request Service'),
+                ),
+              ],
+            ),
+            if (maintenance.driverAcknowledgedAt != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Acknowledged on ${DateFormat.yMMMd().add_jm().format(maintenance.driverAcknowledgedAt!)}',
+                style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.w600),
+              ),
+            ],
+            if (maintenance.driverIssueReport != null && maintenance.driverIssueReport!.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildActionNote(
+                context,
+                'Reported Issue',
+                maintenance.driverIssueReport!,
+                maintenance.driverIssueReportedAt,
+              ),
+            ],
+            if (maintenance.driverServiceRequestedAt != null) ...[
+              const SizedBox(height: 16),
+              _buildActionNote(
+                context,
+                'Service Request',
+                maintenance.driverServiceRequestNotes ?? 'Service requested from mobile app.',
+                maintenance.driverServiceRequestedAt,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildManagerDecisionCard(BuildContext context, MaintenanceRecord maintenance) {
+    final isApproved = maintenance.mobileRequestStatus == 'approved';
+    final color = isApproved ? Colors.green : Colors.red;
+    final title = isApproved ? 'Manager Decision: Approved' : 'Manager Decision: Rejected';
+    final message = isApproved
+        ? 'Your mobile maintenance request was approved.'
+        : 'Your mobile maintenance request was rejected.';
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isApproved ? Icons.verified_outlined : Icons.cancel_outlined,
+                  color: color,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(message),
+            if (maintenance.mobileRequestReviewNote != null &&
+                maintenance.mobileRequestReviewNote!.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildActionNote(
+                context,
+                'Review Note',
+                maintenance.mobileRequestReviewNote!,
+                maintenance.mobileRequestReviewedAt,
+              ),
+            ] else if (maintenance.mobileRequestReviewedAt != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Reviewed on ${DateFormat.yMMMd().add_jm().format(maintenance.mobileRequestReviewedAt!)}',
+                style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w600),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDetailsCard(BuildContext context, MaintenanceRecord maintenance) {
     return Card(
       elevation: 2,
@@ -487,6 +735,46 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildActionNote(
+    BuildContext context,
+    String label,
+    String note,
+    DateTime? timestamp,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(note),
+          if (timestamp != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              DateFormat.yMMMd().add_jm().format(timestamp),
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

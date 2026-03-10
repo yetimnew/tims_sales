@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
+import { formatCurrency } from '@/lib/formatters/currency';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -139,13 +140,6 @@ const formatNumber = (value: number) => value.toLocaleString();
 
 const formatDecimal = (value: number) =>
     value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-const formatCurrency = (value: number) =>
-    new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-    }).format(value);
 
 const formatOptionalDecimal = (value: number | null, unit?: string) =>
     value === null ? '—' : `${formatDecimal(value)}${unit ?? ''}`;
@@ -665,5 +659,4 @@ export default function FuelEfficiency({
         </ReportPageLayout>
     );
 }
-
 

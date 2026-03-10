@@ -8,7 +8,9 @@ use App\Events\DriverUpdated;
 use App\Http\Requests\StoreDriverRequest;
 use App\Http\Requests\UpdateDriverRequest;
 use App\Models\Driver;
+use App\Models\DriverLocation;
 use App\Models\DriverSafetyRecord;
+use App\Models\DriverStatusHistory;
 use App\Models\DriverTruck;
 use App\Models\Performance;
 use App\Services\DriverGradeService;
@@ -467,6 +469,133 @@ class DriverController extends BaseResourceController
             'safetySummary' => $safetySummary,
             'counts' => $counts,
             'gradeReport' => $this->driverGrade->grade($driver),
+        ]);
+    }
+
+    public function statusHistory(Request $request): Response
+    {
+        $query = DriverStatusHistory::query()
+            ->with('driver:id,name,driverid')
+            ->orderByDesc('created_at');
+
+        if ($request->filled('driver_id')) {
+            $query->where('driver_id', (int) $request->input('driver_id'));
+        }
+
+        if ($request->filled('status_type')) {
+            $query->where('status_type', (string) $request->input('status_type'));
+        }
+
+        if ($request->filled('from')) {
+            $query->whereDate('created_at', '>=', (string) $request->input('from'));
+        }
+
+        if ($request->filled('to')) {
+            $query->whereDate('created_at', '<=', (string) $request->input('to'));
+        }
+
+        $history = $query->paginate(20)->withQueryString()
+            ->through(static function (DriverStatusHistory $item): array {
+                return [
+                    'id' => $item->id,
+                    'driver' => $item->driver ? [
+                        'id' => $item->driver->id,
+                        'name' => $item->driver->name,
+                        'driverid' => $item->driver->driverid,
+                    ] : null,
+                    'status_type' => $item->status_type,
+                    'status_value' => $item->status_value,
+                    'notes' => $item->notes,
+                    'created_at' => $item->created_at?->toIso8601String(),
+                    'updated_at' => $item->updated_at?->toIso8601String(),
+                    'location' => $item->latitude !== null && $item->longitude !== null ? [
+                        'latitude' => (float) $item->latitude,
+                        'longitude' => (float) $item->longitude,
+                        'accuracy' => $item->accuracy !== null ? (float) $item->accuracy : null,
+                        'speed' => $item->speed !== null ? (float) $item->speed : null,
+                        'heading' => $item->heading !== null ? (float) $item->heading : null,
+                        'timestamp' => $item->location_timestamp?->toIso8601String(),
+                    ] : null,
+                ];
+            });
+
+        $drivers = Driver::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'driverid'])
+            ->map(static fn (Driver $driver): array => [
+                'id' => $driver->id,
+                'name' => $driver->name,
+                'driverid' => $driver->driverid,
+            ])
+            ->values();
+
+        return Inertia::render('Status/DriverStatusHistory', [
+            'history' => $history,
+            'drivers' => $drivers,
+            'filters' => [
+                'driver_id' => $request->input('driver_id'),
+                'status_type' => $request->input('status_type'),
+                'from' => $request->input('from'),
+                'to' => $request->input('to'),
+            ],
+        ]);
+    }
+
+    public function tracking(Request $request): Response
+    {
+        $query = DriverLocation::query()
+            ->with('driver:id,name,driverid')
+            ->orderByDesc('timestamp');
+
+        if ($request->filled('driver_id')) {
+            $query->where('driver_id', (int) $request->input('driver_id'));
+        }
+
+        if ($request->filled('from')) {
+            $query->whereDate('timestamp', '>=', (string) $request->input('from'));
+        }
+
+        if ($request->filled('to')) {
+            $query->whereDate('timestamp', '<=', (string) $request->input('to'));
+        }
+
+        $locations = $query->paginate(20)->withQueryString()
+            ->through(static function (DriverLocation $item): array {
+                return [
+                    'id' => $item->id,
+                    'driver' => $item->driver ? [
+                        'id' => $item->driver->id,
+                        'name' => $item->driver->name,
+                        'driverid' => $item->driver->driverid,
+                    ] : null,
+                    'latitude' => (float) $item->latitude,
+                    'longitude' => (float) $item->longitude,
+                    'accuracy' => $item->accuracy !== null ? (float) $item->accuracy : null,
+                    'speed' => $item->speed !== null ? (float) $item->speed : null,
+                    'heading' => $item->heading !== null ? (float) $item->heading : null,
+                    'timestamp' => $item->timestamp?->toIso8601String(),
+                    'created_at' => $item->created_at?->toIso8601String(),
+                ];
+            });
+
+        $drivers = Driver::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'driverid'])
+            ->map(static fn (Driver $driver): array => [
+                'id' => $driver->id,
+                'name' => $driver->name,
+                'driverid' => $driver->driverid,
+            ])
+            ->values();
+
+        return Inertia::render('Mobile/Tracking', [
+            'locations' => $locations,
+            'drivers' => $drivers,
+            'filters' => [
+                'driver_id' => $request->input('driver_id'),
+                'from' => $request->input('from'),
+                'to' => $request->input('to'),
+            ],
         ]);
     }
 

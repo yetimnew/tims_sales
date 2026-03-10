@@ -1,11 +1,11 @@
 {
-    "name": "driver_mobile_app",
-    "short_name": "driver_mobile_app",
+    "name": "TIMS",
+    "short_name": "TIMS",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "TIMS mobile application.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

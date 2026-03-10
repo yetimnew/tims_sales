@@ -46,6 +46,8 @@ class _MaintenanceAlertsScreenState extends State<MaintenanceAlertsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dueSoonRecords = _maintenanceData?.upcoming.where((record) => record.isDueSoon).toList() ?? [];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Maintenance Alerts'),
@@ -93,16 +95,16 @@ class _MaintenanceAlertsScreenState extends State<MaintenanceAlertsScreen> {
                         ],
 
                         // Upcoming Section
-                        if (_maintenanceData!.upcoming.isNotEmpty) ...[
+                        if (dueSoonRecords.isNotEmpty) ...[
                           _buildSectionHeader(
                             context,
-                            'Upcoming Maintenance',
-                            _maintenanceData!.upcoming.length,
+                            'Due Soon',
+                            dueSoonRecords.length,
                             Colors.orange,
                             Icons.calendar_today,
                           ),
                           const SizedBox(height: 12),
-                          ..._maintenanceData!.upcoming.map((record) => Padding(
+                          ...dueSoonRecords.map((record) => Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: _buildMaintenanceCard(context, record),
                               )),
@@ -115,7 +117,7 @@ class _MaintenanceAlertsScreenState extends State<MaintenanceAlertsScreen> {
                             context,
                             'Recent Completed',
                             _maintenanceData!.recent.length,
-                            Colors.green,
+                            Colors.blueGrey,
                             Icons.check_circle,
                           ),
                           const SizedBox(height: 12),
@@ -127,7 +129,7 @@ class _MaintenanceAlertsScreenState extends State<MaintenanceAlertsScreen> {
 
                         // Empty State
                         if (_maintenanceData!.overdue.isEmpty &&
-                            _maintenanceData!.upcoming.isEmpty &&
+                            dueSoonRecords.isEmpty &&
                             _maintenanceData!.recent.isEmpty)
                           _buildEmptyState(context),
                       ],
@@ -373,6 +375,59 @@ class _MaintenanceAlertsScreenState extends State<MaintenanceAlertsScreen> {
     );
   }
 
+  Widget _buildDecisionBanner(BuildContext context, MaintenanceRecord record) {
+    if (!record.hasManagerDecision) {
+      return const SizedBox.shrink();
+    }
+
+    final isApproved = record.mobileRequestStatus == 'approved';
+    final color = isApproved ? Colors.green : Colors.red;
+    final title = isApproved ? 'Manager approved your request' : 'Manager rejected your request';
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withAlpha(20),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withAlpha(76)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isApproved ? Icons.verified_outlined : Icons.cancel_outlined,
+                color: color,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(color: color, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+          if (record.mobileRequestReviewNote != null && record.mobileRequestReviewNote!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(record.mobileRequestReviewNote!),
+          ],
+          if (record.mobileRequestReviewedAt != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              DateFormat.yMMMd().add_jm().format(record.mobileRequestReviewedAt!),
+              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildMaintenanceCard(
     BuildContext context,
     MaintenanceRecord record, {
@@ -503,6 +558,7 @@ class _MaintenanceAlertsScreenState extends State<MaintenanceAlertsScreen> {
                   ],
                 ),
               ],
+              _buildDecisionBanner(context, record),
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerRight,

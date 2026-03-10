@@ -51,7 +51,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
           ],
         ),
         content: const Text(
-          'Are you sure you want to send an emergency alert? This will notify dispatchers immediately with your current location.',
+          'Are you sure you want to send an emergency alert? This will notify dispatchers immediately. If location is unavailable, the alert will be sent as location missing.',
         ),
         actions: [
           TextButton(
@@ -195,7 +195,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Send your location and alert dispatchers immediately',
+                  'Send an emergency alert to dispatchers immediately',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.white70,
@@ -223,12 +223,20 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _locationAvailable ? 'Location Available' : 'Location Unavailable',
+                              _locationAvailable ? 'Location Available' : 'Location Missing',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                            if (!_locationAvailable)
+                              const Text(
+                                'Alert can still be sent without coordinates.',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
                             if (_currentLocation != null)
                               Text(
                                 'Lat: ${_currentLocation!['latitude']!.toStringAsFixed(6)}, Lng: ${_currentLocation!['longitude']!.toStringAsFixed(6)}',
@@ -285,7 +293,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                   width: double.infinity,
                   height: 70,
                   child: ElevatedButton(
-                    onPressed: _isSending || !_locationAvailable ? null : _sendEmergencyAlert,
+                    onPressed: _isSending ? null : _sendEmergencyAlert,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.red,
@@ -348,7 +356,8 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                       const SizedBox(height: 8),
                       const Text(
                         '• Only use in genuine emergencies\n'
-                        '• Your location will be shared with dispatchers\n'
+                        '• Your location will be shared when available\n'
+                        '• Alerts without GPS are marked as location missing\n'
                         '• Help will be dispatched immediately\n'
                         '• Contact emergency services (911) if life-threatening',
                         style: TextStyle(

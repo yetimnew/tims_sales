@@ -52,6 +52,7 @@ Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     Route::get('/driver/performance/history', [DriverPerformanceController::class, 'history']);
 
     // Status management
+    Route::get('/driver/status/options', [DriverStatusController::class, 'options']);
     Route::get('/driver/status/current', [DriverStatusController::class, 'current']);
     Route::post('/driver/status', [DriverStatusController::class, 'update']);
     Route::get('/driver/status/history', [DriverStatusController::class, 'history']);
@@ -78,6 +79,9 @@ Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     // Maintenance
     Route::get('/driver/maintenance', [DriverMaintenanceController::class, 'index']);
     Route::get('/driver/maintenance/{id}', [DriverMaintenanceController::class, 'show']);
+    Route::post('/driver/maintenance/{id}/acknowledge', [DriverMaintenanceController::class, 'acknowledge']);
+    Route::post('/driver/maintenance/{id}/report-issue', [DriverMaintenanceController::class, 'reportIssue']);
+    Route::post('/driver/maintenance/{id}/request-service', [DriverMaintenanceController::class, 'requestService']);
 
     // Fuel Tracking
     Route::get('/driver/fuel', [DriverFuelController::class, 'index']);

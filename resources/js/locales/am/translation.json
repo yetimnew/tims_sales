@@ -36,6 +36,7 @@
         "statusManagement": "ሁኔታ አስተዳደር",
         "statusTypeRegistration": "የሁኔታ አይነት መመዝገብ",
         "dailyTruckStatusRegistration": "ዕለታዊ የተሽከርካሪ ሁኔታ መመዝገብ",
+        "driverStatusHistory": "የሹፌር ሁኔታ ታሪክ",
         "outsourcing": "አውትሶርሲንግ",
         "outsources": "አውትሶርሶች",
         "outsourcePerformances": "የአውትሶርስ አፈፃፀሞች",
@@ -1973,8 +1974,7 @@
             "add": "ዞን አክል",
             "view": "እይ",
             "edit": "አስተካክል",
-            "delete": "ሰርዝ",
-            "cancel": "ይቅር"
+            "delete": "ሰርዝ"
         },
         "mobile": {
             "position": "#{{value}}",
@@ -2002,110 +2002,6 @@
             "successDescription": "{{name}} ተሳክቶ ተወግዷል።",
             "failedTitle": "❌ መሰረዝ አልተሳካም",
             "failedDescription": "ዞኑን ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።"
-        },
-        "form": {
-            "badge": "የካቭሬጅ እቅድ",
-            "unsaved": "ያልተዳረሙ ለውጦች አሉዎት",
-            "validation": {
-                "title": "⚠️ የማረጋገጫ ስህተት",
-                "inlineEdit": "የተለዩትን መስኮች ይመርምሩ እና በማሻሻል በኋላ ያስቀምጡ።",
-                "inlineCreate": "ፎርሙን ከማቅረብዎ በፊት የተለዩትን መስኮች እባክዎን ያስተካክሉ።",
-                "resolve": "ፎርሙን ለመላክ በፊት የተለዩትን መስኮች እባክዎን ያስተካክሉ።"
-            },
-            "sections": {
-                "identity": {
-                    "title": "የዞን መለያ",
-                    "descriptionCreate": "የዞኑን መለያ እና የአስተዳደር ዝርዝሮችን ይመዝግቡ።",
-                    "descriptionEdit": "የስም እና የአስተዳደር መረጃዎች ተመሳሳይ እንዲሆኑ ያረጋግጡ።"
-                },
-                "geography": {
-                    "title": "የጂኦግራፊያ መግለጫ",
-                    "descriptionCreate": "የስፋት እና የህዝብ መለኪያዎችን ይገልጹ።",
-                    "descriptionEdit": "የስፋት እና የህዝብ መረጃዎች እንዲያዛመዱ ያድርጉ።"
-                },
-                "infrastructure": {
-                    "title": "መዋቅር እና አየር ንብረት",
-                    "descriptionCreate": "የሎጂስቲክስ ዝግጁነትን የሚያመለክቱ ምልክቶችን ይመዝግቡ።",
-                    "descriptionEdit": "የመዋቅር ማብራሪያዎችን እና የአየር ንብረት ግምገማዎችን ያዘምኑ።"
-                }
-            },
-            "fields": {
-                "name": {
-                    "label": "የዞን ስም",
-                    "placeholder": "ለምሳሌ፣ East Arsi"
-                },
-                "region": {
-                    "label": "ክልል",
-                    "placeholder": "ክልል ይምረጡ"
-                },
-                "status": {
-                    "label": "ሁኔታ",
-                    "placeholder": "ሁኔታ ይምረጡ"
-                },
-                "code": {
-                    "label": "የዞን ኮድ",
-                    "placeholder": "ለምሳሌ፣ EA-02"
-                },
-                "administrativeCenter": {
-                    "label": "የአስተዳደር ማእከል",
-                    "placeholder": "ዋናው የአስተዳደር ማእከል"
-                },
-                "area": {
-                    "label": "ስፋት (ኪ.ሜ²)",
-                    "placeholder": "ለምሳሌ፣ 12450"
-                },
-                "population": {
-                    "label": "ህዝብ",
-                    "placeholder": "ለምሳሌ፣ 820000"
-                },
-                "elevation": {
-                    "label": "ከፍታ (ሜትር)",
-                    "placeholder": "ለምሳሌ፣ 1325"
-                },
-                "latitude": {
-                    "label": "ላቲትዩድ",
-                    "placeholder": "ለምሳሌ፣ 7.123456"
-                },
-                "longitude": {
-                    "label": "ሎንግቲትዩድ",
-                    "placeholder": "ለምሳሌ፣ 39.987654"
-                },
-                "accessibility": {
-                    "label": "የመዳረሻ መለኪያ",
-                    "placeholder": "0 - 100"
-                },
-                "description": {
-                    "label": "መግለጫ",
-                    "placeholder": "የኢኮኖሚ ወይም የመረብ ሚናን የሚገልጽ አጭር መግለጫ"
-                },
-                "infrastructureNotes": {
-                    "label": "የመዋቅር ማስታወሻዎች",
-                    "placeholder": "የመገናኛ፣ የአገልግሎት አቅርቦት ወይም ግድቦች መግለጫ"
-                },
-                "climateProfile": {
-                    "label": "የአየር ንብረት መግለጫ",
-                    "placeholder": "የወቅታዊ ስርዓት፣ የአየር ማስጠንቀቂያዎች ወይም የአየር አደጋዎች"
-                }
-            },
-            "create": {
-                "breadcrumb": "ፍጠር",
-                "title": "አዲስ ዞን ይመዝግቡ",
-                "headTitle": "ዞን ፍጠር",
-                "description": "የካቭሬጅን፣ የዝግጁነት ምልክቶችን እና የሎጂስቲክስ እቅድን ይግለጹ።",
-                "backToList": "ወደ ዞኖች ተመለስ",
-                "submit": "ዞን ፍጠር",
-                "submitting": "በመፍጠር ላይ...",
-                "successTitle": "✅ ዞን ተመዝግቧል",
-                "successDescription": "ዞኑ በተሳካ ሁኔታ ተመዝግቧል።"
-            },
-            "edit": {
-                "breadcrumb": "አስተካክል",
-                "title": "ዞን ያዘምኑ",
-                "headTitle": "{{name}} ያስተካክሉ",
-                "description": "የፊት ስራ ግብሮችን ለማጣመም የክልሉን ዝርዝሮች ያዘምኑ።",
-                "submit": "ዞኑን ያዘምኑ",
-                "submitting": "በማዘመን ላይ..."
-            }
         }
     },
     "outsources": {
@@ -4763,8 +4659,7 @@
                 "contact": {
                     "title": "የእገናኝ እና አድራሻ",
                     "description": "አሽከርካሪውን ማግኘት እና መኖሪያውን ማወቅ እንዲቻል ይረዱ።"
-                }
-                ,
+                },
                 "translations": {
                     "title": "የቋንቋ ትርጉም ስሞች",
                     "description": "በየቋንቋው የተረጋገጡ የአሽከርካሪ ስሞችን ያስገቡ።"
@@ -4817,8 +4712,7 @@
                     "label": "የቤት ቁጥር",
                     "helper": "አስፈላጊ አይደለም - የቤት/ሕንፃ ቁጥር",
                     "placeholder": "የቤት ቁጥር"
-                }
-                ,
+                },
                 "nameTranslations": {
                     "label": "የቋንቋ ትርጉም ስሞች",
                     "helper": "በየቋንቋው የተረጋገጡ የአሽከርካሪ ስሞችን ያስገቡ።",
@@ -4851,93 +4745,6 @@
         },
         "fallbacks": {
             "notAvailable": "አይገኝም"
-        }
-    },
-    "zones": {
-        "title": "ዞኖች",
-        "headTitle": "ዞኖች",
-        "description": "{{formattedCount}} ዞኖችን በማስተዳደር የክልል ስትራቴጂዎችን ተመሳሳይ ያድርጉ።",
-        "columns": {
-            "name": "ዞን",
-            "code": "ኮድ",
-            "status": "ሁኔታ",
-            "region": "ክልል",
-            "administrativeCenter": "የአስተዳደር ማእከል",
-            "population": "ህዝብ",
-            "accessibility": "መዳረሻ",
-            "woredas": "ወረዳዎች"
-        },
-        "table": {
-            "title": "የዞን ማህደር",
-            "description": "የዝግጁነት ምልክቶችን፣ የህዝብ መድረሻን እና የእንቅስቃሴ ሁኔታን ይከታተሉ",
-            "index": "#",
-            "actions": "እርምጃዎች"
-        },
-        "stats": {
-            "total": {
-                "label": "ጠቅላላ ዞኖች",
-                "description": "{{count}} ተመርመሩ"
-            },
-            "active": {
-                "label": "ንቁ ዞኖች",
-                "description": "የተግባር ስፋት"
-            },
-            "inactive": {
-                "label": "ዝግ ዞኖች",
-                "description": "ለእንቅስቃሴ በመጠባበቅ"
-            },
-            "population": {
-                "label": "የህዝብ መድረሻ",
-                "description": "የሚደርሱ ነዋሪዎች"
-            },
-            "accessibility": {
-                "label": "የመዳረሻ መጠን",
-                "description": "የሎጂስቲክስ ዝግጁነት"
-            }
-        },
-        "filters": {
-            "searchPlaceholder": "ዞኖችን ፈልግ...",
-            "rowsLabel": "ረድፎች",
-            "perPageOption": "{{value}} / ገጽ",
-            "statusPlaceholder": "ሁኔታ",
-            "statusAll": "ሁሉም ሁኔታዎች",
-            "statusOptions": {
-                "active": "ንቁ",
-                "inactive": "ዝግ"
-            }
-        },
-        "actions": {
-            "add": "ዞን አክል",
-            "view": "እይ",
-            "edit": "አስተካክል",
-            "delete": "ሰርዝ"
-        },
-        "mobile": {
-            "position": "#{{value}}",
-            "noRegion": "ክልል አልተመዘገበም",
-            "status": "ሁኔታ",
-            "population": "ህዝብ",
-            "woredas": "ወረዳዎች"
-        },
-        "empty": {
-            "title": "ዞኖች አልተገኙም።",
-            "createAction": "አንዱን ይፍጠሩ"
-        },
-        "fallbacks": {
-            "notAvailable": "—"
-        },
-        "status": {
-            "active": "ንቁ",
-            "inactive": "ዝግ",
-            "unknown": "ያልታወቀ"
-        },
-        "delete": {
-            "title": "ዞን ሰርዝ",
-            "description": "ይህን ዞን ለመሰረዝ እርግጠኛ ነዎት? ይህ እርምጃ መመለስ አይችልም።",
-            "successTitle": "✅ ዞን ተሰርዟል",
-            "successDescription": "{{name}} ተሳክቶ ተወግዷል።",
-            "failedTitle": "❌ መሰረዝ አልተሳካም",
-            "failedDescription": "ዞኑን ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።"
         }
     },
     "statusTypes": {
@@ -5962,6 +5769,251 @@
             "saving": "በማስቀመጥ ላይ…",
             "save": "ምርጫዎችን አስቀምጥ",
             "saved": "ተቀምጧል"
+        }
+    },
+    "operations": {
+        "title": "Operations",
+        "breadcrumb": "Operations",
+        "description": "Manage {{count}} operation{{plural}} and monitor execution progress.",
+        "table": {
+            "title": "Operations List",
+            "description": "Track operation plans, progress, and lifecycle status.",
+            "index": "#",
+            "actions": "Actions"
+        },
+        "columns": {
+            "operationId": "Operation ID",
+            "customer": "Customer",
+            "startDate": "Start Date",
+            "volume": "Volume (MT)",
+            "distance": "Distance (KM)",
+            "upliftProgress": "Uplift Progress",
+            "closed": "State"
+        },
+        "actions": {
+            "add": "Add Operation",
+            "view": "View",
+            "edit": "Edit",
+            "close": "Close",
+            "reopen": "Reopen",
+            "delete": "Delete",
+            "cancel": "Cancel"
+        },
+        "filters": {
+            "searchPlaceholder": "Search operations...",
+            "rowsLabel": "Rows",
+            "statusPlaceholder": "Status",
+            "allStatuses": "All statuses",
+            "customerPlaceholder": "Customer",
+            "allCustomers": "All customers",
+            "perPageOption": "{{value}} / page"
+        },
+        "stats": {
+            "total": {
+                "label": "Total Operations",
+                "description": "{{count}} open"
+            },
+            "active": {
+                "label": "Active",
+                "description": "Currently active operations"
+            },
+            "inactive": {
+                "label": "Inactive",
+                "description": "Paused operations"
+            },
+            "closed": {
+                "label": "Closed",
+                "description": "Completed or locked operations"
+            }
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive",
+            "open": "Open",
+            "closed": "Closed",
+            "pending": "Pending",
+            "cancelled": "Cancelled",
+            "unknown": "Unknown"
+        },
+        "executionModes": {
+            "company": "Company",
+            "vendor": "Vendor",
+            "hybrid": "Hybrid",
+            "pending": "Pending"
+        },
+        "progress": {
+            "delivered": "Delivered",
+            "deliveredValue": "{{value}} MT",
+            "notAvailable": "N/A",
+            "completionValue": "{{value}}% complete",
+            "noPlan": "No planned volume",
+            "remainingValue": "{{value}} MT remaining",
+            "placeholder": "No remaining data"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "startDate": "Start Date",
+            "volume": "Volume",
+            "volumeValue": "{{value}} MT",
+            "distance": "Distance",
+            "distanceValue": "{{value}} KM"
+        },
+        "empty": {
+            "title": "No operations found.",
+            "createAction": "Create one"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "unknown": "Unknown",
+            "unassignedCustomer": "Unassigned customer"
+        },
+        "delete": {
+            "title": "Delete Operation",
+            "description": "Are you sure you want to delete this operation? This action cannot be undone.",
+            "successTitle": "✅ Operation Deleted",
+            "successDescription": "The operation was removed successfully.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Failed to delete operation. Please try again."
+        },
+        "close": {
+            "title": "Close Operation",
+            "description": "Close operation {{id}}? This will lock further updates.",
+            "fallbackId": "this operation",
+            "fields": {
+                "closedDate": "Closed Date",
+                "comment": "Comment",
+                "commentPlaceholder": "Reason for closing or notes..."
+            },
+            "submit": "Close Operation",
+            "submitting": "Closing...",
+            "successTitle": "✅ Operation Closed",
+            "successDescription": "Operation {{id}} has been closed successfully.",
+            "failedTitle": "❌ Close Failed",
+            "failedDescription": "Failed to close operation. Please try again."
+        },
+        "reopen": {
+            "title": "Reopen Operation",
+            "description": "Reopen operation {{id}} and allow updates again?",
+            "fallbackId": "this operation",
+            "fields": {
+                "comment": "Comment",
+                "commentPlaceholder": "Reason for reopening..."
+            },
+            "submit": "Reopen Operation",
+            "submitting": "Reopening...",
+            "successTitle": "✅ Operation Reopened",
+            "successDescription": "Operation {{id}} has been reopened successfully.",
+            "failedTitle": "❌ Reopen Failed",
+            "failedDescription": "Failed to reopen operation. Please try again."
+        },
+        "form": {
+            "validation": {
+                "title": "⚠️ Validation Error",
+                "resolve": "Please resolve the highlighted fields before submitting.",
+                "resolveEdit": "Please resolve the highlighted fields before saving changes.",
+                "destinationRequired": "Destination is required."
+            },
+            "sections": {
+                "overview": {
+                    "title": "Overview",
+                    "description": "Define core operation details and ownership.",
+                    "descriptionEdit": "Review and update core operation details and ownership."
+                },
+                "schedule": {
+                    "title": "Schedule & Cargo",
+                    "description": "Set execution date, service type, and transport volume.",
+                    "descriptionEdit": "Adjust schedule, service type, and transport volume."
+                },
+                "commercial": {
+                    "title": "Commercial",
+                    "description": "Set tariff and additional remarks.",
+                    "descriptionEdit": "Update tariff and additional remarks."
+                }
+            },
+            "fields": {
+                "operationId": {
+                    "label": "Operation ID",
+                    "placeholder": "Enter operation identifier"
+                },
+                "customer": {
+                    "label": "Customer",
+                    "placeholder": "Select customer",
+                    "recentLabel": "Recent customers"
+                },
+                "status": {
+                    "label": "Status",
+                    "placeholder": "Select status"
+                },
+                "destinationScope": {
+                    "label": "Destination Scope",
+                    "placeholder": "Select destination scope"
+                },
+                "destination": {
+                    "label": "Destination",
+                    "placeholder": "Select destination",
+                    "empty": "No destinations available for selected scope.",
+                    "scopeHint": "Showing destinations from {{scope}} scope.",
+                    "scopePlaceholder": "Select destination scope first."
+                },
+                "startDate": {
+                    "label": "Start Date",
+                    "placeholder": "Select start date"
+                },
+                "cargoServiceType": {
+                    "label": "Cargo Service Type",
+                    "placeholder": "Select cargo service type"
+                },
+                "cargoType": {
+                    "label": "Cargo Type",
+                    "placeholder": "Select cargo type",
+                    "recentLabel": "Recent cargo types"
+                },
+                "volume": {
+                    "label": "Volume (MT)",
+                    "placeholder": "Enter volume"
+                },
+                "distance": {
+                    "label": "Distance (KM)",
+                    "placeholder": "Enter distance"
+                },
+                "tariff": {
+                    "label": "Tariff",
+                    "placeholder": "Enter tariff"
+                },
+                "remark": {
+                    "label": "Remark",
+                    "placeholder": "Optional remark",
+                    "placeholderEdit": "Update remark"
+                }
+            },
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Create Operation",
+                "headTitle": "Create Operation",
+                "description": "Register a new operation with destination, schedule, and commercial details.",
+                "submit": "Create Operation",
+                "submitting": "Creating..."
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Edit Operation",
+                "headTitle": "Edit Operation {{id}}",
+                "description": "Update operation details and keep execution data accurate.",
+                "submit": "Update Operation",
+                "submitting": "Updating...",
+                "successTitle": "✅ Operation Updated",
+                "successDescription": "Operation updated successfully."
+            }
+        },
+        "show": {
+            "fallbackId": "Operation {{id}}",
+            "currency": "ETB {{value}}",
+            "percent": "{{value}}%",
+            "currencyPerUnit": "ETB {{value}} / {{unit}}",
+            "valueWithUnit": "{{value}} {{unit}}"
+        },
+        "index": {
+            "shouldShowSkeleton": "operations-index-skeleton"
         }
     }
 }

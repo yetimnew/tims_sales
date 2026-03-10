@@ -11,6 +11,13 @@ class FuelRecord {
   final String? notes;
   final String? receiptImage;
   final TruckInfo? truck;
+  final double? latitude;
+  final double? longitude;
+  final double? locationAccuracyM;
+  final String? locationTimestamp;
+  final bool submittedViaMobile;
+  final String? reviewedAt;
+  final String? reviewNote;
   final String createdAt;
   final String updatedAt;
 
@@ -27,24 +34,38 @@ class FuelRecord {
     this.notes,
     this.receiptImage,
     this.truck,
+    this.latitude,
+    this.longitude,
+    this.locationAccuracyM,
+    this.locationTimestamp,
+    this.submittedViaMobile = false,
+    this.reviewedAt,
+    this.reviewNote,
     required this.createdAt,
     required this.updatedAt,
   });
 
   factory FuelRecord.fromJson(Map<String, dynamic> json) {
     return FuelRecord(
-      id: json['id'] as int,
+      id: _asInt(json['id']) ?? 0,
       fuelDate: json['fuel_date'] as String,
       fuelQuantityLiters: (json['fuel_quantity_liters'] as num).toDouble(),
       fuelPricePerLiter: (json['fuel_price_per_liter'] as num).toDouble(),
       totalCost: (json['total_cost'] as num).toDouble(),
       fuelStation: json['fuel_station'] as String,
       fuelType: json['fuel_type'] as String,
-      odometerReading: json['odometer_reading'] as int?,
+      odometerReading: _asInt(json['odometer_reading']),
       receiptNumber: json['receipt_number'] as String?,
       notes: json['notes'] as String?,
       receiptImage: json['receipt_image'] as String?,
       truck: json['truck'] != null ? TruckInfo.fromJson(json['truck']) : null,
+      latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
+      longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
+      locationAccuracyM: json['location_accuracy_m'] != null ? (json['location_accuracy_m'] as num).toDouble() : null,
+      locationTimestamp: json['location_timestamp'] as String?,
+      submittedViaMobile: json['submitted_via_mobile'] as bool? ?? false,
+      reviewedAt: json['reviewed_at'] as String?,
+      reviewNote: json['review_note'] as String?,
       createdAt: json['created_at'] as String,
       updatedAt: json['updated_at'] as String,
     );
@@ -75,7 +96,7 @@ class TruckInfo {
 
   factory TruckInfo.fromJson(Map<String, dynamic> json) {
     return TruckInfo(
-      id: json['id'] as int,
+      id: _asInt(json['id']) ?? 0,
       plate: json['plate'] as String,
     );
   }
@@ -100,9 +121,29 @@ class FuelRecordsResponse {
       records: (json['data'] as List<dynamic>)
           .map((item) => FuelRecord.fromJson(item as Map<String, dynamic>))
           .toList(),
-      count: json['count'] as int,
+      count: _asInt(json['count']) ?? 0,
       message: json['message'] as String?,
     );
   }
+}
+
+int? _asInt(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+
+  if (value is int) {
+    return value;
+  }
+
+  if (value is num) {
+    return value.toInt();
+  }
+
+  if (value is String) {
+    return int.tryParse(value);
+  }
+
+  return null;
 }
 

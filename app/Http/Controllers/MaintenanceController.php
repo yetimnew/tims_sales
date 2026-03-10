@@ -5,13 +5,17 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Maintenance\CompleteMaintenanceRequest;
 use App\Http\Requests\Maintenance\StoreMaintenanceRequest;
 use App\Http\Requests\Maintenance\UpdateMaintenanceRequest;
+use App\Models\DriverTruck;
 use App\Models\MaintenanceType;
+use App\Models\NotificationType;
 use App\Models\Truck;
 use App\Models\User;
 use App\Models\VehicleMaintenanceRecord;
+use App\Notifications\MaintenanceAlertNotification;
 use App\Services\MaintenanceService;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -73,13 +77,10 @@ class MaintenanceController extends BaseResourceController
             })
             ->values();
 
-        $statusBreakdown = VehicleMaintenanceRecord::select('status', DB::raw('COUNT(*) as total'))
-            ->groupBy('status')
-            ->orderBy('status')
-            ->get()
-            ->map(fn ($row) => [
-                'status' => $row->status,
-                'total' => (int) $row->total,
+        $statusBreakdown = collect(['scheduled', 'in_progress', 'completed', 'overdue'])
+            ->map(fn (string $computedStatus) => [
+                'status' => $computedStatus,
+                'total' => $this->countByComputedStatus(VehicleMaintenanceRecord::query(), $computedStatus),
             ])
             ->values();
 
@@ -146,40 +147,62 @@ class MaintenanceController extends BaseResourceController
             $baseQuery->where('maintenance_type_id', $maintenanceTypeId);
         }
 
+        $filteredQuery = clone $baseQuery;
         if (! empty($status) && $status !== 'all') {
-            $baseQuery->where('status', $status);
+            $this->applyComputedStatusFilter($filteredQuery, $status);
         }
 
-        $maintenanceRecords = (clone $baseQuery)
+        $maintenanceRecords = (clone $filteredQuery)
             ->orderBy($sort, $direction)
             ->paginate($perPage)
             ->withQueryString();
+
+        $maintenanceRecords->setCollection(
+            $maintenanceRecords->getCollection()->map(function (VehicleMaintenanceRecord $record) {
+                return [
+                    'id' => $record->id,
+                    'scheduled_date' => optional($record->scheduled_date)->toDateString(),
+                    'completed_date' => optional($record->completed_date)->toDateString(),
+                    'status' => $record->computed_status,
+                    'raw_status' => $record->status,
+                    'is_overdue' => (bool) $record->is_overdue,
+                    'cost' => $record->cost !== null ? (float) $record->cost : null,
+                    'description' => $record->description,
+                    'truck' => $record->truck ? [
+                        'id' => $record->truck->id,
+                        'plate' => $record->truck->plate,
+                    ] : null,
+                    'maintenanceType' => $record->maintenanceType ? [
+                        'id' => $record->maintenanceType->id,
+                        'name' => $record->maintenanceType->name,
+                        'category' => $record->maintenanceType->category,
+                    ] : null,
+                    'assignedMechanic' => $record->assignedMechanic ? [
+                        'id' => $record->assignedMechanic->id,
+                        'name' => $record->assignedMechanic->name,
+                    ] : null,
+                ];
+            })
+        );
 
         $metricsQuery = clone $baseQuery;
 
         $metrics = [
             'total' => (clone $metricsQuery)->count(),
-            'scheduled' => (clone $metricsQuery)->where('status', 'scheduled')->count(),
+            'scheduled' => $this->countByComputedStatus(clone $metricsQuery, 'scheduled'),
             'in_progress' => (clone $metricsQuery)->where('status', 'in_progress')->count(),
-            'completed' => (clone $metricsQuery)->where('status', 'completed')->count(),
-            'overdue' => (clone $metricsQuery)->where('status', 'overdue')->count(),
+            'completed' => $this->countByComputedStatus(clone $metricsQuery, 'completed'),
+            'overdue' => $this->countByComputedStatus(clone $metricsQuery, 'overdue'),
             'total_cost' => (float) (clone $metricsQuery)->sum('cost'),
             'average_cost' => (float) (clone $metricsQuery)->avg('cost'),
         ];
 
-        // Cache status options (1 hour) - rarely changes
-        $statusOptions = Cache::remember('maintenance.status_options', 3600, function () {
-            return VehicleMaintenanceRecord::query()
-                ->select('status')
-                ->distinct()
-                ->whereNotNull('status')
-                ->orderBy('status')
-                ->get()
-                ->map(fn ($record) => [
-                    'label' => Str::of($record->status)->replace('_', ' ')->headline(),
-                    'value' => $record->status,
-                ])->values();
-        });
+        $statusOptions = collect(['scheduled', 'in_progress', 'completed', 'overdue'])
+            ->map(fn (string $option) => [
+                'label' => Str::of($option)->replace('_', ' ')->headline(),
+                'value' => $option,
+            ])
+            ->values();
 
         // Cache maintenance types (1 hour) - rarely changes
         $maintenanceTypes = Cache::remember('maintenance.maintenance_type_options', 3600, function () {
@@ -239,6 +262,90 @@ class MaintenanceController extends BaseResourceController
         ]);
     }
 
+    public function mobileRequests(Request $request): Response
+    {
+        $requestType = (string) $request->input('request_type', 'all');
+        $requestStatus = (string) $request->input('request_status', 'pending');
+
+        $query = VehicleMaintenanceRecord::query()
+            ->with(['truck', 'maintenanceType', 'assignedMechanic'])
+            ->where(function ($builder) {
+                $builder
+                    ->whereNotNull('driver_issue_reported_at')
+                    ->orWhereNotNull('driver_service_requested_at');
+            });
+
+        if ($requestType === 'issue') {
+            $query->whereNotNull('driver_issue_reported_at');
+        } elseif ($requestType === 'service') {
+            $query->whereNotNull('driver_service_requested_at');
+        }
+
+        if ($requestStatus === 'pending') {
+            $query->where(function ($builder) {
+                $builder
+                    ->whereNull('mobile_request_status')
+                    ->orWhere('mobile_request_status', 'pending');
+            });
+        } elseif (in_array($requestStatus, ['approved', 'rejected'], true)) {
+            $query->where('mobile_request_status', $requestStatus);
+        }
+
+        $requests = $query
+            ->orderByRaw('COALESCE(driver_service_requested_at, driver_issue_reported_at) desc')
+            ->paginate(20)
+            ->withQueryString()
+            ->through(fn (VehicleMaintenanceRecord $record) => $this->transformMobileRequestRecord($record));
+
+        return Inertia::render('Maintenance/MobileRequests', [
+            'requests' => $requests,
+            'filters' => [
+                'request_type' => $requestType,
+                'request_status' => $requestStatus,
+            ],
+        ]);
+    }
+
+    public function approveMobileRequest(Request $request, VehicleMaintenanceRecord $maintenance)
+    {
+        $validated = $request->validate([
+            'review_note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $maintenance->forceFill([
+            'mobile_request_status' => 'approved',
+            'mobile_request_reviewed_at' => now(),
+            'mobile_request_reviewed_by_user_id' => Auth::id(),
+            'mobile_request_review_note' => $validated['review_note'] ?? null,
+        ])->save();
+
+        $this->notifyAssignedDriversOfMobileRequestDecision($maintenance->fresh(['truck']), 'approved');
+
+        return redirect()
+            ->route('maintenance.mobile-requests')
+            ->with('success', 'Mobile maintenance request approved.');
+    }
+
+    public function rejectMobileRequest(Request $request, VehicleMaintenanceRecord $maintenance)
+    {
+        $validated = $request->validate([
+            'review_note' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $maintenance->forceFill([
+            'mobile_request_status' => 'rejected',
+            'mobile_request_reviewed_at' => now(),
+            'mobile_request_reviewed_by_user_id' => Auth::id(),
+            'mobile_request_review_note' => $validated['review_note'],
+        ])->save();
+
+        $this->notifyAssignedDriversOfMobileRequestDecision($maintenance->fresh(['truck']), 'rejected');
+
+        return redirect()
+            ->route('maintenance.mobile-requests')
+            ->with('success', 'Mobile maintenance request rejected.');
+    }
+
     /**
      * Export maintenance records to CSV.
      */
@@ -268,7 +375,7 @@ class MaintenanceController extends BaseResourceController
         }
 
         if ($request->filled('status') && $request->input('status') !== 'all') {
-            $query->where('status', $request->input('status'));
+            $this->applyComputedStatusFilter($query, (string) $request->input('status'));
         }
 
         // Apply sorting if provided
@@ -290,7 +397,7 @@ class MaintenanceController extends BaseResourceController
                 $record->maintenanceType->name ?? 'N/A',
                 $record->scheduled_date,
                 $record->completed_date ?? 'N/A',
-                $record->status,
+                $record->computed_status,
                 $record->cost ?? 0,
                 str_replace('"', '""', $record->description ?? '')
             );
@@ -359,7 +466,7 @@ class MaintenanceController extends BaseResourceController
                 ->values();
         });
 
-        $statusOptions = collect(['scheduled', 'in_progress', 'completed', 'overdue'])
+        $statusOptions = collect(['scheduled', 'in_progress', 'completed'])
             ->map(fn (string $status) => [
                 'value' => $status,
                 'label' => Str::of($status)->replace('_', ' ')->headline(),
@@ -445,7 +552,7 @@ class MaintenanceController extends BaseResourceController
                 ->values();
         });
 
-        $statusOptions = collect(['scheduled', 'in_progress', 'completed', 'overdue'])
+        $statusOptions = collect(['scheduled', 'in_progress', 'completed'])
             ->map(fn (string $status) => [
                 'value' => $status,
                 'label' => Str::of($status)->replace('_', ' ')->headline(),
@@ -655,7 +762,7 @@ class MaintenanceController extends BaseResourceController
             ],
             'scheduled_date' => optional($record->scheduled_date)->toDateString(),
             'completed_date' => optional($record->completed_date)->toDateString(),
-            'status' => $record->status,
+            'status' => $record->computed_status,
             'cost' => $record->cost ? (float) $record->cost : null,
             'odometer_reading' => $record->odometer_reading,
             'description' => $record->description,
@@ -666,5 +773,115 @@ class MaintenanceController extends BaseResourceController
             'days_until_scheduled' => method_exists($record, 'getDaysUntilScheduledAttribute') ? $record->days_until_scheduled : null,
             'is_overdue' => method_exists($record, 'getIsOverdueAttribute') ? (bool) $record->is_overdue : false,
         ];
+    }
+
+    protected function transformMobileRequestRecord(VehicleMaintenanceRecord $record): array
+    {
+        $requestType = $record->driver_service_requested_at !== null ? 'service' : 'issue';
+        $requestTimestamp = $record->driver_service_requested_at ?? $record->driver_issue_reported_at;
+        $requestMessage = $record->driver_service_requested_at !== null
+            ? ($record->driver_service_request_notes ?: 'Service requested from mobile app.')
+            : $record->driver_issue_report;
+
+        return array_merge($this->transformMaintenanceRecord($record), [
+            'request_type' => $requestType,
+            'request_message' => $requestMessage,
+            'request_created_at' => $requestTimestamp?->toIso8601String(),
+            'driver_acknowledged_at' => $record->driver_acknowledged_at?->toIso8601String(),
+            'mobile_request_status' => $record->mobile_request_status ?? 'pending',
+            'mobile_request_reviewed_at' => $record->mobile_request_reviewed_at?->toIso8601String(),
+            'mobile_request_review_note' => $record->mobile_request_review_note,
+        ]);
+    }
+
+    protected function notifyAssignedDriversOfMobileRequestDecision(VehicleMaintenanceRecord $maintenance, string $decision): void
+    {
+        $notificationKey = $decision === 'approved'
+            ? NotificationType::MAINTENANCE_REQUEST_APPROVED
+            : NotificationType::MAINTENANCE_REQUEST_REJECTED;
+
+        $notificationType = NotificationType::query()->where('key', $notificationKey)->first();
+
+        if ($notificationType === null) {
+            return;
+        }
+
+        $assignments = DriverTruck::query()
+            ->with('driver.user')
+            ->where('truck_id', $maintenance->truck_id)
+            ->where('status', 'active')
+            ->whereNull('date_detach')
+            ->where('is_attached', true)
+            ->get();
+
+        $requestType = $maintenance->driver_service_requested_at !== null ? 'service request' : 'issue report';
+        $title = $decision === 'approved'
+            ? 'Maintenance Request Approved'
+            : 'Maintenance Request Rejected';
+        $message = $decision === 'approved'
+            ? sprintf('Your maintenance %s was approved for truck %s.', $requestType, $maintenance->truck?->plate ?? 'N/A')
+            : sprintf('Your maintenance %s was rejected for truck %s.', $requestType, $maintenance->truck?->plate ?? 'N/A');
+
+        foreach ($assignments as $assignment) {
+            $user = $assignment->driver?->user;
+
+            if ($user === null) {
+                continue;
+            }
+
+            $user->notify(
+                (new MaintenanceAlertNotification(
+                    $notificationType,
+                    $title,
+                    $message,
+                    [
+                        'maintenance_id' => $maintenance->id,
+                        'truck_id' => $maintenance->truck_id,
+                        'truck_plate' => $maintenance->truck?->plate,
+                        'mobile_request_status' => $decision,
+                        'mobile_request_review_note' => $maintenance->mobile_request_review_note,
+                        'mobile_request_reviewed_at' => $maintenance->mobile_request_reviewed_at?->toIso8601String(),
+                    ],
+                ))->withChannels(['database'])
+            );
+        }
+    }
+
+    protected function applyComputedStatusFilter($query, string $status): void
+    {
+        $today = now()->toDateString();
+
+        if ($status === 'overdue') {
+            $query->overdue();
+
+            return;
+        }
+
+        if ($status === 'scheduled') {
+            $query
+                ->whereIn('status', ['scheduled', 'overdue'])
+                ->whereNull('completed_date')
+                ->whereDate('scheduled_date', '>=', $today);
+
+            return;
+        }
+
+        if ($status === 'completed') {
+            $query->where(function ($completedQuery) {
+                $completedQuery->where('status', 'completed')
+                    ->orWhereNotNull('completed_date');
+            });
+
+            return;
+        }
+
+        $query->where('status', $status);
+    }
+
+    protected function countByComputedStatus($query, string $status): int
+    {
+        $this->applyComputedStatusFilter($query, $status);
+
+        return $query->count();
     }
 }

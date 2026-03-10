@@ -23,7 +23,6 @@ import {
     User,
     UserCheck,
     UserX,
-    ChevronRight,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -506,7 +505,12 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                           <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                           <TableCell className="font-medium">
                               <div className="flex flex-col">
-                                  <span>{assignment.driver.name}</span>
+                                  <Link
+                                      href={`/driver-trucks/${assignment.id}`}
+                                      className="inline-flex w-fit items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-800 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:border-blue-800 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                                  >
+                                      <span>{assignment.driver.name}</span>
+                                  </Link>
                                   <span className="text-xs text-muted-foreground">{assignment.driver.driverid}</span>
                               </div>
                           </TableCell>
@@ -622,8 +626,12 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">
                         {t('driverTrucks.mobile.position', { value: item.position })}
                     </span>
-                    <span className="text-base">{item.assignment.driver.name}</span>
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Link
+                        href={`/driver-trucks/${item.assignment.id}`}
+                        className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-800 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:border-blue-800 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                    >
+                        <span>{item.assignment.driver.name}</span>
+                    </Link>
                 </div>
             )}
             renderSubtitle={(item) => item.assignment.truck.plate || t('driverTrucks.mobile.truckPending')}

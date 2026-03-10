@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:driver_mobile_app/l10n/app_localizations.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
@@ -10,50 +8,24 @@ import 'services/auth_service.dart';
 import 'services/sync_service.dart';
 import 'services/offline_storage_service.dart';
 import 'services/connectivity_service.dart';
-import 'services/fcm_service.dart';
+import 'services/app_startup_service.dart';
 import 'services/language_service.dart';
+import 'services/location_service.dart';
+import 'services/local_notification_service.dart';
 import 'theme/app_theme.dart';
-
-/// Background message handler - must be top-level function
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Firebase should already be initialized in main()
-  if (kDebugMode) {
-    debugPrint('[FCM Background] Message received: ${message.messageId}');
-  }
-  // Handle background notification - can save to local storage
-}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase (if Firebase is configured)
-  // Note: User needs to run 'flutterfire configure' to generate firebase_options.dart
-  // The app will work without Firebase, but push notifications won't function
-  try {
-    // Try to initialize Firebase - this will fail if firebase_options.dart doesn't exist
-    // We'll import it conditionally if it exists
-    await Firebase.initializeApp(
-      // options: DefaultFirebaseOptions.currentPlatform, // Uncomment after running flutterfire configure
-    );
-
-    // Register background message handler
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    debugPrint('Firebase initialized successfully');
-  } catch (e) {
-    // Firebase not configured yet - app can still work without push notifications
-    debugPrint('Firebase not initialized: $e');
-    debugPrint('To enable push notifications:');
-    debugPrint('  1. Run: dart pub global activate flutterfire_cli');
-    debugPrint('  2. Run: flutterfire configure');
-    debugPrint('  3. Uncomment DefaultFirebaseOptions import and usage in main.dart');
-  }
-
   // Initialize offline services
   await _initializeOfflineServices();
 
-  // Initialize FCM service (will check if Firebase is initialized)
-  await _initializeFCMService();
+  await LocalNotificationService().initialize();
+
+  await LocationService().resumeTrackingIfEnabled();
+
+  // Initialize push services (native only; web safely skips)
+  await initializePushPlatformServices();
 
   // Initialize language service and get saved locale
   final savedLocale = await LanguageService.getSavedLocale();
@@ -89,18 +61,6 @@ Future<void> _initializeOfflineServices() async {
   } catch (e) {
     // Silently fail - app can still work without offline mode
     debugPrint('Failed to initialize offline services: $e');
-  }
-}
-
-Future<void> _initializeFCMService() async {
-  try {
-    final fcmService = FCMService();
-    await fcmService.initialize();
-    debugPrint('FCM Service initialized');
-  } catch (e) {
-    // Silently fail - app can still work without push notifications
-    debugPrint('Failed to initialize FCM service: $e');
-    debugPrint('To enable push notifications, configure Firebase and add firebase_options.dart');
   }
 }
 
@@ -350,4 +310,3 @@ class _AuthWrapperState extends State<AuthWrapper> {
         : const LoginScreen();
   }
 }
-

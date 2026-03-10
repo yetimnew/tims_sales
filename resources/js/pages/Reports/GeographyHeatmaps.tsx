@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
+import { formatCurrency } from '@/lib/formatters/currency';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -39,8 +40,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const formatNumber = (value: number) => value.toLocaleString();
 const formatDecimal = (value: number) => value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const formatCurrency = (value: number) => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(value);
-
 export default function GeographyHeatmaps({ filters, regions, zones, woredas, places, regionTrends }: GeographyHeatmapsProps) {
     const { hasPermission } = usePermissions();
     const canExport = hasPermission('reports.geography-heatmaps.export');
@@ -414,7 +413,6 @@ export default function GeographyHeatmaps({ filters, regions, zones, woredas, pl
         </ReportPageLayout>
     );
 }
-
 
 
 

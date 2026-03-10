@@ -53,6 +53,26 @@ class NotificationType extends Model
 
     public const DRIVER_DELETED = 'driver.deleted';
 
+    public const DRIVER_STATUS_UPDATED = 'driver_status.updated';
+
+    public const EMERGENCY_ALERT_CREATED = 'emergency_alert.created';
+
+    public const MAINTENANCE_ASSIGNED = 'maintenance.assigned';
+
+    public const MAINTENANCE_DUE_SOON = 'maintenance.due_soon';
+
+    public const MAINTENANCE_OVERDUE = 'maintenance.overdue';
+
+    public const MAINTENANCE_DRIVER_ACKNOWLEDGED = 'maintenance.driver_acknowledged';
+
+    public const MAINTENANCE_ISSUE_REPORTED = 'maintenance.issue_reported';
+
+    public const MAINTENANCE_SERVICE_REQUESTED = 'maintenance.service_requested';
+
+    public const MAINTENANCE_REQUEST_APPROVED = 'maintenance.request_approved';
+
+    public const MAINTENANCE_REQUEST_REJECTED = 'maintenance.request_rejected';
+
     public const DRIVER_TRUCK_CREATED = 'driver_truck.created';
 
     public const DRIVER_TRUCK_UPDATED = 'driver_truck.updated';

@@ -208,6 +208,58 @@ class _FuelRecordDetailsScreenState extends State<FuelRecordDetailsScreen> {
           ],
           const SizedBox(height: 16),
 
+          if (record.receiptImage != null) ...[
+            _buildSectionHeader('Receipt Image'),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    record.receiptImage!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox(
+                      height: 120,
+                      child: Center(child: Text('Unable to load receipt image')),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          if (record.latitude != null && record.longitude != null) ...[
+            _buildSectionHeader('Location Snapshot'),
+            _buildDetailCard([
+              _buildDetailRow(Icons.place, 'Coordinates', '${record.latitude}, ${record.longitude}'),
+              if (record.locationAccuracyM != null)
+                _buildDetailRow(Icons.my_location, 'Accuracy', '${record.locationAccuracyM!.toStringAsFixed(2)} m'),
+              if (record.locationTimestamp != null)
+                _buildDetailRow(
+                  Icons.schedule,
+                  'Captured At',
+                  DateFormat('MMM d, y • h:mm a').format(DateTime.parse(record.locationTimestamp!)),
+                ),
+            ]),
+            const SizedBox(height: 16),
+          ],
+
+          if (record.reviewedAt != null || record.reviewNote != null) ...[
+            _buildSectionHeader('Review'),
+            _buildDetailCard([
+              if (record.reviewedAt != null)
+                _buildDetailRow(
+                  Icons.verified,
+                  'Reviewed At',
+                  DateFormat('MMM d, y • h:mm a').format(DateTime.parse(record.reviewedAt!)),
+                ),
+              if (record.reviewNote != null && record.reviewNote!.isNotEmpty)
+                _buildDetailRow(Icons.comment, 'Review Note', record.reviewNote!),
+            ]),
+            const SizedBox(height: 16),
+          ],
+
           // Truck Information
           if (record.truck != null) ...[
             _buildSectionHeader('Truck Information'),

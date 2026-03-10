@@ -6,6 +6,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DailyTruckStatusController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DistanceController;
+use App\Http\Controllers\EmergencyAlertController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\DriverPerformanceController;
 use App\Http\Controllers\DriverSafetyController;
@@ -186,6 +187,30 @@ Route::middleware('auth')->group(function () {
             ->middleware('can:drivers.activate')
             ->name('drivers.activate');
 
+        Route::get('driver-status-history', [DriverController::class, 'statusHistory'])
+            ->middleware('can:drivers.view')
+            ->name('drivers.status-history');
+
+        Route::get('mobile/tracking', [DriverController::class, 'tracking'])
+            ->middleware('can:drivers.view')
+            ->name('mobile.tracking');
+
+        Route::get('mobile/emergency-alerts', [EmergencyAlertController::class, 'index'])
+            ->middleware('can:drivers.view')
+            ->name('mobile.emergency-alerts');
+
+        Route::post('mobile/emergency-alerts/{emergencyAlert}/acknowledge', [EmergencyAlertController::class, 'acknowledge'])
+            ->middleware('can:drivers.update')
+            ->name('mobile.emergency-alerts.acknowledge');
+
+        Route::post('mobile/emergency-alerts/{emergencyAlert}/resolve', [EmergencyAlertController::class, 'resolve'])
+            ->middleware('can:drivers.update')
+            ->name('mobile.emergency-alerts.resolve');
+
+        Route::post('mobile/emergency-alerts/{emergencyAlert}/false-alarm', [EmergencyAlertController::class, 'falseAlarm'])
+            ->middleware('can:drivers.update')
+            ->name('mobile.emergency-alerts.false-alarm');
+
         // Performances
         Route::get('performances', [PerformanceController::class, 'index'])
             ->middleware('can:performances.view')
@@ -242,6 +267,18 @@ Route::middleware('auth')->group(function () {
         Route::get('maintenance/alerts', [MaintenanceController::class, 'alerts'])
             ->middleware('can:maintenance.view')
             ->name('maintenance.alerts');
+
+        Route::get('maintenance/mobile-requests', [MaintenanceController::class, 'mobileRequests'])
+            ->middleware('can:maintenance.view')
+            ->name('maintenance.mobile-requests');
+
+        Route::post('maintenance/{maintenance}/approve-mobile-request', [MaintenanceController::class, 'approveMobileRequest'])
+            ->middleware('can:maintenance.update')
+            ->name('maintenance.mobile-requests.approve');
+
+        Route::post('maintenance/{maintenance}/reject-mobile-request', [MaintenanceController::class, 'rejectMobileRequest'])
+            ->middleware('can:maintenance.update')
+            ->name('maintenance.mobile-requests.reject');
 
         Route::get('maintenance', [MaintenanceController::class, 'index'])
             ->middleware('can:maintenance.view')
@@ -340,6 +377,14 @@ Route::middleware('auth')->group(function () {
         Route::post('fuel', [FuelController::class, 'store'])
             ->middleware('can:fuel.store')
             ->name('fuel.store');
+
+        Route::get('fuel/mobile-review', [FuelController::class, 'mobileReview'])
+            ->middleware('can:fuel.view')
+            ->name('fuel.mobile-review');
+
+        Route::post('fuel/{fuel}/mark-mobile-reviewed', [FuelController::class, 'markMobileReviewed'])
+            ->middleware('can:fuel.update')
+            ->name('fuel.mark-mobile-reviewed');
 
         Route::get('fuel/{fuel}', [FuelController::class, 'show'])
             ->middleware('can:fuel.show')

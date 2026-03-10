@@ -17,7 +17,7 @@ import { maintenanceValidation } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { AlertCircle, ClipboardList, Info, Lightbulb, Wrench } from 'lucide-react';
 
-type MaintenanceStatus = 'scheduled' | 'in_progress' | 'completed' | 'overdue';
+type MaintenanceStatus = 'scheduled' | 'in_progress' | 'completed';
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Maintenance', href: '/maintenance' },
@@ -39,7 +39,6 @@ const fallbackStatusOptions: StatusOption[] = [
   { value: 'scheduled', label: 'Scheduled' },
   { value: 'in_progress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
-  { value: 'overdue', label: 'Overdue' },
 ];
 
 const UNASSIGNED_MECHANIC_VALUE = '__unassigned__';

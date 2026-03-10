@@ -141,8 +141,8 @@ class MaintenanceService
     public function getOverdueMaintenance()
     {
         return VehicleMaintenanceRecord::with(['truck', 'maintenanceType'])
-            ->where('status', 'scheduled')
-            ->where('scheduled_date', '<', now())
+            ->overdue()
+            ->orderBy('scheduled_date')
             ->get();
     }
 
@@ -152,8 +152,7 @@ class MaintenanceService
     public function getUpcomingMaintenance(int $days = 7)
     {
         return VehicleMaintenanceRecord::with(['truck', 'maintenanceType'])
-            ->where('status', 'scheduled')
-            ->whereBetween('scheduled_date', [now(), now()->addDays($days)])
+            ->upcoming($days)
             ->orderBy('scheduled_date')
             ->get();
     }
@@ -209,18 +208,30 @@ class MaintenanceService
      */
     public function getMaintenanceStatistics()
     {
+        $pendingStatuses = ['scheduled', 'overdue'];
+
         return [
-            'total_scheduled' => VehicleMaintenanceRecord::where('status', 'scheduled')->count(),
-            'total_completed' => VehicleMaintenanceRecord::where('status', 'completed')->count(),
-            'total_overdue' => VehicleMaintenanceRecord::where('status', 'scheduled')
-                ->where('scheduled_date', '<', now())->count(),
-            'total_cost' => VehicleMaintenanceRecord::where('status', 'completed')
+            'total_scheduled' => VehicleMaintenanceRecord::whereIn('status', $pendingStatuses)
+                ->whereNull('completed_date')
+                ->whereDate('scheduled_date', '>=', now()->toDateString())
+                ->count(),
+            'total_completed' => VehicleMaintenanceRecord::where(function ($query) {
+                $query->where('status', 'completed')
+                    ->orWhereNotNull('completed_date');
+            })->count(),
+            'total_overdue' => VehicleMaintenanceRecord::overdue()->count(),
+            'total_cost' => VehicleMaintenanceRecord::where(function ($query) {
+                $query->where('status', 'completed')
+                    ->orWhereNotNull('completed_date');
+            })
                 ->sum('cost'),
-            'average_cost' => VehicleMaintenanceRecord::where('status', 'completed')
+            'average_cost' => VehicleMaintenanceRecord::where(function ($query) {
+                $query->where('status', 'completed')
+                    ->orWhereNotNull('completed_date');
+            })
                 ->avg('cost'),
         ];
     }
 }
-
 
 

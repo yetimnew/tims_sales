@@ -85,7 +85,7 @@ const getMainNavItems = (
                     currentUrl.startsWith('/drivers') ||
                     currentUrl.startsWith('/driver-trucks') ||
                     currentUrl.startsWith('/vehicletypes') ||
-                    // currentUrl.startsWith('/fuel') ||
+                    currentUrl.startsWith('/fuel') ||
                     currentUrl.startsWith('/driver-performance') ||
                     currentUrl.startsWith('/driver-safety') ||
                     currentUrl.startsWith('/cargo-types') ||
@@ -115,14 +115,12 @@ const getMainNavItems = (
                         icon: Settings,
                         requiredPermissions: ['vehicletypes.view', 'vehicletypes.show'],
                     },
-                    /*
                     {
-                        title: 'Fuel Records',
+                        title: translate('sidebar.fuelRecords'),
                         href: '/fuel',
                         icon: Fuel,
                         requiredPermissions: ['fuel.view', 'fuel.show'],
                     },
-                    */
                     {
                         title: translate('sidebar.driverSafety'),
                         href: '/driver-safety',
@@ -167,6 +165,12 @@ const getMainNavItems = (
                         title: translate('sidebar.overdueAlerts'),
                         href: '/maintenance/alerts',
                         icon: AlertTriangle,
+                        requiredPermissions: ['maintenance.view', 'maintenance.show'],
+                    },
+                    {
+                        title: translate('sidebar.mobileRequests'),
+                        href: '/maintenance/mobile-requests',
+                        icon: Bell,
                         requiredPermissions: ['maintenance.view', 'maintenance.show'],
                     },
                 ],
@@ -268,7 +272,8 @@ const getMainNavItems = (
                 icon: Settings,
                 isActive:
                     currentUrl.startsWith('/statustypes') ||
-                    currentUrl.startsWith('/truck-status-board'),
+                    currentUrl.startsWith('/truck-status-board') ||
+                    currentUrl.startsWith('/driver-status-history'),
                 items: [
                     {
                         title: translate('sidebar.statusTypeRegistration'),
@@ -281,6 +286,37 @@ const getMainNavItems = (
                         href: '/truck-status-board',
                         icon: Activity,
                         requiredPermissions: ['truck-status-board.view'],
+                    },
+                    {
+                        title: translate('sidebar.driverStatusHistory'),
+                        href: '/driver-status-history',
+                        icon: History,
+                        requiredPermissions: ['drivers.view', 'drivers.show'],
+                    },
+                ],
+            },
+            {
+                title: translate('sidebar.mobile'),
+                icon: Navigation,
+                isActive: currentUrl.startsWith('/mobile') || currentUrl.startsWith('/fuel/mobile-review'),
+                items: [
+                    {
+                        title: translate('sidebar.tracking'),
+                        href: '/mobile/tracking',
+                        icon: MapPin,
+                        requiredPermissions: ['drivers.view', 'drivers.show'],
+                    },
+                    {
+                        title: translate('sidebar.emergency'),
+                        href: '/mobile/emergency-alerts',
+                        icon: AlertTriangle,
+                        requiredPermissions: ['drivers.view', 'drivers.show'],
+                    },
+                    {
+                        title: translate('sidebar.fuelMobileReview'),
+                        href: '/fuel/mobile-review',
+                        icon: Fuel,
+                        requiredPermissions: ['fuel.view', 'fuel.show'],
                     },
                 ],
             },

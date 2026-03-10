@@ -1,13 +1,38 @@
 import '../config/app_config.dart';
 import 'api_service.dart';
+import '../models/status.dart';
 
 class StatusService {
   final ApiService _apiService = ApiService();
+
+  Future<List<StatusOption>> getStatusOptions({String statusType = 'work'}) async {
+    try {
+      final response = await _apiService.get(
+        AppConfig.statusOptionsEndpoint,
+        queryParameters: {
+          'status_type': statusType,
+        },
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final data = response.data['data'] as List<dynamic>;
+        return data
+            .whereType<Map<String, dynamic>>()
+            .map(StatusOption.fromJson)
+            .toList();
+      }
+
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
 
   Future<bool> updateStatus({
     required String statusType, // 'work', 'truck', 'trip'
     required String statusValue,
     String? notes,
+    Map<String, dynamic>? location,
   }) async {
     try {
       final response = await _apiService.post(
@@ -16,6 +41,7 @@ class StatusService {
           'status_type': statusType,
           'status_value': statusValue,
           'notes': notes,
+          ...?location,
         },
       );
 
@@ -48,6 +74,23 @@ class StatusService {
       return [];
     } catch (e) {
       return [];
+    }
+  }
+
+  Future<DriverStatus?> getCurrentStatus() async {
+    try {
+      final response = await _apiService.get(AppConfig.statusCurrentEndpoint);
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final data = response.data['data'];
+        if (data is Map<String, dynamic>) {
+          return DriverStatus.fromJson(data);
+        }
+      }
+
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 }

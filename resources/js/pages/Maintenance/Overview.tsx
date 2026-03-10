@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { useListingLoading } from '@/hooks/use-listing-loading';
+import { formatCurrency } from '@/lib/formatters/currency';
 import { ArrowUpRight, CalendarClock, ClipboardList, Clock4, DollarSign, ListChecks, ShieldAlert, Wrench } from 'lucide-react';
 
 interface MaintenanceParty {
@@ -72,11 +73,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const TABLE_LOADING_STORAGE_KEY = 'maintenance.overview.table-loading';
-
-const formatCurrency = (value: number | null | undefined) => {
-    if (value === null || value === undefined || Number.isNaN(value)) return '—';
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(value);
-};
 
 const formatStatus = (status: string | null) => {
     if (!status) return 'Unknown';

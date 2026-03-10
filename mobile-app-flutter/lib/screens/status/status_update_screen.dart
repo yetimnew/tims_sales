@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../../config/app_config.dart';
 import '../../models/status.dart';
 import '../../services/api_service.dart';
+import '../../services/location_service.dart';
+import '../../services/status_service.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/glass_card.dart';
 import 'status_history_screen.dart';
 
 class StatusUpdateScreen extends StatefulWidget {
@@ -14,18 +19,22 @@ class StatusUpdateScreen extends StatefulWidget {
 
 class _StatusUpdateScreenState extends State<StatusUpdateScreen> {
   final ApiService _apiService = ApiService();
+  final LocationService _locationService = LocationService();
+  final StatusService _statusService = StatusService();
   final TextEditingController _notesController = TextEditingController();
-  
+
   DriverStatus? _currentStatus;
+  List<StatusOption> _statusOptions = [];
   bool _isLoading = true;
   bool _isUpdating = false;
   String? _error;
-  WorkStatus? _selectedStatus;
+  String _selectedStatusType = 'work';
+  String? _selectedStatusValue;
 
   @override
   void initState() {
     super.initState();
-    _loadCurrentStatus();
+    _loadStatusScreen();
   }
 
   @override
@@ -34,30 +43,53 @@ class _StatusUpdateScreenState extends State<StatusUpdateScreen> {
     super.dispose();
   }
 
-  Future<void> _loadCurrentStatus() async {
+  Future<void> _loadStatusScreen({String? statusType}) async {
+    final nextStatusType = statusType ?? _selectedStatusType;
+
     setState(() {
       _isLoading = true;
       _error = null;
+      _selectedStatusType = nextStatusType;
     });
 
     try {
-      final response = await _apiService.get(AppConfig.statusCurrentEndpoint);
-      
-      if (response.statusCode == 200 && response.data['success'] == true) {
-        final statusData = response.data['data'];
-        setState(() {
+      final statusOptions = await _statusService.getStatusOptions(
+        statusType: nextStatusType,
+      );
+
+      DriverStatus? currentStatus;
+
+      if (nextStatusType == 'work') {
+        final response = await _apiService.get(AppConfig.statusCurrentEndpoint);
+
+        if (response.statusCode == 200 && response.data['success'] == true) {
+          final statusData = response.data['data'];
           if (statusData != null) {
-            _currentStatus = DriverStatus.fromJson(statusData);
-            _selectedStatus = WorkStatus.fromString(_currentStatus!.statusValue);
-          } else {
-            _currentStatus = null;
-            _selectedStatus = WorkStatus.available; // Default
+            currentStatus = DriverStatus.fromJson(statusData);
           }
-          _isLoading = false;
-        });
+        } else {
+          throw Exception('Failed to load current status');
+        }
       } else {
-        throw Exception('Failed to load current status');
+        final history = await _statusService.getStatusHistory(
+          statusType: nextStatusType,
+          limit: 1,
+        );
+
+        if (history.isNotEmpty) {
+          currentStatus = DriverStatus.fromJson(history.first);
+        }
       }
+
+      final defaultValue = currentStatus?.statusValue ??
+          (statusOptions.isNotEmpty ? statusOptions.first.value : null);
+
+      setState(() {
+        _statusOptions = statusOptions;
+        _currentStatus = currentStatus;
+        _selectedStatusValue = defaultValue;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _error = 'Failed to load status: ${e.toString()}';
@@ -66,8 +98,16 @@ class _StatusUpdateScreenState extends State<StatusUpdateScreen> {
     }
   }
 
+  Future<void> _switchStatusType(String statusType) async {
+    if (_isLoading || _selectedStatusType == statusType) {
+      return;
+    }
+
+    await _loadStatusScreen(statusType: statusType);
+  }
+
   Future<void> _updateStatus() async {
-    if (_selectedStatus == null) {
+    if (_selectedStatusValue == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a status')),
       );
@@ -80,22 +120,27 @@ class _StatusUpdateScreenState extends State<StatusUpdateScreen> {
     });
 
     try {
+      final currentLocation = await _locationService.getCurrentLocation();
+
       final response = await _apiService.post(
         AppConfig.statusEndpoint,
         data: {
-          'status_type': 'work',
-          'status_value': _selectedStatus!.value,
-          'notes': _notesController.text.trim().isEmpty 
-              ? null 
+          'status_type': _selectedStatusType,
+          'status_value': _selectedStatusValue,
+          'notes': _notesController.text.trim().isEmpty
+              ? null
               : _notesController.text.trim(),
+          if (currentLocation != null) ...currentLocation,
         },
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         final updatedStatus = DriverStatus.fromJson(response.data['data']);
+        final updatedLabel = _statusLabel(updatedStatus.statusValue);
+
         setState(() {
           _currentStatus = updatedStatus;
-          _selectedStatus = WorkStatus.fromString(updatedStatus.statusValue);
+          _selectedStatusValue = updatedStatus.statusValue;
           _notesController.clear();
         });
 
@@ -106,19 +151,22 @@ class _StatusUpdateScreenState extends State<StatusUpdateScreen> {
                 children: [
                   const Icon(Icons.check_circle, color: Colors.white),
                   const SizedBox(width: 8),
-                  Expanded(child: Text('Status updated to ${_selectedStatus!.label}')),
+                  Expanded(child: Text('Status updated to $updatedLabel')),
                 ],
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: AppTheme.successColor,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMD),
+              ),
             ),
           );
         }
 
-        // Reload status after a short delay
-        Future.delayed(const Duration(milliseconds: 500), () {
-          _loadCurrentStatus();
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            _loadStatusScreen(statusType: _selectedStatusType);
+          }
         });
       } else {
         throw Exception(response.data['message'] ?? 'Failed to update status');
@@ -127,7 +175,7 @@ class _StatusUpdateScreenState extends State<StatusUpdateScreen> {
       setState(() {
         _error = e.toString();
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -138,133 +186,261 @@ class _StatusUpdateScreenState extends State<StatusUpdateScreen> {
                 Expanded(child: Text('Error: ${e.toString()}')),
               ],
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.errorColor,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusMD),
+            ),
           ),
         );
       }
     } finally {
-      setState(() {
-        _isUpdating = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isUpdating = false;
+        });
+      }
     }
   }
 
-  Color _getStatusColor(WorkStatus status) {
+  StatusOption? _statusOption(String? value) {
+    if (value == null) {
+      return null;
+    }
+
+    for (final option in _statusOptions) {
+      if (option.value.toLowerCase() == value.toLowerCase()) {
+        return option;
+      }
+    }
+
+    return null;
+  }
+
+  bool _isWorkStatusType() => _selectedStatusType == 'work';
+
+  Color _getWorkStatusColor(WorkStatus status) {
     switch (status) {
       case WorkStatus.available:
-        return Colors.green;
+        return AppTheme.successColor;
       case WorkStatus.onTrip:
-        return Colors.blue;
+        return AppTheme.sky400;
       case WorkStatus.onBreak:
-        return Colors.orange;
+        return AppTheme.warningColor;
       case WorkStatus.offDuty:
-        return Colors.grey;
+        return AppTheme.textSecondary;
     }
   }
 
-  IconData _getStatusIcon(WorkStatus status) {
+  IconData _getWorkStatusIcon(WorkStatus status) {
     switch (status) {
       case WorkStatus.available:
         return Icons.check_circle;
       case WorkStatus.onTrip:
-        return Icons.directions_car;
+        return Icons.local_shipping;
       case WorkStatus.onBreak:
-        return Icons.coffee;
+        return Icons.free_breakfast;
       case WorkStatus.offDuty:
-        return Icons.home;
+        return Icons.pause_circle;
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Update Status'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const StatusHistoryScreen(),
-                ),
-              );
-            },
-            tooltip: 'View History',
-          ),
-        ],
+  String _getWorkStatusDescription(WorkStatus status) {
+    switch (status) {
+      case WorkStatus.available:
+        return 'Ready to receive the next assignment';
+      case WorkStatus.onTrip:
+        return 'Actively driving or handling delivery work';
+      case WorkStatus.onBreak:
+        return 'Temporarily paused and unavailable';
+      case WorkStatus.offDuty:
+        return 'Signed out from work responsibilities';
+    }
+  }
+
+  Color _statusColor(String? value) {
+    final workStatus = WorkStatus.fromString(value);
+    if (workStatus != null) {
+      return _getWorkStatusColor(workStatus);
+    }
+
+    return _isWorkStatusType() ? AppTheme.textSecondary : AppTheme.sky400;
+  }
+
+  IconData _statusIcon(String? value) {
+    final workStatus = WorkStatus.fromString(value);
+    if (workStatus != null) {
+      return _getWorkStatusIcon(workStatus);
+    }
+
+    return _isWorkStatusType() ? Icons.info_outline : Icons.local_shipping;
+  }
+
+  String _statusLabel(String? value) {
+    final option = _statusOption(value);
+    if (option != null) {
+      return option.label;
+    }
+
+    final workStatus = WorkStatus.fromString(value);
+    if (workStatus != null) {
+      return workStatus.label;
+    }
+
+    return (value ?? 'Unknown').replaceAll('_', ' ');
+  }
+
+  String _statusDescription(String? value) {
+    final option = _statusOption(value);
+    if (option?.description != null && option!.description!.isNotEmpty) {
+      return option.description!;
+    }
+
+    final workStatus = WorkStatus.fromString(value);
+    if (workStatus != null) {
+      return _getWorkStatusDescription(workStatus);
+    }
+
+    return _isWorkStatusType()
+        ? 'Select the status that best reflects your current work condition.'
+        : 'Select the active truck operational status from the configured list.';
+  }
+
+  String _formatDateTime(String value) {
+    try {
+      return DateFormat('dd MMM yyyy, hh:mm a')
+          .format(DateTime.parse(value).toLocal());
+    } catch (_) {
+      return value;
+    }
+  }
+
+  Widget _buildStatusChip(String label, Color color, {bool selected = false}) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: selected ? color.withAlpha(36) : AppTheme.slate700.withAlpha(120),
+        borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+        border: Border.all(
+          color: selected ? color : AppTheme.slate600,
+        ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null && _currentStatus == null
-              ? _buildErrorState()
-              : RefreshIndicator(
-                  onRefresh: _loadCurrentStatus,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Current Status Card
-                        if (_currentStatus != null) _buildCurrentStatusCard(),
-                        if (_currentStatus != null) const SizedBox(height: 24),
-                        
-                        // Status Selection
-                        _buildStatusSelection(),
-                        const SizedBox(height: 24),
-                        
-                        // Notes Field
-                        _buildNotesField(),
-                        const SizedBox(height: 32),
-                        
-                        // Update Button
-                        _buildUpdateButton(),
-                        
-                        if (_error != null && _currentStatus != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16),
-                            child: Text(
-                              _error!,
-                              style: TextStyle(color: Colors.red[300]),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: selected ? color : AppTheme.textSecondary,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+      ),
     );
   }
 
   Widget _buildErrorState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
+        padding: AppTheme.paddingScreen,
+        child: GlassCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: AppTheme.iconSizeXXL,
+                color: AppTheme.errorColor,
+              ),
+              AppTheme.gapLG,
+              Text(
+                'Something went wrong',
+                style: AppTheme.headingLarge(context),
+              ),
+              AppTheme.gapSM,
+              Text(
+                _error ?? 'Unknown error',
+                style: AppTheme.bodyMedium(context),
+                textAlign: TextAlign.center,
+              ),
+              AppTheme.gapXL,
+              FilledButton.icon(
+                onPressed: () => _loadStatusScreen(statusType: _selectedStatusType),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusTypeSelection() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Status Type', style: AppTheme.headingMedium(context)),
+          AppTheme.gapSM,
+          Row(
+            children: [
+              Expanded(
+                child: _buildTypeButton(
+                  label: 'Work',
+                  icon: Icons.work_outline,
+                  value: 'work',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTypeButton(
+                  label: 'Truck',
+                  icon: Icons.local_shipping_outlined,
+                  value: 'truck',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeButton({
+    required String label,
+    required IconData icon,
+    required String value,
+  }) {
+    final isSelected = _selectedStatusType == value;
+
+    return InkWell(
+      onTap: _isUpdating ? null : () => _switchStatusType(value),
+      borderRadius: BorderRadius.circular(AppTheme.radiusMD),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppTheme.sky400.withAlpha(26)
+              : AppTheme.slate800.withAlpha(150),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMD),
+          border: Border.all(
+            color: isSelected ? AppTheme.sky400 : AppTheme.slate700,
+          ),
+        ),
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-            const SizedBox(height: 16),
+            Icon(
+              icon,
+              color: isSelected ? AppTheme.sky400 : AppTheme.textSecondary,
+            ),
+            const SizedBox(width: 8),
             Text(
-              'Something went wrong',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+              label,
+              style: TextStyle(
+                color: isSelected ? AppTheme.sky400 : AppTheme.textPrimary,
+                fontWeight: FontWeight.w700,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _error ?? 'Unknown error',
-              style: TextStyle(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _loadCurrentStatus,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
             ),
           ],
         ),
@@ -272,79 +448,100 @@ class _StatusUpdateScreenState extends State<StatusUpdateScreen> {
     );
   }
 
-  Widget _buildCurrentStatusCard() {
-    final status = _currentStatus!;
-    final workStatus = WorkStatus.fromString(status.statusValue);
-    
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Theme.of(context).primaryColor,
+  Widget _buildOverviewCard() {
+    final selectedValue = _selectedStatusValue ?? _currentStatus?.statusValue;
+    final color = _statusColor(selectedValue);
+
+    return GlassCard(
+      useGradient: true,
+      color: AppTheme.darkCard,
+      borderColor: color,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withAlpha(38),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMD),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Current Status',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: workStatus != null 
-                    ? _getStatusColor(workStatus).withOpacity(0.1)
-                    : Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: workStatus != null 
-                      ? _getStatusColor(workStatus)
-                      : Colors.grey,
-                  width: 2,
+                child: Icon(
+                  _statusIcon(selectedValue),
+                  color: color,
+                  size: AppTheme.iconSizeLG,
                 ),
               ),
-              child: Row(
-                children: [
-                  if (workStatus != null) ...[
-                    Icon(
-                      _getStatusIcon(workStatus),
-                      size: 32,
-                      color: _getStatusColor(workStatus),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _isWorkStatusType() ? 'Driver Work Status' : 'Truck Status',
+                      style: AppTheme.captionStyle(
+                        context,
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(height: 4),
+                    Text(
+                      _statusLabel(selectedValue),
+                      style: AppTheme.headingLarge(context),
+                    ),
                   ],
+                ),
+              ),
+              _buildStatusChip(_statusLabel(selectedValue), color, selected: true),
+            ],
+          ),
+          AppTheme.gapLG,
+          Text(
+            _statusDescription(selectedValue),
+            style: AppTheme.bodyMedium(context),
+          ),
+          if (_currentStatus != null) ...[
+            AppTheme.gapLG,
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppTheme.slate800.withAlpha(170),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMD),
+                border: Border.all(color: AppTheme.slate700),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.schedule, size: 18, color: color),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          workStatus?.label ?? status.statusValue.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: workStatus != null 
-                                ? _getStatusColor(workStatus)
-                                : Colors.grey[700],
+                          'Last updated',
+                          style: AppTheme.captionStyle(
+                            context,
+                            color: AppTheme.textSecondary,
                           ),
                         ),
-                        if (status.notes != null && status.notes!.isNotEmpty) ...[
-                          const SizedBox(height: 4),
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatDateTime(_currentStatus!.createdAt),
+                          style: const TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_currentStatus!.notes != null &&
+                            _currentStatus!.notes!.isNotEmpty) ...[
+                          const SizedBox(height: 8),
                           Text(
-                            status.notes!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
+                            _currentStatus!.notes!,
+                            style: AppTheme.smallTextStyle(
+                              context,
+                              color: AppTheme.textSecondary,
                             ),
                           ),
                         ],
@@ -354,84 +551,78 @@ class _StatusUpdateScreenState extends State<StatusUpdateScreen> {
                 ],
               ),
             ),
-            if (status.createdAt.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Updated ${_formatDateTime(status.createdAt)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ],
           ],
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildStatusSelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Select New Status',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Choose Status', style: AppTheme.headingMedium(context)),
+          AppTheme.gapSM,
+          Text(
+            _isWorkStatusType()
+                ? 'Select the status that best reflects your current work condition.'
+                : 'Select the active truck operational status from the configured list.',
+            style: AppTheme.bodyMedium(context),
           ),
-        ),
-        const SizedBox(height: 16),
-        ...WorkStatus.values.map((status) => _buildStatusOption(status)),
-      ],
+          AppTheme.gapLG,
+          if (_statusOptions.isEmpty)
+            Text(
+              'No active status options found.',
+              style: AppTheme.bodyMedium(context),
+            )
+          else
+            ..._statusOptions.map(_buildStatusOption),
+        ],
+      ),
     );
   }
 
-  Widget _buildStatusOption(WorkStatus status) {
-    final isSelected = _selectedStatus == status;
-    final color = _getStatusColor(status);
-    
+  Widget _buildStatusOption(StatusOption status) {
+    final isSelected = _selectedStatusValue == status.value;
+    final color = _statusColor(status.value);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: _isUpdating ? null : () {
-          setState(() {
-            _selectedStatus = status;
-          });
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
+        onTap: _isUpdating
+            ? null
+            : () {
+                setState(() {
+                  _selectedStatusValue = status.value;
+                });
+              },
+        borderRadius: BorderRadius.circular(AppTheme.radiusLG),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isSelected 
-                ? color.withOpacity(0.1)
-                : Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
+            color: isSelected
+                ? color.withAlpha(30)
+                : AppTheme.slate800.withAlpha(150),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLG),
             border: Border.all(
-              color: isSelected ? color : Colors.grey[300]!,
-              width: isSelected ? 2 : 1,
+              color: isSelected ? color : AppTheme.slate700,
+              width: isSelected ? 1.6 : 1,
             ),
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
+                  color: color.withAlpha(28),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(
-                  _getStatusIcon(status),
-                  color: color,
-                  size: 24,
-                ),
+                child: Icon(_statusIcon(status.value), color: color),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -439,23 +630,28 @@ class _StatusUpdateScreenState extends State<StatusUpdateScreen> {
                     Text(
                       status.label,
                       style: TextStyle(
+                        color: isSelected ? color : AppTheme.textPrimary,
+                        fontWeight: FontWeight.w700,
                         fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected ? color : Colors.grey[800],
                       ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
-                      _getStatusDescription(status),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
+                      _statusDescription(status.value),
+                      style: AppTheme.smallTextStyle(
+                        context,
+                        color: AppTheme.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
-              if (isSelected)
-                Icon(Icons.check_circle, color: color, size: 24),
+              Icon(
+                isSelected
+                    ? Icons.check_circle
+                    : Icons.radio_button_unchecked,
+                color: isSelected ? color : AppTheme.textTertiary,
+              ),
             ],
           ),
         ),
@@ -463,101 +659,149 @@ class _StatusUpdateScreenState extends State<StatusUpdateScreen> {
     );
   }
 
-  String _getStatusDescription(WorkStatus status) {
-    switch (status) {
-      case WorkStatus.available:
-        return 'Ready to accept assignments';
-      case WorkStatus.onTrip:
-        return 'Currently on a trip';
-      case WorkStatus.onBreak:
-        return 'Taking a break';
-      case WorkStatus.offDuty:
-        return 'Not available for work';
-    }
+  Widget _buildNotesField() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Notes', style: AppTheme.headingMedium(context)),
+          AppTheme.gapSM,
+          Text(
+            'Add an optional note for dispatch or internal tracking.',
+            style: AppTheme.bodyMedium(context),
+          ),
+          AppTheme.gapLG,
+          TextField(
+            controller: _notesController,
+            maxLines: 4,
+            enabled: !_isUpdating,
+            style: const TextStyle(color: AppTheme.textPrimary),
+            decoration: InputDecoration(
+              hintText: 'Example: Waiting at checkpoint, back in 10 minutes',
+              hintStyle: const TextStyle(color: AppTheme.textTertiary),
+              filled: true,
+              fillColor: AppTheme.slate800.withAlpha(170),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMD),
+                borderSide: const BorderSide(color: AppTheme.slate700),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMD),
+                borderSide: const BorderSide(color: AppTheme.slate700),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMD),
+                borderSide: const BorderSide(color: AppTheme.sky400),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildNotesField() {
+  Widget _buildBottomActions() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Notes (Optional)',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _notesController,
-          maxLines: 4,
-          decoration: InputDecoration(
-            hintText: 'Add any additional notes about this status change...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+        Container(
+          decoration: AppTheme.gradientButtonDecoration(),
+          child: FilledButton.icon(
+            onPressed: _isUpdating || _selectedStatusValue == null
+                ? null
+                : _updateStatus,
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMD),
+              ),
             ),
-            filled: true,
-            fillColor: Colors.grey[50],
+            icon: _isUpdating
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.save_outlined),
+            label: Text(_isUpdating ? 'Updating...' : 'Save Status'),
           ),
-          enabled: !_isUpdating,
         ),
+        if (_error != null && _currentStatus != null) ...[
+          AppTheme.gapMD,
+          Text(
+            _error!,
+            style: const TextStyle(
+              color: AppTheme.errorColor,
+              fontSize: 13,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildUpdateButton() {
-    return FilledButton(
-      onPressed: _isUpdating || _selectedStatus == null
-          ? null
-          : _updateStatus,
-      style: FilledButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      child: _isUpdating
-          ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.update),
-                const SizedBox(width: 8),
-                Text(
-                  'Update Status to ${_selectedStatus?.label ?? "..."}',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(gradient: AppTheme.darkGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text('Update Status'),
+          backgroundColor: AppTheme.darkSurface.withAlpha(220),
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.history),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const StatusHistoryScreen(),
+                  ),
+                );
+              },
+              tooltip: 'View History',
             ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: AppTheme.sky400),
+              )
+            : _error != null && _currentStatus == null
+                ? _buildErrorState()
+                : RefreshIndicator(
+                    onRefresh: () =>
+                        _loadStatusScreen(statusType: _selectedStatusType),
+                    color: AppTheme.sky400,
+                    backgroundColor: AppTheme.darkCard,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: AppTheme.paddingScreen,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildStatusTypeSelection(),
+                          AppTheme.gapLG,
+                          _buildOverviewCard(),
+                          AppTheme.gapLG,
+                          _buildStatusSelection(),
+                          AppTheme.gapLG,
+                          _buildNotesField(),
+                          AppTheme.gapXL,
+                          _buildBottomActions(),
+                        ],
+                      ),
+                    ),
+                  ),
+      ),
     );
   }
-
-  String _formatDateTime(String dateString) {
-    try {
-      final date = DateTime.parse(dateString);
-      final now = DateTime.now();
-      final difference = now.difference(date);
-
-      if (difference.inMinutes < 1) {
-        return 'just now';
-      } else if (difference.inMinutes < 60) {
-        return '${difference.inMinutes} minute${difference.inMinutes == 1 ? '' : 's'} ago';
-      } else if (difference.inHours < 24) {
-        return '${difference.inHours} hour${difference.inHours == 1 ? '' : 's'} ago';
-      } else if (difference.inDays < 7) {
-        return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
-      } else {
-        return DateFormat('MMM dd, yyyy HH:mm').format(date);
-      }
-    } catch (e) {
-      return dateString;
-    }
-  }
 }
-

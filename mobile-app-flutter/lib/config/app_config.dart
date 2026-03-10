@@ -45,6 +45,7 @@ class AppConfig {
   static const String passwordChangeEndpoint = '/profile/password';
   static const String performanceEndpoint = '/driver/performance';
   static const String statusCurrentEndpoint = '/driver/status/current';
+  static const String statusOptionsEndpoint = '/driver/status/options';
   static const String statusEndpoint = '/driver/status';
   static const String statusHistoryEndpoint = '/driver/status/history';
   static const String locationEndpoint = '/driver/location';
@@ -68,4 +69,3 @@ class AppConfig {
   static const Duration apiTimeout = Duration(seconds: 30);
   static const Duration locationTimeout = Duration(seconds: 10);
 }
-

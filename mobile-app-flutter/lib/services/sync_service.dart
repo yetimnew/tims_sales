@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:image_picker/image_picker.dart';
 import '../models/sync_queue_item.dart';
 import 'connectivity_service.dart';
 import 'offline_storage_service.dart';
@@ -197,14 +198,6 @@ class SyncService {
 
   Future<bool> _syncFuelRecordCreate(SyncQueueItem item) async {
     try {
-      // Note: File uploads stored in item.data as base64 or file path
-      // This would need special handling
-      // For now, we'll skip file-based sync items and require online upload
-      if (item.data.containsKey('imagePath')) {
-        // Would need to re-upload file, which is complex offline
-        return false;
-      }
-
       final result = await _fuelService.createFuelRecord(
         fuelDate: item.data['fuelDate'] as String,
         fuelQuantityLiters: (item.data['fuelQuantityLiters'] as num).toDouble(),
@@ -215,6 +208,13 @@ class SyncService {
         odometerReading: item.data['odometerReading'] as int?,
         receiptNumber: item.data['receiptNumber'] as String?,
         notes: item.data['notes'] as String?,
+        receiptImage: (item.data['imagePath'] as String?) != null
+            ? XFile(item.data['imagePath'] as String)
+            : null,
+        latitude: (item.data['latitude'] as num?)?.toDouble(),
+        longitude: (item.data['longitude'] as num?)?.toDouble(),
+        locationAccuracyM: (item.data['locationAccuracyM'] as num?)?.toDouble(),
+        locationTimestamp: item.data['locationTimestamp'] as String?,
       );
 
       return result != null;
