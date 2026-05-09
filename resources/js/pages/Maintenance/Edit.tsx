@@ -19,7 +19,7 @@ import { AlertCircle, CalendarCheck, ClipboardList, Info, RefreshCcw, Sparkles, 
 
 const UNASSIGNED_MECHANIC_VALUE = '__unassigned__';
 
-type MaintenanceStatus = 'scheduled' | 'in_progress' | 'completed' | 'overdue';
+type MaintenanceStatus = 'scheduled' | 'in_progress' | 'completed';
 
 interface TruckOption {
   id: number;
@@ -50,6 +50,7 @@ interface MaintenanceRecord {
   scheduled_date: string;
   completed_date?: string | null;
   status: MaintenanceStatus;
+  computed_status?: MaintenanceStatus | 'overdue';
   odometer_reading?: number | null;
   cost?: number | string | null;
   description?: string | null;
@@ -71,7 +72,6 @@ const fallbackStatusOptions: StatusOption[] = [
   { value: 'scheduled', label: 'Scheduled' },
   { value: 'in_progress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
-  { value: 'overdue', label: 'Overdue' },
 ];
 
 type MaintenanceField = 'truck_id' | 'maintenance_type_id' | 'scheduled_date' | 'status';
@@ -81,7 +81,7 @@ const buildFormState = (record: MaintenanceRecord) => ({
   maintenance_type_id: record.maintenance_type_id ? record.maintenance_type_id.toString() : '',
   scheduled_date: record.scheduled_date ?? '',
   completed_date: record.completed_date ?? '',
-  status: record.status,
+  status: (record.computed_status && record.computed_status !== 'overdue' ? record.computed_status : record.status),
   odometer_reading: record.odometer_reading ? record.odometer_reading.toString() : '',
   cost: record.cost !== null && record.cost !== undefined ? record.cost.toString() : '',
   description: record.description ?? '',
@@ -116,7 +116,7 @@ export default function MaintenanceEdit({ maintenance, trucks, maintenanceTypes,
     { title: 'Edit', href: '#' },
   ];
 
-  const { toast } = useToast();
+  // Removed direct toast usage; only controller/session notifications will be shown
   const formDefaults = useMemo(() => buildFormState(maintenance), [maintenance]);
   const [, startTransition] = useTransition();
   const { data, setData, setDefaults, put, processing, errors } = useForm(formDefaults);
@@ -170,13 +170,7 @@ export default function MaintenanceEdit({ maintenance, trucks, maintenanceTypes,
       .filter(Boolean)
       .map(message => String(message));
 
-    if (backendErrors.length) {
-      toast({
-        title: '⚠️ Validation Error',
-        description: backendErrors.join(', '),
-        variant: 'destructive',
-      });
-    }
+    // Validation errors will be shown inline, not as toasts
   }, [errors, toast]);
 
   const setFieldErrorMessage = (field: keyof typeof data, message: string) => {
@@ -314,30 +308,14 @@ export default function MaintenanceEdit({ maintenance, trucks, maintenanceTypes,
 
     if (Object.keys(pendingErrors).length) {
       setFrontendErrors(pendingErrors);
-      toast({
-        title: '⚠️ Validation Error',
-        description: 'Please fix the highlighted fields before saving your changes.',
-        variant: 'destructive',
-      });
       return;
     }
 
     put(`/maintenance/${maintenance.id}`, {
       preserveScroll: true,
       onSuccess: () => {
-        toast({
-          title: '✅ Maintenance Record Updated',
-          description: 'The maintenance record has been updated successfully.',
-        });
         setFrontendErrors({});
         setIsDirty(false);
-      },
-      onError: () => {
-        toast({
-          title: 'Update failed',
-          description: 'Unable to update maintenance. Review the errors and retry.',
-          variant: 'destructive',
-        });
       },
     });
   };

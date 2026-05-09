@@ -111,14 +111,14 @@ interface DashboardProps {
         revenue30d: number;
         operatingCost30d: number;
         margin30d: number;
-        fareboxRecovery: number | null;
+        // fareboxRecovery: number | null;
         avgRevenuePerTon: number | null;
         avgCostPerTon: number | null;
         change: {
             revenue: number | null;
             operatingCost: number | null;
             margin: number | null;
-            fareboxRecovery: number | null;
+            // fareboxRecovery: number | null;
         };
         trend: Array<{ period: string; revenue: number; cost: number; net: number }>;
         costBreakdown: Array<{ label: string; value: number }>;
@@ -201,7 +201,7 @@ const PRIMARY_KPI_ICONS: Record<string, ComponentType<{ className?: string }>> =
     trips30d: Truck,
     avgLoadPerTrip: Gauge,
     margin30d: DollarSign,
-    fareboxRecovery: Target,
+    // fareboxRecovery: Target,
     fleetUtilisation: Sparkles,
 };
 
@@ -480,13 +480,13 @@ export default function Dashboard({
                 change: financialOverview.change.margin,
                 type: 'currency' as const,
             },
-            {
-                key: 'fareboxRecovery',
-                label: t('dashboard.financialPulse.fareboxRecovery'),
-                value: financialOverview.fareboxRecovery,
-                change: financialOverview.change.fareboxRecovery,
-                type: 'percent' as const,
-            },
+            // {
+            //     key: 'fareboxRecovery',
+            //     label: t('dashboard.financialPulse.fareboxRecovery'),
+            //     value: financialOverview.fareboxRecovery,
+            //     change: financialOverview.change.fareboxRecovery,
+            //     type: 'percent' as const,
+            // },
         ],
         [financialOverview, t]
     );
@@ -549,9 +549,9 @@ export default function Dashboard({
                 </header>
 
                 {/* Primary KPIs Section */}
-                <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                     {primaryKpis.length === 0 && (
-                        <Card className="sm:col-span-2 lg:col-span-3 xl:col-span-6 border-dashed border-slate-300/70 dark:border-slate-700/70 bg-white dark:bg-slate-800">
+                        <Card className="sm:col-span-2 lg:col-span-3 xl:col-span-5 border-dashed border-slate-300/70 dark:border-slate-700/70 bg-white dark:bg-slate-800">
                             <CardContent className="flex h-32 items-center justify-center text-sm text-slate-500 dark:text-slate-400">
                                 {t('dashboard.empty.kpis')}
                             </CardContent>

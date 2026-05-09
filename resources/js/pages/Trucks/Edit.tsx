@@ -10,7 +10,6 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { toast } from '@/hooks/use-toast';
 import { validateTruck, truckValidation, type ValidationErrors } from '@/lib/validation';
 import { Info, Wrench, DollarSign, CheckCircle, ArrowLeft, Save, Truck, Hash, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -167,10 +166,6 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: t('trucks.form.edit.successTitle'),
-                    description: t('trucks.form.edit.successDescription'),
-                });
             },
         });
     };

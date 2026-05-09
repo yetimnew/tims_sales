@@ -10,11 +10,28 @@ class DriverStatusHistory extends Model
 {
     use HasFactory;
 
+    protected $table = 'driver_status_history';
+
     protected $fillable = [
         'driver_id',
         'status_type',
         'status_value',
         'notes',
+        'latitude',
+        'longitude',
+        'accuracy',
+        'speed',
+        'heading',
+        'location_timestamp',
+    ];
+
+    protected $casts = [
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
+        'accuracy' => 'decimal:2',
+        'speed' => 'decimal:2',
+        'heading' => 'decimal:2',
+        'location_timestamp' => 'datetime',
     ];
 
     /**

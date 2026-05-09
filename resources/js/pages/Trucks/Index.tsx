@@ -13,7 +13,6 @@ import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
 import { Link, router } from '@inertiajs/react';
-import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
 import { useTranslation } from 'react-i18next';
 import {
@@ -461,30 +460,16 @@ export default function TrucksIndex({
             },
             onError: (errors) => {
                 setIsDeleting(false);
-
                 if (errors && typeof errors === 'object') {
                     const messages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
                         .filter((value) => Boolean(value))
                         .join('\n');
-
                     const fallback = t('trucks.delete.errorKnown');
                     setDeleteError(messages || fallback);
-
-                    toast({
-                        title: t('trucks.delete.failedTitle'),
-                        description: messages || fallback,
-                        variant: 'destructive',
-                    });
                 } else {
                     const fallback = t('trucks.delete.errorUnknown');
                     setDeleteError(fallback);
-
-                    toast({
-                        title: t('trucks.delete.failedTitle'),
-                        description: fallback,
-                        variant: 'destructive',
-                    });
                 }
             },
         });
@@ -578,23 +563,6 @@ export default function TrucksIndex({
                 tonKmPerBirrDisplay
             ),
             valueClassName: isTableLoading ? undefined : 'text-emerald-600',
-        },
-        {
-            id: 'driver-churn',
-            label: t('trucks.stats.churn.label', { days: churnWindowDays }),
-            icon: <Users className="h-3.5 w-3.5 text-rose-600" />,
-            className: 'min-w-[220px] flex-shrink-0',
-            value: isTableLoading ? (
-                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
-            ) : (
-                averageTenureDisplay
-            ),
-            description: isTableLoading ? (
-                <Skeleton className="h-3 w-32" aria-hidden="true" />
-            ) : (
-                highChurnDescription
-            ),
-            valueClassName: isTableLoading ? undefined : churnValueClass,
         },
         {
             id: 'utilization',
@@ -704,7 +672,14 @@ export default function TrucksIndex({
                   <TableCell className="text-center font-medium">
                       {rowOffset + index + 1}
                   </TableCell>
-                  <TableCell className="font-medium">{truck.plate}</TableCell>
+                  <TableCell className="font-medium">
+                      <Link
+                          href={`/trucks/${truck.id}`}
+                          className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-800 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:border-blue-800 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                      >
+                          <span className="tracking-[0.02em]">{truck.plate}</span>
+                      </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                       {truck.vehicleType?.name || t('trucks.fallbacks.notAvailable')}
                   </TableCell>
@@ -826,7 +801,12 @@ export default function TrucksIndex({
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">
                         {t('trucks.mobile.position', { value: item.position })}
                     </span>
-                    <span className="text-base">{item.truck.plate}</span>
+                    <Link
+                        href={`/trucks/${item.truck.id}`}
+                        className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-800 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:border-blue-800 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                    >
+                        <span className="tracking-[0.02em]">{item.truck.plate}</span>
+                    </Link>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}

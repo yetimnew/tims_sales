@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/use-toast';
 import { validateDriverTruck } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
@@ -59,6 +58,13 @@ type DriverTruckFormField = keyof DriverTruckFormData;
 
 export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }: DriverTruckEditProps) {
     const { t } = useTranslation();
+        // Scroll to top handler for ScrollToTopFab
+        const handleScrollToTop = () => {
+            const container = scrollContainerRef.current;
+            if (container) {
+                container.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
     const assignmentLabel = driverTruck?.driver?.name || driverTruck?.driver?.driverid || t('driverTrucks.form.edit.fallbackAssignment');
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -101,33 +107,8 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
     const minDate = useMemo(() => parseISO(minDateString), [minDateString]);
     const maxDate = useMemo(() => parseISO(todayString), [todayString]);
 
-    useEffect(() => {
-        if (!error) {
-            return;
-        }
 
-        toast({
-            title: t('driverTrucks.form.validation.errorTitle'),
-            description: error,
-            variant: 'destructive',
-        });
-    }, [error, t]);
 
-    useEffect(() => {
-        const messages = Object.values(errors)
-            .map((message) => (typeof message === 'string' ? message : String(message)))
-            .filter(Boolean);
-
-        if (messages.length === 0) {
-            return;
-        }
-
-        toast({
-            title: t('driverTrucks.form.validation.title'),
-            description: messages.join(', '),
-            variant: 'destructive',
-        });
-    }, [errors, t]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -142,63 +123,12 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
         return () => container.removeEventListener('scroll', handleScroll);
     }, []);
 
-    useEffect(() => {
-        if (!wasSuccessful) {
-            return;
-        }
-
-        toast({
-            title: t('driverTrucks.form.edit.successTitle'),
-            description: t('driverTrucks.form.edit.successDescription'),
-        });
-    }, [wasSuccessful, t]);
-
-    const handleScrollToTop = () => {
-        const container = scrollContainerRef.current;
-        container?.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const validateField = (field: DriverTruckFormField, nextState: DriverTruckFormData) => {
-        const result = validateDriverTruck(nextState);
-        const message = result[field];
-
-        setFrontendErrors((prev) => {
-            const next = { ...prev };
-            if (message) {
-                next[field] = message;
-            } else {
-                delete next[field];
-            }
-            return next;
-        });
-    };
-
-    const handleFieldChange = (field: DriverTruckFormField, value: string) => {
-        let nextValue = value;
-
-        if (field === 'date_recived') {
-            nextValue = value.slice(0, 10);
-        }
-
-        const nextState = { ...data, [field]: nextValue } as DriverTruckFormData;
-
-        setData(field, nextValue);
-        clearErrors(field);
-        validateField(field, nextState);
-        setIsDirty(true);
-    };
-
     const submit: FormEventHandler = (event) => {
         event.preventDefault();
 
         const validationResult = validateDriverTruck(data);
         if (Object.keys(validationResult).length > 0) {
             setFrontendErrors(validationResult as Partial<Record<DriverTruckFormField, string>>);
-            toast({
-                title: t('driverTrucks.form.validation.title'),
-                description: t('driverTrucks.form.validation.fixErrors'),
-                variant: 'destructive',
-            });
             return;
         }
 

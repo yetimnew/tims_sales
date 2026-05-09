@@ -14,6 +14,7 @@ import { ListingPaginationFooter } from '@/components/listing/pagination-footer'
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
+import { formatCurrency } from '@/lib/formatters/currency';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import {
@@ -152,21 +153,6 @@ const formatNumber = (value: number | string | null | undefined): string => {
     }
 
     return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(numeric);
-};
-
-const formatCurrency = (value: number | string | null | undefined): string => {
-    const numeric = toNumeric(value);
-
-    if (numeric === null) {
-        return '—';
-    }
-
-    return new Intl.NumberFormat('en-ET', {
-        style: 'currency',
-        currency: 'ETB',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(numeric);
 };
 
 const formatIntervalKm = (value?: number | null): string => {

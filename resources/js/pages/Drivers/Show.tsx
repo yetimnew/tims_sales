@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from '@/hooks/use-toast';
 import { AlertCircle, Ban, BarChart3, History, ShieldCheck, CheckCircle, Calendar, User, ArrowLeft, Edit, Trash2, Truck, ArrowUpRight, Award, TrendingUp, DollarSign, Package, ExternalLink, MapPin, Fuel, Route, Gauge } from 'lucide-react';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
@@ -617,8 +616,8 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                           {gradeReport.overall?.score?.toFixed(1) ?? 'N/A'}
                         </span>
                         <span className="text-sm text-muted-foreground">
-                          {t('drivers.show.grade.scoreOutOf', { 
-                            score: gradeReport.overall?.score?.toFixed(1) ?? 'N/A' 
+                          {t('drivers.show.grade.scoreOutOf', {
+                            score: gradeReport.overall?.score?.toFixed(1) ?? 'N/A'
                           })}
                         </span>
                       </div>
@@ -672,12 +671,12 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie 
-                          data={safetyChartData} 
-                          dataKey="value" 
-                          nameKey="name" 
-                          cx="50%" 
-                          cy="50%" 
+                        <Pie
+                          data={safetyChartData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
                           innerRadius={40}
                           outerRadius={70}
                           paddingAngle={4}
@@ -832,12 +831,12 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie 
-                          data={safetyChartData} 
-                          dataKey="value" 
-                          nameKey="name" 
-                          cx="50%" 
-                          cy="50%" 
+                        <Pie
+                          data={safetyChartData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
                           innerRadius={60}
                           outerRadius={90}
                           paddingAngle={4}

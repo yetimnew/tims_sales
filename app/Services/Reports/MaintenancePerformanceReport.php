@@ -132,7 +132,7 @@ class MaintenancePerformanceReport
 
     private function applyFilters(Builder $query, string $fromDate, string $toDate, array $truckIds, array $maintenanceTypeIds, array $statuses, array $serviceProviders): Builder
     {
-        return $query
+        $query = $query
             ->where(function (Builder $builder) use ($fromDate, $toDate) {
                 $builder->whereBetween('scheduled_date', [$fromDate, $toDate])
                     ->orWhere(function (Builder $inner) use ($fromDate, $toDate) {
@@ -142,8 +142,58 @@ class MaintenancePerformanceReport
             })
             ->when(! empty($truckIds), static fn (Builder $builder) => $builder->whereIn('truck_id', $truckIds))
             ->when(! empty($maintenanceTypeIds), static fn (Builder $builder) => $builder->whereIn('maintenance_type_id', $maintenanceTypeIds))
-            ->when(! empty($statuses), static fn (Builder $builder) => $builder->whereIn('status', $statuses))
             ->when(! empty($serviceProviders), static fn (Builder $builder) => $builder->whereIn('service_provider', $serviceProviders));
+
+        return $this->applyComputedStatusFilter($query, $statuses);
+    }
+
+    private function applyComputedStatusFilter(Builder $query, array $statuses): Builder
+    {
+        $statuses = collect($statuses)
+            ->map(static fn ($status) => (string) $status)
+            ->filter(static fn ($status) => in_array($status, ['scheduled', 'in_progress', 'completed', 'overdue'], true))
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($statuses)) {
+            return $query;
+        }
+
+        $today = now()->toDateString();
+
+        return $query->where(function (Builder $builder) use ($statuses, $today) {
+            foreach ($statuses as $status) {
+                $builder->orWhere(function (Builder $statusQuery) use ($status, $today) {
+                    if ($status === 'overdue') {
+                        $statusQuery->whereIn('status', ['scheduled', 'overdue'])
+                            ->whereNull('completed_date')
+                            ->whereDate('scheduled_date', '<', $today);
+
+                        return;
+                    }
+
+                    if ($status === 'scheduled') {
+                        $statusQuery->whereIn('status', ['scheduled', 'overdue'])
+                            ->whereNull('completed_date')
+                            ->whereDate('scheduled_date', '>=', $today);
+
+                        return;
+                    }
+
+                    if ($status === 'completed') {
+                        $statusQuery->where(function (Builder $completedQuery) {
+                            $completedQuery->where('status', 'completed')
+                                ->orWhereNotNull('completed_date');
+                        });
+
+                        return;
+                    }
+
+                    $statusQuery->where('status', 'in_progress');
+                });
+            }
+        });
     }
 
     private function aggregateByTruck(string $fromDate, string $toDate, array $truckIds, array $maintenanceTypeIds, array $statuses, array $serviceProviders): Collection
@@ -168,19 +218,19 @@ class MaintenancePerformanceReport
         )
             ->whereNotNull('truck_id')
             ->selectRaw('COUNT(*) as total_records')
-            ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_records")
-            ->selectRaw("SUM(CASE WHEN status = 'scheduled' THEN 1 ELSE 0 END) as scheduled_records")
+            ->selectRaw("SUM(CASE WHEN status = 'completed' OR completed_date IS NOT NULL THEN 1 ELSE 0 END) as completed_records")
+            ->selectRaw("SUM(CASE WHEN status IN ('scheduled', 'overdue') AND completed_date IS NULL AND DATE(scheduled_date) >= ? THEN 1 ELSE 0 END) as scheduled_records", [$today])
             ->selectRaw("SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_records")
-            ->selectRaw("SUM(CASE WHEN status = 'scheduled' AND DATE(scheduled_date) < ? THEN 1 ELSE 0 END) as overdue_records", [$today])
+            ->selectRaw("SUM(CASE WHEN status IN ('scheduled', 'overdue') AND completed_date IS NULL AND DATE(scheduled_date) < ? THEN 1 ELSE 0 END) as overdue_records", [$today])
             ->selectRaw('SUM(COALESCE(cost, 0)) as total_cost')
-            ->selectRaw("SUM(CASE WHEN status = 'completed' THEN COALESCE(cost, 0) ELSE 0 END) as completed_cost")
-            ->selectRaw("SUM(CASE WHEN status != 'completed' THEN COALESCE(cost, 0) ELSE 0 END) as open_cost")
+            ->selectRaw("SUM(CASE WHEN status = 'completed' OR completed_date IS NOT NULL THEN COALESCE(cost, 0) ELSE 0 END) as completed_cost")
+            ->selectRaw("SUM(CASE WHEN status != 'completed' AND completed_date IS NULL THEN COALESCE(cost, 0) ELSE 0 END) as open_cost")
             ->selectRaw('AVG(COALESCE(cost, 0)) as average_cost')
             ->selectRaw("SUM(CASE WHEN completed_date IS NOT NULL AND scheduled_date IS NOT NULL THEN {$completionDiff} ELSE 0 END) as completion_days_total")
             ->selectRaw("AVG(CASE WHEN completed_date IS NOT NULL AND scheduled_date IS NOT NULL THEN {$completionDiff} END) as completion_days_average")
-            ->selectRaw("MAX(CASE WHEN status = 'completed' THEN completed_date END) as last_completed_at")
-            ->selectRaw("MIN(CASE WHEN status = 'scheduled' AND scheduled_date >= ? THEN scheduled_date END) as next_scheduled_at", [$today])
-            ->selectRaw("MAX(CASE WHEN status = 'scheduled' AND DATE(scheduled_date) < ? THEN {$overdueDiff} END) as max_overdue_days", [$today, $today])
+            ->selectRaw("MAX(CASE WHEN status = 'completed' OR completed_date IS NOT NULL THEN completed_date END) as last_completed_at")
+            ->selectRaw("MIN(CASE WHEN status IN ('scheduled', 'overdue') AND completed_date IS NULL AND scheduled_date >= ? THEN scheduled_date END) as next_scheduled_at", [$today])
+            ->selectRaw("MAX(CASE WHEN status IN ('scheduled', 'overdue') AND completed_date IS NULL AND DATE(scheduled_date) < ? THEN {$overdueDiff} END) as max_overdue_days", [$today, $today])
             ->groupBy('truck_id');
 
         return $query->get();
@@ -202,9 +252,9 @@ class MaintenancePerformanceReport
         )
             ->whereNotNull('maintenance_type_id')
             ->selectRaw('COUNT(*) as total_records')
-            ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_records")
-            ->selectRaw("SUM(CASE WHEN status = 'scheduled' THEN 1 ELSE 0 END) as scheduled_records")
-            ->selectRaw("SUM(CASE WHEN status = 'scheduled' AND DATE(scheduled_date) < ? THEN 1 ELSE 0 END) as overdue_records", [$today])
+            ->selectRaw("SUM(CASE WHEN status = 'completed' OR completed_date IS NOT NULL THEN 1 ELSE 0 END) as completed_records")
+            ->selectRaw("SUM(CASE WHEN status IN ('scheduled', 'overdue') AND completed_date IS NULL AND DATE(scheduled_date) >= ? THEN 1 ELSE 0 END) as scheduled_records", [$today])
+            ->selectRaw("SUM(CASE WHEN status IN ('scheduled', 'overdue') AND completed_date IS NULL AND DATE(scheduled_date) < ? THEN 1 ELSE 0 END) as overdue_records", [$today])
             ->selectRaw('SUM(COALESCE(cost, 0)) as total_cost')
             ->selectRaw('AVG(COALESCE(cost, 0)) as average_cost')
             ->groupBy('maintenance_type_id');
@@ -440,9 +490,9 @@ class MaintenancePerformanceReport
             VehicleMaintenanceRecord::query()
                 ->selectRaw("{$periodExpression} as period")
                 ->selectRaw('COUNT(*) as total_records')
-                ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_records")
-                ->selectRaw("SUM(CASE WHEN status = 'scheduled' THEN 1 ELSE 0 END) as scheduled_records")
-                ->selectRaw("SUM(CASE WHEN status = 'scheduled' AND DATE(scheduled_date) < ? THEN 1 ELSE 0 END) as overdue_records", [$today])
+                ->selectRaw("SUM(CASE WHEN status = 'completed' OR completed_date IS NOT NULL THEN 1 ELSE 0 END) as completed_records")
+                ->selectRaw("SUM(CASE WHEN status IN ('scheduled', 'overdue') AND completed_date IS NULL AND DATE(scheduled_date) >= ? THEN 1 ELSE 0 END) as scheduled_records", [$today])
+                ->selectRaw("SUM(CASE WHEN status IN ('scheduled', 'overdue') AND completed_date IS NULL AND DATE(scheduled_date) < ? THEN 1 ELSE 0 END) as overdue_records", [$today])
                 ->selectRaw('SUM(COALESCE(cost, 0)) as total_cost'),
             $fromDate,
             $toDate,
@@ -483,14 +533,16 @@ class MaintenancePerformanceReport
 
         $query = VehicleMaintenanceRecord::query()
             ->with(['truck:id,plate,status', 'maintenanceType:id,name,category'])
-            ->where('status', 'scheduled')
+            ->whereIn('status', ['scheduled', 'overdue'])
+            ->whereNull('completed_date')
             ->whereBetween('scheduled_date', [$start->toDateString(), $end->toDateString()])
             ->when(! empty($truckIds), static fn (Builder $builder) => $builder->whereIn('truck_id', $truckIds))
             ->when(! empty($maintenanceTypeIds), static fn (Builder $builder) => $builder->whereIn('maintenance_type_id', $maintenanceTypeIds))
-            ->when(! empty($statuses), static fn (Builder $builder) => $builder->whereIn('status', $statuses))
             ->when(! empty($serviceProviders), static fn (Builder $builder) => $builder->whereIn('service_provider', $serviceProviders))
             ->orderBy('scheduled_date')
             ->limit(12);
+
+        $query = $this->applyComputedStatusFilter($query, $statuses);
 
         return $query->get()
             ->map(static function (VehicleMaintenanceRecord $record) {

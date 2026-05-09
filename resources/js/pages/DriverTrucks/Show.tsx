@@ -8,7 +8,6 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { DetailSummaryGrid } from '@/components/detail/detail-summary-grid';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { DetailPageLayout } from '@/components/detail/detail-page-layout';
-import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
 import { Activity, AlertCircle, ArrowLeft, ArrowUpRight, Award, BarChart3, CheckCircle, Clock, Edit, History, Truck, User, UserX, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -323,29 +322,9 @@ export default function Show({ driverTruck, performances, dateDifference, activi
       onSuccess: () => {
         setDeleteDialogOpen(false);
         setIsDeleting(false);
-        toast({
-          title: t('driverTrucks.show.delete.successTitle'),
-          description: t('driverTrucks.show.delete.successDescription'),
-        });
       },
       onError: errors => {
         setIsDeleting(false);
-        if (errors && typeof errors === 'object') {
-          const errorMessages = Object.values(errors)
-            .flatMap(value => (Array.isArray(value) ? value : [value]))
-            .filter((message): message is string => Boolean(message && message.length));
-          toast({
-            title: t('driverTrucks.show.delete.failedTitle'),
-            description: errorMessages.length > 0 ? errorMessages.join('\n') : t('driverTrucks.show.delete.failedDescription'),
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: t('driverTrucks.show.delete.failedTitle'),
-            description: t('driverTrucks.show.delete.failedDescriptionUnknown'),
-            variant: 'destructive',
-          });
-        }
       },
     });
   };

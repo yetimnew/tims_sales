@@ -10,7 +10,6 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link, useForm } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
-import { toast } from '@/hooks/use-toast';
 import { validateDriver } from '@/lib/validation';
 import { cn } from '@/lib/utils';
 import { Globe, Info, User, MapPin, CheckCircle, Save, User as UserIcon, Hash, ArrowLeft, AlertCircle } from 'lucide-react';
@@ -121,13 +120,14 @@ export default function DriversEdit({ driver, availableUsers = [] }: DriversEdit
             typeof message === 'string' ? message : String(message),
         );
 
-        if (errorMessages.length > 0) {
-            toast({
-                title: t('drivers.form.validation.title'),
-                description: errorMessages.join(', '),
-                variant: 'destructive',
-            });
-        }
+        // Only controller handles notification
+        // if (errorMessages.length > 0) {
+        //     toast({
+        //         title: t('drivers.form.validation.title'),
+        //         description: errorMessages.join(', '),
+        //         variant: 'destructive',
+        //     });
+        // }
     }, [errors, t]);
 
     useEffect(() => {
@@ -194,11 +194,6 @@ export default function DriversEdit({ driver, availableUsers = [] }: DriversEdit
         const allErrors = validateDriver(data);
         if (Object.keys(allErrors).length > 0) {
             setFrontendErrors(allErrors);
-            toast({
-                title: t('drivers.form.validation.title'),
-                description: t('drivers.form.validation.fixErrors'),
-                variant: 'destructive',
-            });
             return;
         }
 
@@ -219,10 +214,6 @@ export default function DriversEdit({ driver, availableUsers = [] }: DriversEdit
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: t('drivers.form.edit.successTitle'),
-                    description: t('drivers.form.edit.successDescription', { name: driverDisplayName }),
-                });
             },
             onError: () => {
                 transform((data) => data);

@@ -155,16 +155,7 @@ class ReportController extends Controller
             });
 
             // Cache status options (1 hour) - rarely changes
-            $statusOptions = Cache::remember('reports.maintenance.status_options', 3600, function () {
-                return VehicleMaintenanceRecord::query()
-                    ->select('status')
-                    ->whereNotNull('status')
-                    ->distinct()
-                    ->orderBy('status')
-                    ->pluck('status')
-                    ->filter()
-                    ->values();
-            });
+            $statusOptions = collect(['scheduled', 'in_progress', 'completed', 'overdue'])->values();
 
             // Cache service provider options (1 hour) - rarely changes
             $serviceProviderOptions = Cache::remember('reports.maintenance.service_provider_options', 3600, function () {

@@ -14,6 +14,12 @@ class VehicleMaintenanceRecord extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity, ClearsCacheOnModelEvents;
 
+    protected $appends = [
+        'days_until_scheduled',
+        'is_overdue',
+        'computed_status',
+    ];
+
     protected $fillable = [
         'truck_id',
         'maintenance_type_id',
@@ -26,6 +32,18 @@ class VehicleMaintenanceRecord extends Model
         'parts_replaced',
         'service_provider',
         'status',
+        'driver_acknowledged_at',
+        'driver_acknowledged_by_user_id',
+        'driver_issue_reported_at',
+        'driver_issue_reported_by_user_id',
+        'driver_issue_report',
+        'driver_service_requested_at',
+        'driver_service_requested_by_user_id',
+        'driver_service_request_notes',
+        'mobile_request_status',
+        'mobile_request_reviewed_at',
+        'mobile_request_reviewed_by_user_id',
+        'mobile_request_review_note',
         'assigned_mechanic_id',
         'user_id',
     ];
@@ -33,6 +51,10 @@ class VehicleMaintenanceRecord extends Model
     protected $casts = [
         'scheduled_date' => 'date',
         'completed_date' => 'date',
+        'driver_acknowledged_at' => 'datetime',
+        'driver_issue_reported_at' => 'datetime',
+        'driver_service_requested_at' => 'datetime',
+        'mobile_request_reviewed_at' => 'datetime',
         'cost' => 'decimal:2',
     ];
 
@@ -89,7 +111,8 @@ class VehicleMaintenanceRecord extends Model
      */
     public function scopeOverdue($query)
     {
-        return $query->where('status', 'scheduled')
+        return $query->whereIn('status', ['scheduled', 'overdue'])
+            ->whereNull('completed_date')
             ->where('scheduled_date', '<', now());
     }
 
@@ -98,7 +121,8 @@ class VehicleMaintenanceRecord extends Model
      */
     public function scopeUpcoming($query, $days = 7)
     {
-        return $query->where('status', 'scheduled')
+        return $query->whereIn('status', ['scheduled', 'overdue'])
+            ->whereNull('completed_date')
             ->whereBetween('scheduled_date', [now(), now()->addDays($days)]);
     }
 
@@ -118,7 +142,30 @@ class VehicleMaintenanceRecord extends Model
      */
     public function getIsOverdueAttribute()
     {
-        return $this->status === 'scheduled' && $this->scheduled_date < now();
+        return in_array($this->status, ['scheduled', 'overdue'], true)
+            && $this->completed_date === null
+            && $this->scheduled_date < now();
+    }
+
+    public function getComputedStatusAttribute(): string
+    {
+        if ($this->status === 'completed' || $this->completed_date !== null) {
+            return 'completed';
+        }
+
+        if ($this->status === 'in_progress') {
+            return 'in_progress';
+        }
+
+        if ($this->is_overdue) {
+            return 'overdue';
+        }
+
+        if (in_array($this->status, ['scheduled', 'overdue'], true)) {
+            return 'scheduled';
+        }
+
+        return (string) $this->status;
     }
 
     /**
@@ -133,6 +180,3 @@ class VehicleMaintenanceRecord extends Model
             ->useLogName('maintenance');
     }
 }
-
-
-

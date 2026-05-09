@@ -169,7 +169,7 @@ export const maintenanceValidation = {
 
   status: (value: string) => {
     if (!value) return 'Status is required'
-    if (!['scheduled', 'in_progress', 'completed', 'overdue'].includes(value)) return 'Invalid status'
+    if (!['scheduled', 'in_progress', 'completed'].includes(value)) return 'Invalid status'
     return ''
   },
 

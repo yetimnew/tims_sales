@@ -17,7 +17,7 @@ import { maintenanceValidation } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { AlertCircle, ClipboardList, Info, Lightbulb, Wrench } from 'lucide-react';
 
-type MaintenanceStatus = 'scheduled' | 'in_progress' | 'completed' | 'overdue';
+type MaintenanceStatus = 'scheduled' | 'in_progress' | 'completed';
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Maintenance', href: '/maintenance' },
@@ -39,7 +39,6 @@ const fallbackStatusOptions: StatusOption[] = [
   { value: 'scheduled', label: 'Scheduled' },
   { value: 'in_progress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
-  { value: 'overdue', label: 'Overdue' },
 ];
 
 const UNASSIGNED_MECHANIC_VALUE = '__unassigned__';
@@ -54,7 +53,7 @@ interface MaintenanceCreateProps {
 type MaintenanceField = 'truck_id' | 'maintenance_type_id' | 'scheduled_date' | 'status';
 
 export default function MaintenanceCreate({ trucks, maintenanceTypes, mechanics, statusOptions }: MaintenanceCreateProps) {
-  const { toast } = useToast();
+  // Removed direct toast usage; only controller/session notifications will be shown
   const resolvedStatusOptions: StatusOption[] =
     Array.isArray(statusOptions) && statusOptions.length > 0 ? statusOptions : fallbackStatusOptions;
 
@@ -168,31 +167,15 @@ export default function MaintenanceCreate({ trucks, maintenanceTypes, mechanics,
 
     if (Object.keys(pendingErrors).length) {
       setFrontendErrors(prev => ({ ...prev, ...pendingErrors }));
-      toast({
-        title: '⚠️ Validation Error',
-        description: 'Please fix the highlighted fields before scheduling.',
-        variant: 'destructive',
-      });
       return;
     }
 
     post('/maintenance', {
       preserveScroll: true,
       onSuccess: () => {
-        toast({
-          title: '✅ Maintenance Record Created',
-          description: 'The maintenance task has been created successfully.',
-        });
         setFrontendErrors({});
         setIsDirty(false);
         reset();
-      },
-      onError: () => {
-        toast({
-          title: '❌ Schedule Failed',
-          description: 'Unable to save maintenance. Review the errors and retry.',
-          variant: 'destructive',
-        });
       },
     });
   };

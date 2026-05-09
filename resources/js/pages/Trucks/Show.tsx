@@ -7,7 +7,6 @@ import { DetailSummaryGrid } from '@/components/detail/detail-summary-grid';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { DetailPageLayout } from '@/components/detail/detail-page-layout';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -267,11 +266,11 @@ export default function TrucksShow({ truck, activityLogs = [], performanceSummar
       onSuccess: () => {
         setDeleteDialogOpen(false);
         setIsDeleting(false);
-        toast({ title: t('trucks.show.delete.successTitle'), description: t('trucks.show.delete.successDescription') });
+        // Only controller handles notification
       },
       onError: () => {
         setIsDeleting(false);
-        toast({ title: t('trucks.show.delete.failedTitle'), description: t('trucks.show.delete.failedDescription'), variant: 'destructive' });
+        // Only controller handles notification
       },
     });
   };
@@ -283,11 +282,11 @@ export default function TrucksShow({ truck, activityLogs = [], performanceSummar
       onSuccess: () => {
         setDeactivateDialogOpen(false);
         setIsDeactivating(false);
-        toast({ title: t('trucks.show.deactivate.successTitle'), description: t('trucks.show.deactivate.successDescription') });
+        // Only controller handles notification
       },
       onError: () => {
         setIsDeactivating(false);
-        toast({ title: t('trucks.show.deactivate.failedTitle'), description: t('trucks.show.deactivate.failedDescription'), variant: 'destructive' });
+        // Only controller handles notification
       },
     });
   };

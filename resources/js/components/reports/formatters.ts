@@ -1,8 +1,10 @@
+import { formatCurrency as formatAppCurrency } from '@/lib/formatters/currency';
+
 export const formatDecimal = (value: number) => value.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 });
 
 export const formatInteger = (value: number) => value.toLocaleString();
 
-export const formatCurrency = (value: number) => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(value);
+export const formatCurrency = (value: number) => formatAppCurrency(value);
 
 export const formatPercentage = (value: number | null) => (value === null ? '—' : `${value.toFixed(2)}%`);
 

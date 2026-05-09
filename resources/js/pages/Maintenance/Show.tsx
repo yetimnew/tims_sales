@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { type BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { ActivityLogTable } from '@/components/activity-log-table';
+import { formatCurrency } from '@/lib/formatters/currency';
 import { toast } from '@/hooks/use-toast';
 import { useState, type ReactNode } from 'react';
 import { DetailPageLayout } from '@/components/detail/detail-page-layout';
@@ -70,14 +71,6 @@ const formatDate = (date?: string | null) => {
     month: 'long',
     day: 'numeric',
   });
-};
-
-const formatCurrency = (value?: number | null) => {
-  if (value === null || value === undefined) return 'N/A';
-  return `$${Number(value).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
 };
 
 export default function MaintenanceShow({ maintenance, activityLogs = [] }: MaintenanceShowProps) {
@@ -151,7 +144,7 @@ export default function MaintenanceShow({ maintenance, activityLogs = [] }: Main
     { label: 'Scheduled Date', value: formatDate(maintenance.scheduled_date), helper: 'When due' },
     { label: 'Completed Date', value: formatDate(maintenance.completed_date), helper: 'When finished' },
     { label: 'Odometer Reading', value: maintenance.odometer_reading ? `${maintenance.odometer_reading.toLocaleString()} km` : 'N/A', helper: 'Mileage at service' },
-    { label: 'Estimated Cost', value: formatCurrency(maintenance.cost), helper: 'Financial impact' },
+    { label: 'Estimated Cost', value: formatCurrency(maintenance.cost, 'N/A'), helper: 'Financial impact' },
   ];
 
   return (

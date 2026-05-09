@@ -92,6 +92,8 @@ class FuelController extends BaseResourceController
             $validated['total_cost'] = $validated['fuel_quantity_liters'] * $validated['fuel_price_per_liter'];
             $validated['user_id'] = Auth::id();
 
+            $this->validateOdometerSequence($assignment->id, $validated['odometer_reading'] ?? null);
+
             $fuelRecord = FuelRecord::create($validated);
 
             // Clear all related caches systematically
@@ -206,6 +208,8 @@ class FuelController extends BaseResourceController
             $validated['driver_id'] = $assignment->driver_id;
             $validated['total_cost'] = $validated['fuel_quantity_liters'] * $validated['fuel_price_per_liter'];
 
+            $this->validateOdometerSequence($assignment->id, $validated['odometer_reading'] ?? null, $fuel->id);
+
             // Capture original values before update
             $original = $this->normalizeAttributes($fuel->getOriginal());
 
@@ -237,6 +241,50 @@ class FuelController extends BaseResourceController
                 ->withErrors(['error' => $errorMessage])
                 ->with('error', $errorMessage);
         }
+    }
+
+    public function mobileReview(Request $request): Response
+    {
+        $reviewStatus = $request->string('review_status')->value();
+
+        $records = FuelRecord::query()
+            ->with(['truck:id,plate', 'driver:id,name,driverid', 'reviewedBy:id,name'])
+            ->where('submitted_via_mobile', true)
+            ->when($reviewStatus === 'pending', fn ($query) => $query->whereNull('reviewed_at'))
+            ->when($reviewStatus === 'reviewed', fn ($query) => $query->whereNotNull('reviewed_at'))
+            ->orderByDesc('fuel_date')
+            ->orderByDesc('created_at')
+            ->paginate(20)
+            ->withQueryString()
+            ->through(fn (FuelRecord $record) => $this->transformMobileFuelRecord($record));
+
+        return Inertia::render('Fuel/MobileReview', [
+            'records' => $records,
+            'filters' => [
+                'review_status' => $reviewStatus ?: 'pending',
+            ],
+        ]);
+    }
+
+    public function markMobileReviewed(Request $request, FuelRecord $fuel)
+    {
+        $validated = $request->validate([
+            'review_note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        if (! $fuel->submitted_via_mobile) {
+            return redirect()->route('fuel.mobile-review')
+                ->with('error', 'Only mobile-submitted fuel records can be reviewed here.');
+        }
+
+        $fuel->forceFill([
+            'reviewed_at' => now(),
+            'reviewed_by_user_id' => Auth::id(),
+            'review_note' => $validated['review_note'] ?? null,
+        ])->save();
+
+        return redirect()->route('fuel.mobile-review')
+            ->with('success', 'Fuel submission marked as reviewed.');
     }
 
     /**
@@ -384,5 +432,63 @@ class FuelController extends BaseResourceController
                 'fuel_cost_per_km' => $fuelCostPerKm,
             ]);
         }
+    }
+
+    private function validateOdometerSequence(int $driverTruckId, ?int $odometerReading, ?int $ignoreFuelRecordId = null): void
+    {
+        if ($odometerReading === null) {
+            return;
+        }
+
+        $latestRecord = FuelRecord::query()
+            ->where('driver_truck_id', $driverTruckId)
+            ->whereNotNull('odometer_reading')
+            ->when($ignoreFuelRecordId !== null, fn ($query) => $query->where('id', '!=', $ignoreFuelRecordId))
+            ->orderByDesc('fuel_date')
+            ->orderByDesc('created_at')
+            ->first();
+
+        if ($latestRecord !== null && $odometerReading < (int) $latestRecord->odometer_reading) {
+            throw ValidationException::withMessages([
+                'odometer_reading' => sprintf(
+                    'Odometer reading cannot be lower than the latest recorded value (%d km).',
+                    $latestRecord->odometer_reading
+                ),
+            ]);
+        }
+    }
+
+    private function transformMobileFuelRecord(FuelRecord $record): array
+    {
+        return [
+            'id' => $record->id,
+            'fuel_date' => optional($record->fuel_date)->toDateString(),
+            'fuel_station' => $record->fuel_station,
+            'fuel_type' => $record->fuel_type,
+            'fuel_quantity_liters' => $record->fuel_quantity_liters !== null ? (float) $record->fuel_quantity_liters : null,
+            'fuel_price_per_liter' => $record->fuel_price_per_liter !== null ? (float) $record->fuel_price_per_liter : null,
+            'total_cost' => $record->total_cost !== null ? (float) $record->total_cost : null,
+            'odometer_reading' => $record->odometer_reading,
+            'receipt_number' => $record->receipt_number,
+            'receipt_image_url' => $record->receipt_image_url,
+            'notes' => $record->notes,
+            'latitude' => $record->latitude !== null ? (float) $record->latitude : null,
+            'longitude' => $record->longitude !== null ? (float) $record->longitude : null,
+            'location_accuracy_m' => $record->location_accuracy_m !== null ? (float) $record->location_accuracy_m : null,
+            'location_timestamp' => $record->location_timestamp?->toIso8601String(),
+            'truck' => [
+                'id' => $record->truck?->id,
+                'plate' => $record->truck?->plate,
+            ],
+            'driver' => [
+                'id' => $record->driver?->id,
+                'name' => $record->driver?->name,
+                'driverid' => $record->driver?->driverid,
+            ],
+            'reviewed_at' => $record->reviewed_at?->toIso8601String(),
+            'review_note' => $record->review_note,
+            'reviewed_by' => $record->reviewedBy?->name,
+            'created_at' => $record->created_at?->toIso8601String(),
+        ];
     }
 }
